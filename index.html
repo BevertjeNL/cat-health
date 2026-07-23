@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Kattengezondheid</title>
+<meta name="description" content="Volg het gewicht en de bloedwaarden van je kat" />
+
+<link rel="manifest" href="manifest.json" />
+<meta name="theme-color" content="#4f46e5" />
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Kat Health" />
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+
+<style>
+  :root {
+    --bg: #f5f5f7;
+    --card-bg: #ffffff;
+    --text: #1c1c1e;
+    --text-muted: #6e6e73;
+    --accent: #4f46e5;
+    --accent-contrast: #ffffff;
+    --border: #e5e5ea;
+    --danger: #d9432c;
+    --radius: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #000000;
+      --card-bg: #1c1c1e;
+      --text: #f2f2f7;
+      --text-muted: #98989f;
+      --border: #2c2c2e;
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    padding-bottom: max(env(safe-area-inset-bottom), 16px);
+  }
+
+  header {
+    padding: 20px 16px 8px;
+    text-align: center;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    margin: 0;
+  }
+
+  nav.tabs {
+    display: flex;
+    gap: 8px;
+    padding: 8px 16px 16px;
+    max-width: 640px;
+    margin: 0 auto;
+  }
+
+  nav.tabs button {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--card-bg);
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+  }
+
+  nav.tabs button.active {
+    background: var(--accent);
+    color: var(--accent-contrast);
+    border-color: var(--accent);
+  }
+
+  main {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0 16px 40px;
+  }
+
+  section.tab-panel { display: none; }
+  section.tab-panel.active { display: block; }
+
+  .card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .card h2 {
+    font-size: 1rem;
+    margin: 0 0 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  form.entry-form {
+    display: grid;
+    gap: 10px;
+  }
+
+  form.entry-form .row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 1rem;
+  }
+
+  button.submit {
+    margin-top: 4px;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    background: var(--accent);
+    color: var(--accent-contrast);
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  button.submit:disabled {
+    opacity: 0.5;
+  }
+
+  .chart-wrap {
+    position: relative;
+    height: 240px;
+  }
+
+  ul.entry-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
+  }
+
+  ul.entry-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    gap: 10px;
+  }
+
+  .entry-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .entry-main .primary {
+    font-weight: 600;
+    font-size: 0.98rem;
+  }
+
+  .entry-main .secondary {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .delete-btn {
+    border: none;
+    background: transparent;
+    color: var(--danger);
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 4px 8px;
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 12px 0;
+  }
+
+  .status-banner {
+    max-width: 640px;
+    margin: 0 auto 12px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    display: none;
+  }
+
+  .status-banner.show { display: block; }
+
+  .status-banner.error {
+    background: #fdecea;
+    color: #86271b;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .status-banner.error { background: #3a1a16; color: #ff8f7a; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🐱 Kattengezondheid</h1>
+</header>
+
+<div id="statusBanner" class="status-banner"></div>
+
+<nav class="tabs">
+  <button id="tabBtnWeight" class="active" onclick="switchTab('weight')">Gewicht</button>
+  <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
+</nav>
+
+<main>
+  <section id="tabWeight" class="tab-panel active">
+    <div class="card">
+      <h2>Nieuwe meting</h2>
+      <form class="entry-form" id="weightForm">
+        <div class="row">
+          <div>
+            <label for="weightDate">Datum</label>
+            <input type="date" id="weightDate" required />
+          </div>
+          <div>
+            <label for="weightGrams">Gewicht (gram)</label>
+            <input type="number" id="weightGrams" inputmode="numeric" min="0" step="1" placeholder="4200" required />
+          </div>
+        </div>
+        <div>
+          <label for="weightNote">Notitie (optioneel)</label>
+          <input type="text" id="weightNote" placeholder="bijv. na het eten" />
+        </div>
+        <button class="submit" type="submit">Opslaan</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Verloop</h2>
+      <div class="chart-wrap">
+        <canvas id="weightChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Metingen</h2>
+      <ul class="entry-list" id="weightList"></ul>
+    </div>
+  </section>
+
+  <section id="tabBlood" class="tab-panel">
+    <div class="card">
+      <h2>Nieuwe bloedwaarde</h2>
+      <form class="entry-form" id="bloodForm">
+        <div class="row">
+          <div>
+            <label for="bloodDate">Datum</label>
+            <input type="date" id="bloodDate" required />
+          </div>
+          <div>
+            <label for="bloodMarker">Marker</label>
+            <input type="text" id="bloodMarker" placeholder="bijv. creatinine" required />
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="bloodValue">Waarde</label>
+            <input type="number" id="bloodValue" step="any" placeholder="1.6" required />
+          </div>
+          <div>
+            <label for="bloodUnit">Eenheid</label>
+            <input type="text" id="bloodUnit" placeholder="mg/dL" />
+          </div>
+        </div>
+        <div>
+          <label for="bloodNote">Notitie (optioneel)</label>
+          <input type="text" id="bloodNote" placeholder="bijv. nuchter geprikt" />
+        </div>
+        <button class="submit" type="submit">Opslaan</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Resultaten</h2>
+      <ul class="entry-list" id="bloodList"></ul>
+    </div>
+  </section>
+</main>
+
+<script>
+  // --- Supabase config -------------------------------------------------
+  // Fill these in with your project's URL and public anon key
+  // (Supabase dashboard > Project Settings > API).
+  const SUPABASE_URL = "YOUR_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+  const isConfigured = SUPABASE_URL.startsWith("http");
+  let supabaseClient = null;
+
+  if (isConfigured) {
+    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+
+  // --- Tabs --------------------------------------------------------------
+  function switchTab(tab) {
+    document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
+    document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
+    document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
+    document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
+  }
+
+  function showError(message) {
+    const banner = document.getElementById("statusBanner");
+    banner.textContent = message;
+    banner.classList.add("show", "error");
+  }
+
+  if (!isConfigured) {
+    showError("Supabase is nog niet geconfigureerd: vul SUPABASE_URL en SUPABASE_ANON_KEY in bovenaan index.html.");
+  }
+
+  function formatDate(dateStr) {
+    const [y, m, d] = dateStr.split("-");
+    return `${d}-${m}-${y}`;
+  }
+
+  // --- Weight --------------------------------------------------------------
+  const weightForm = document.getElementById("weightForm");
+  const weightList = document.getElementById("weightList");
+  let weightChart;
+
+  document.getElementById("weightDate").valueAsDate = new Date();
+
+  weightForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = weightForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const date = document.getElementById("weightDate").value;
+    const weight_grams = parseInt(document.getElementById("weightGrams").value, 10);
+    const note = document.getElementById("weightNote").value.trim() || null;
+
+    const { error } = await supabaseClient
+      .from("weight_measurements")
+      .insert([{ date, weight_grams, note }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    weightForm.reset();
+    document.getElementById("weightDate").valueAsDate = new Date();
+    await loadWeights();
+  });
+
+  async function loadWeights() {
+    if (!isConfigured) return;
+
+    const { data, error } = await supabaseClient
+      .from("weight_measurements")
+      .select("*")
+      .order("date", { ascending: true });
+
+    if (error) {
+      showError("Laden mislukt: " + error.message);
+      return;
+    }
+
+    renderWeightChart(data);
+    renderWeightList(data);
+  }
+
+  function renderWeightChart(data) {
+    const ctx = document.getElementById("weightChart");
+
+    const points = data.map((row) => ({ x: row.date, y: row.weight_grams }));
+
+    if (weightChart) {
+      weightChart.data.datasets[0].data = points;
+      weightChart.update();
+      return;
+    }
+
+    weightChart = new Chart(ctx, {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: "Gewicht (g)",
+            data: points,
+            borderColor: "#4f46e5",
+            backgroundColor: "rgba(79, 70, 229, 0.15)",
+            tension: 0.25,
+            fill: true,
+            pointRadius: 3,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            type: "time",
+            time: { unit: "week", tooltipFormat: "dd-MM-yyyy" },
+          },
+          y: {
+            title: { display: true, text: "gram" },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+        },
+      },
+    });
+  }
+
+  function renderWeightList(data) {
+    weightList.innerHTML = "";
+
+    if (data.length === 0) {
+      weightList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen metingen</li>';
+      return;
+    }
+
+    [...data].reverse().forEach((row) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="entry-main">
+          <span class="primary">${row.weight_grams} g</span>
+          <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+        </div>
+        <button class="delete-btn" aria-label="Verwijderen">×</button>
+      `;
+      li.querySelector(".delete-btn").addEventListener("click", () => deleteWeight(row.id));
+      weightList.appendChild(li);
+    });
+  }
+
+  async function deleteWeight(id) {
+    const { error } = await supabaseClient.from("weight_measurements").delete().eq("id", id);
+    if (error) {
+      showError("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    await loadWeights();
+  }
+
+  // --- Blood values --------------------------------------------------------
+  const bloodForm = document.getElementById("bloodForm");
+  const bloodList = document.getElementById("bloodList");
+
+  document.getElementById("bloodDate").valueAsDate = new Date();
+
+  bloodForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = bloodForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const date = document.getElementById("bloodDate").value;
+    const marker = document.getElementById("bloodMarker").value.trim();
+    const value = parseFloat(document.getElementById("bloodValue").value);
+    const unit = document.getElementById("bloodUnit").value.trim() || null;
+    const note = document.getElementById("bloodNote").value.trim() || null;
+
+    const { error } = await supabaseClient
+      .from("blood_values")
+      .insert([{ date, marker, value, unit, note }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    bloodForm.reset();
+    document.getElementById("bloodDate").valueAsDate = new Date();
+    await loadBloodValues();
+  });
+
+  async function loadBloodValues() {
+    if (!isConfigured) return;
+
+    const { data, error } = await supabaseClient
+      .from("blood_values")
+      .select("*")
+      .order("date", { ascending: false });
+
+    if (error) {
+      showError("Laden mislukt: " + error.message);
+      return;
+    }
+
+    renderBloodList(data);
+  }
+
+  function renderBloodList(data) {
+    bloodList.innerHTML = "";
+
+    if (data.length === 0) {
+      bloodList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen resultaten</li>';
+      return;
+    }
+
+    data.forEach((row) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="entry-main">
+          <span class="primary">${escapeHtml(row.marker)}: ${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+        </div>
+        <button class="delete-btn" aria-label="Verwijderen">×</button>
+      `;
+      li.querySelector(".delete-btn").addEventListener("click", () => deleteBloodValue(row.id));
+      bloodList.appendChild(li);
+    });
+  }
+
+  async function deleteBloodValue(id) {
+    const { error } = await supabaseClient.from("blood_values").delete().eq("id", id);
+    if (error) {
+      showError("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    await loadBloodValues();
+  }
+
+  // --- Utils ---------------------------------------------------------------
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // --- Init ------------------------------------------------------------
+  loadWeights();
+  loadBloodValues();
+
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    });
+  }
+</script>
+
+</body>
+</html>

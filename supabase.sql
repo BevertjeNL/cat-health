@@ -1,0 +1,41 @@
+-- Run this in the Supabase SQL editor (project > SQL Editor > New query)
+
+create table if not exists weight_measurements (
+  id bigint generated always as identity primary key,
+  date date not null,
+  weight_grams integer not null,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists blood_values (
+  id bigint generated always as identity primary key,
+  date date not null,
+  marker text not null,
+  value numeric not null,
+  unit text,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists weight_measurements_date_idx on weight_measurements (date);
+create index if not exists blood_values_date_idx on blood_values (date);
+create index if not exists blood_values_marker_idx on blood_values (marker);
+
+-- No auth in this app: the anon key is used directly from the frontend.
+-- Enable RLS and allow the anon role full access, since only this key is
+-- ever exposed and there's no login (personal single-user app).
+alter table weight_measurements enable row level security;
+alter table blood_values enable row level security;
+
+create policy "anon full access weight_measurements"
+  on weight_measurements for all
+  to anon
+  using (true)
+  with check (true);
+
+create policy "anon full access blood_values"
+  on blood_values for all
+  to anon
+  using (true)
+  with check (true);
