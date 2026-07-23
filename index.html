@@ -61,11 +61,38 @@
   header {
     padding: 20px 16px 8px;
     text-align: center;
+    position: relative;
   }
 
   header h1 {
     font-size: 1.4rem;
     margin: 0;
+  }
+
+  .refresh-btn {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.4rem;
+    line-height: 1;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .refresh-btn:active {
+    color: var(--accent);
+  }
+
+  .refresh-btn.spinning {
+    animation: spin 0.6s linear;
+  }
+
+  @keyframes spin {
+    to { transform: translateY(-50%) rotate(360deg); }
   }
 
   nav.tabs {
@@ -208,14 +235,23 @@
     gap: 8px;
   }
 
-  ul.entry-list li {
+  .entry-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .entry-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     padding: 10px 12px;
-    border: 1px solid var(--border);
-    border-radius: 10px;
     gap: 10px;
+    background: var(--card-bg);
+    position: relative;
+    touch-action: pan-y;
+    transition: transform 0.2s ease;
   }
 
   .entry-main {
@@ -227,6 +263,8 @@
   .entry-main .primary {
     font-weight: 600;
     font-size: 0.98rem;
+    display: flex;
+    align-items: center;
   }
 
   .entry-main .secondary {
@@ -237,14 +275,38 @@
     text-overflow: ellipsis;
   }
 
-  .delete-btn {
-    border: none;
-    background: transparent;
-    color: var(--danger);
-    font-size: 1.3rem;
-    line-height: 1;
-    padding: 4px 8px;
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 7px;
     flex-shrink: 0;
+  }
+
+  .entry-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 84px;
+    display: flex;
+  }
+
+  .delete-action {
+    flex: 1;
+    border: none;
+    background: var(--danger);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.85rem;
+  }
+
+  .swipe-hint {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-align: center;
+    margin: 2px 0 0;
   }
 
   .hint-text {
@@ -313,7 +375,8 @@
 <body>
 
 <header>
-  <h1>🐱 Kattengezondheid</h1>
+  <h1 id="appTitle">🐱 Kattengezondheid</h1>
+  <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">⟳</button>
 </header>
 
 <div id="statusBanner" class="status-banner"></div>
@@ -361,11 +424,15 @@
         <span><span class="legend-dot" style="background:#f59e0b;"></span> te licht</span>
         <span><span class="legend-dot" style="background:rgba(34,197,94,0.5);"></span> streefzone</span>
       </div>
-      <p class="hint-text" style="margin-top:6px;">Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.</p>
+      <p class="hint-text" style="margin-top:6px;">
+        Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.
+        <button type="button" class="today-btn" style="display:inline;padding:2px 10px;margin-left:6px;" onclick="weightChart && weightChart.resetZoom()">Toon alles</button>
+      </p>
     </div>
 
     <div class="card">
       <h2>Metingen</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen</p>
       <ul class="entry-list" id="weightList"></ul>
     </div>
   </section>
@@ -407,6 +474,7 @@
 
     <div class="card">
       <h2>Resultaten</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen</p>
       <ul class="entry-list" id="bloodList"></ul>
     </div>
   </section>
@@ -584,6 +652,95 @@
     return { min: adultBase - 0.4, max: adultBase + 0.4 };
   }
 
+  function weightStatusColor(row) {
+    const adultBase = computeAdultBase(catProfile);
+    const range = computeTargetRange(catProfile, adultBase);
+    const birthDate = catProfile.birth_date || null;
+    const kg = row.weight_grams / 1000;
+    const months = ageInMonths(birthDate, row.date);
+
+    if (months !== null && months < 12) {
+      const expected = idealWeightForMonths(months, adultBase);
+      if (kg > expected * 1.15) return "#ef4444";
+      if (kg < expected * 0.85) return "#f59e0b";
+      return "#22c55e";
+    }
+    if (kg > range.max) return "#ef4444";
+    if (kg < range.min) return "#f59e0b";
+    return "#22c55e";
+  }
+
+  // --- Swipe-to-delete list items -----------------------------------------
+  function closeAllSwipes(exceptRow) {
+    document.querySelectorAll(".entry-row.swiped").forEach((row) => {
+      if (row !== exceptRow) {
+        row.classList.remove("swiped");
+        row.style.transform = "";
+      }
+    });
+  }
+
+  function createSwipeableListItem(innerHtml, onDelete) {
+    const li = document.createElement("li");
+    li.className = "entry-item";
+    li.innerHTML = `
+      <div class="entry-actions"><button class="delete-action">Verwijder</button></div>
+      <div class="entry-row">${innerHtml}</div>
+    `;
+
+    const row = li.querySelector(".entry-row");
+    const REVEAL = 84;
+    let startX = 0;
+    let startY = 0;
+    let deltaX = 0;
+    let dragging = false;
+    let axisLocked = null;
+
+    row.addEventListener("pointerdown", (e) => {
+      closeAllSwipes(row);
+      startX = e.clientX;
+      startY = e.clientY;
+      deltaX = row.classList.contains("swiped") ? -REVEAL : 0;
+      dragging = true;
+      axisLocked = null;
+      row.style.transition = "none";
+    });
+
+    row.addEventListener("pointermove", (e) => {
+      if (!dragging) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      if (axisLocked === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+        axisLocked = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+      }
+      if (axisLocked !== "x") return;
+
+      row.setPointerCapture(e.pointerId);
+      const base = row.classList.contains("swiped") ? -REVEAL : 0;
+      let next = base + dx;
+      next = Math.max(-REVEAL * 1.15, Math.min(0, next));
+      deltaX = next;
+      row.style.transform = `translateX(${next}px)`;
+    });
+
+    function endDrag() {
+      if (!dragging) return;
+      dragging = false;
+      row.style.transition = "";
+      const revealed = deltaX < -REVEAL / 2;
+      row.classList.toggle("swiped", revealed);
+      row.style.transform = revealed ? `translateX(-${REVEAL}px)` : "";
+    }
+
+    row.addEventListener("pointerup", endDrag);
+    row.addEventListener("pointercancel", endDrag);
+
+    li.querySelector(".delete-action").addEventListener("click", onDelete);
+
+    return li;
+  }
+
   // --- Weight --------------------------------------------------------------
   const weightForm = document.getElementById("weightForm");
   const weightList = document.getElementById("weightList");
@@ -640,35 +797,78 @@
     return d.toISOString().slice(0, 10);
   }
 
+  // --- Target-zone background gradient (green -> yellow -> orange -> red) --
+  function lerpColor(c1, c2, t) {
+    const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
+    const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
+    const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
+    return [r, g, b];
+  }
+
+  function targetZoneColorAt(value, range) {
+    const bw = Math.max(range.max - range.min, 0.2);
+    const GREEN = [34, 197, 94];
+    const YELLOW = [234, 179, 8];
+    const ORANGE = [245, 158, 11];
+    const RED = [239, 68, 68];
+    const stops = [
+      { v: range.min - 1.5 * bw, c: RED },
+      { v: range.min - 1.0 * bw, c: ORANGE },
+      { v: range.min - 0.5 * bw, c: YELLOW },
+      { v: range.min, c: GREEN },
+      { v: range.max, c: GREEN },
+      { v: range.max + 0.5 * bw, c: YELLOW },
+      { v: range.max + 1.0 * bw, c: ORANGE },
+      { v: range.max + 1.5 * bw, c: RED },
+    ];
+
+    if (value <= stops[0].v) return stops[0].c;
+    if (value >= stops[stops.length - 1].v) return stops[stops.length - 1].c;
+
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (value >= stops[i].v && value <= stops[i + 1].v) {
+        const t = (value - stops[i].v) / (stops[i + 1].v - stops[i].v);
+        return lerpColor(stops[i].c, stops[i + 1].c, t);
+      }
+    }
+    return GREEN;
+  }
+
+  const targetZoneGradientPlugin = {
+    id: "targetZoneGradient",
+    beforeDatasetsDraw(chart) {
+      const opts = chart.options.plugins.targetZoneGradient;
+      if (!opts || !opts.range) return;
+
+      const { ctx, chartArea, scales } = chart;
+      if (!chartArea) return;
+      const yScale = scales.y;
+
+      const topValue = yScale.getValueForPixel(chartArea.top);
+      const bottomValue = yScale.getValueForPixel(chartArea.bottom);
+      const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+      const steps = 24;
+
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const value = topValue + (bottomValue - topValue) * t;
+        const [r, g, b] = targetZoneColorAt(value, opts.range);
+        gradient.addColorStop(t, `rgba(${r}, ${g}, ${b}, 0.16)`);
+      }
+
+      ctx.save();
+      ctx.fillStyle = gradient;
+      ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+      ctx.restore();
+    },
+  };
+
   function renderWeightChart(data) {
     const ctx = document.getElementById("weightChart");
     const adultBase = computeAdultBase(catProfile);
     const range = computeTargetRange(catProfile, adultBase);
-    const birthDate = catProfile.birth_date || null;
 
-    // Target-zone band only needs two points (start/end of the visible
-    // range) since it's flat; the x-axis itself is clamped to the first
-    // and last measurement below.
-    const bandDates = data.length
-      ? [data[0].date, data[data.length - 1].date]
-      : [dateToISO(new Date()), dateToISO(new Date())];
-    const rangeMaxPoints = bandDates.map((date) => ({ x: date, y: range.max }));
-    const rangeMinPoints = bandDates.map((date) => ({ x: date, y: range.min }));
-
-    const pointColors = data.map((row) => {
-      const kg = row.weight_grams / 1000;
-      const months = ageInMonths(birthDate, row.date);
-      if (months !== null && months < 12) {
-        const expected = idealWeightForMonths(months, adultBase);
-        if (kg > expected * 1.15) return "#ef4444";
-        if (kg < expected * 0.85) return "#f59e0b";
-        return "#22c55e";
-      }
-      if (kg > range.max) return "#ef4444";
-      if (kg < range.min) return "#f59e0b";
-      return "#22c55e";
-    });
-
+    const pointColors = data.map(weightStatusColor);
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
 
     // X-axis: only span the actual measurements. Y-axis: 10% padding
@@ -678,16 +878,23 @@
     const xMax = data.length ? data[data.length - 1].date : undefined;
     const yMin = weights.length ? Math.min(...weights) * 0.9 : undefined;
     const yMax = weights.length ? Math.max(...weights) * 1.1 : undefined;
+    const zoomLimits = {
+      x: {
+        min: xMin ? new Date(xMin).getTime() : undefined,
+        max: xMax ? new Date(xMax).getTime() : undefined,
+        minRange: 1000 * 60 * 60 * 24 * 3,
+      },
+    };
 
     if (weightChart) {
-      weightChart.data.datasets[0].data = rangeMaxPoints;
-      weightChart.data.datasets[1].data = rangeMinPoints;
-      weightChart.data.datasets[2].data = points;
-      weightChart.data.datasets[2].pointBackgroundColor = pointColors;
+      weightChart.data.datasets[0].data = points;
+      weightChart.data.datasets[0].pointBackgroundColor = pointColors;
       weightChart.options.scales.x.min = xMin;
       weightChart.options.scales.x.max = xMax;
       weightChart.options.scales.y.min = yMin;
       weightChart.options.scales.y.max = yMax;
+      weightChart.options.plugins.targetZoneGradient = { range };
+      weightChart.options.plugins.zoom.limits = zoomLimits;
       weightChart.resetZoom();
       weightChart.update();
       return;
@@ -700,25 +907,9 @@
 
     weightChart = new Chart(ctx, {
       type: "line",
+      plugins: [targetZoneGradientPlugin],
       data: {
         datasets: [
-          {
-            label: "Bovengrens streefzone",
-            data: rangeMaxPoints,
-            borderWidth: 0,
-            pointRadius: 0,
-            fill: false,
-            order: 3,
-          },
-          {
-            label: "Streefzone",
-            data: rangeMinPoints,
-            borderWidth: 0,
-            pointRadius: 0,
-            fill: "-1",
-            backgroundColor: "rgba(34, 197, 94, 0.15)",
-            order: 3,
-          },
           {
             label: "Gewicht (kg)",
             data: points,
@@ -732,13 +923,16 @@
             pointBorderColor: "#ffffff",
             pointBorderWidth: 1.5,
             pointHoverRadius: 6,
-            order: 1,
+            clip: 8,
           },
         ],
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        layout: {
+          padding: { top: 8, right: 8, left: 0, bottom: 0 },
+        },
         scales: {
           x: {
             type: "time",
@@ -756,18 +950,19 @@
         plugins: {
           legend: { display: false },
           tooltip: {
-            filter: (item) => item.datasetIndex === 2,
             callbacks: {
               label: (item) => item.parsed.y.toFixed(1) + " kg",
             },
           },
+          targetZoneGradient: { range },
           zoom: {
             pan: { enabled: true, mode: "x" },
             zoom: {
               pinch: { enabled: true },
-              wheel: { enabled: true },
+              wheel: { enabled: true, speed: 0.05 },
               mode: "x",
             },
+            limits: zoomLimits,
           },
         },
       },
@@ -783,15 +978,14 @@
     }
 
     [...data].reverse().forEach((row) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
+      const color = weightStatusColor(row);
+      const innerHtml = `
         <div class="entry-main">
-          <span class="primary">${(row.weight_grams / 1000).toFixed(1)} kg</span>
+          <span class="primary"><span class="status-dot" style="background:${color};"></span>${(row.weight_grams / 1000).toFixed(1)} kg</span>
           <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
-        <button class="delete-btn" aria-label="Verwijderen">×</button>
       `;
-      li.querySelector(".delete-btn").addEventListener("click", () => deleteWeight(row.id));
+      const li = createSwipeableListItem(innerHtml, () => deleteWeight(row.id));
       weightList.appendChild(li);
     });
   }
@@ -865,15 +1059,13 @@
     }
 
     data.forEach((row) => {
-      const li = document.createElement("li");
-      li.innerHTML = `
+      const innerHtml = `
         <div class="entry-main">
           <span class="primary">${escapeHtml(row.marker)}: ${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
           <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
-        <button class="delete-btn" aria-label="Verwijderen">×</button>
       `;
-      li.querySelector(".delete-btn").addEventListener("click", () => deleteBloodValue(row.id));
+      const li = createSwipeableListItem(innerHtml, () => deleteBloodValue(row.id));
       bloodList.appendChild(li);
     });
   }
@@ -966,6 +1158,30 @@
     div.textContent = str;
     return div.innerHTML;
   }
+
+  // --- Refresh -------------------------------------------------------------
+  let refreshing = false;
+
+  async function refreshAll(manual) {
+    if (refreshing) return;
+    refreshing = true;
+
+    const btn = document.getElementById("refreshBtn");
+    if (manual && btn) btn.classList.add("spinning");
+
+    await Promise.all([loadWeights(), loadBloodValues(), loadProfile()]);
+
+    if (manual && btn) setTimeout(() => btn.classList.remove("spinning"), 600);
+    refreshing = false;
+  }
+
+  // The app is often resumed from the background (opened via the home
+  // screen shortcut while still "open") without a full page reload, so
+  // data can go stale until we explicitly refetch here.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") refreshAll(false);
+  });
+  window.addEventListener("pageshow", () => refreshAll(false));
 
   // --- Init ------------------------------------------------------------
   loadWeights();
