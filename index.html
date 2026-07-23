@@ -16,6 +16,8 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+<script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
 
 <style>
   :root {
@@ -297,8 +299,14 @@
     color: #86271b;
   }
 
+  .status-banner.success {
+    background: #e6f7ec;
+    color: #1a7a3e;
+  }
+
   @media (prefers-color-scheme: dark) {
     .status-banner.error { background: #3a1a16; color: #ff8f7a; }
+    .status-banner.success { background: #123a24; color: #6ee7a0; }
   }
 </style>
 </head>
@@ -351,8 +359,9 @@
         <span><span class="legend-dot" style="background:#22c55e;"></span> optimaal</span>
         <span><span class="legend-dot" style="background:#ef4444;"></span> te zwaar</span>
         <span><span class="legend-dot" style="background:#f59e0b;"></span> te licht</span>
-        <span><span class="legend-dot" style="background:#9ca3af;"></span> streefzone / ideaallijn</span>
+        <span><span class="legend-dot" style="background:rgba(34,197,94,0.5);"></span> streefzone</span>
       </div>
+      <p class="hint-text" style="margin-top:6px;">Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.</p>
     </div>
 
     <div class="card">
@@ -491,7 +500,16 @@
   function showError(message) {
     const banner = document.getElementById("statusBanner");
     banner.textContent = message;
+    banner.classList.remove("success");
     banner.classList.add("show", "error");
+  }
+
+  function showSuccess(message) {
+    const banner = document.getElementById("statusBanner");
+    banner.textContent = message;
+    banner.classList.remove("error");
+    banner.classList.add("show", "success");
+    setTimeout(() => banner.classList.remove("show", "success"), 2500);
   }
 
   if (!isConfigured) {
@@ -628,20 +646,14 @@
     const range = computeTargetRange(catProfile, adultBase);
     const birthDate = catProfile.birth_date || null;
 
-    // Sample dates for the ideal-weight line & target band: every measurement
-    // date plus the birth date and today, so both render smoothly even with
-    // sparse measurements.
-    const sampleDates = new Set([dateToISO(new Date())]);
-    data.forEach((row) => sampleDates.add(row.date));
-    if (birthDate) sampleDates.add(birthDate);
-    const sortedDates = [...sampleDates].sort();
-
-    const idealPoints = sortedDates.map((date) => ({
-      x: date,
-      y: idealWeightForMonths(ageInMonths(birthDate, date), adultBase),
-    }));
-    const rangeMaxPoints = sortedDates.map((date) => ({ x: date, y: range.max }));
-    const rangeMinPoints = sortedDates.map((date) => ({ x: date, y: range.min }));
+    // Target-zone band only needs two points (start/end of the visible
+    // range) since it's flat; the x-axis itself is clamped to the first
+    // and last measurement below.
+    const bandDates = data.length
+      ? [data[0].date, data[data.length - 1].date]
+      : [dateToISO(new Date()), dateToISO(new Date())];
+    const rangeMaxPoints = bandDates.map((date) => ({ x: date, y: range.max }));
+    const rangeMinPoints = bandDates.map((date) => ({ x: date, y: range.min }));
 
     const pointColors = data.map((row) => {
       const kg = row.weight_grams / 1000;
@@ -659,12 +671,24 @@
 
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
 
+    // X-axis: only span the actual measurements. Y-axis: 10% padding
+    // above/below the lowest and highest recorded weight.
+    const weights = data.map((row) => row.weight_grams / 1000);
+    const xMin = data.length ? data[0].date : undefined;
+    const xMax = data.length ? data[data.length - 1].date : undefined;
+    const yMin = weights.length ? Math.min(...weights) * 0.9 : undefined;
+    const yMax = weights.length ? Math.max(...weights) * 1.1 : undefined;
+
     if (weightChart) {
       weightChart.data.datasets[0].data = rangeMaxPoints;
       weightChart.data.datasets[1].data = rangeMinPoints;
-      weightChart.data.datasets[2].data = idealPoints;
-      weightChart.data.datasets[3].data = points;
-      weightChart.data.datasets[3].pointBackgroundColor = pointColors;
+      weightChart.data.datasets[2].data = points;
+      weightChart.data.datasets[2].pointBackgroundColor = pointColors;
+      weightChart.options.scales.x.min = xMin;
+      weightChart.options.scales.x.max = xMax;
+      weightChart.options.scales.y.min = yMin;
+      weightChart.options.scales.y.max = yMax;
+      weightChart.resetZoom();
       weightChart.update();
       return;
     }
@@ -684,7 +708,7 @@
             borderWidth: 0,
             pointRadius: 0,
             fill: false,
-            order: 4,
+            order: 3,
           },
           {
             label: "Streefzone",
@@ -693,18 +717,7 @@
             pointRadius: 0,
             fill: "-1",
             backgroundColor: "rgba(34, 197, 94, 0.15)",
-            order: 4,
-          },
-          {
-            label: "Ideaalgewicht",
-            data: idealPoints,
-            borderColor: "#9ca3af",
-            borderDash: [6, 4],
-            borderWidth: 1.5,
-            pointRadius: 0,
-            fill: false,
-            tension: 0.2,
-            order: 2,
+            order: 3,
           },
           {
             label: "Gewicht (kg)",
@@ -731,17 +744,29 @@
             type: "time",
             time: { tooltipFormat: "dd-MM-yyyy" },
             grid: { display: false },
+            min: xMin,
+            max: xMax,
           },
           y: {
             title: { display: true, text: "kg" },
+            min: yMin,
+            max: yMax,
           },
         },
         plugins: {
           legend: { display: false },
           tooltip: {
-            filter: (item) => item.datasetIndex === 3,
+            filter: (item) => item.datasetIndex === 2,
             callbacks: {
               label: (item) => item.parsed.y.toFixed(1) + " kg",
+            },
+          },
+          zoom: {
+            pan: { enabled: true, mode: "x" },
+            zoom: {
+              pinch: { enabled: true },
+              wheel: { enabled: true },
+              mode: "x",
             },
           },
         },
@@ -869,6 +894,8 @@
     e.preventDefault();
     if (!isConfigured) return;
 
+    if (document.activeElement) document.activeElement.blur();
+
     const submitBtn = profileForm.querySelector("button.submit");
     submitBtn.disabled = true;
 
@@ -898,6 +925,7 @@
 
     catProfile = profile;
     renderWeightChart(latestWeightData);
+    showSuccess("Profiel opgeslagen ✓");
   });
 
   async function loadProfile() {
