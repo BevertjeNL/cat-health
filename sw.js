@@ -1,4 +1,4 @@
-const CACHE_NAME = "cat-health-v1";
+const CACHE_NAME = "cat-health-v2";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
@@ -25,8 +25,10 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
-// Cache-first for the app shell; everything else (Supabase API, CDN
-// libraries) goes straight to the network since it needs to stay fresh.
+// Network-first for the app shell: always try to fetch the latest version
+// first so updates show up immediately, only falling back to the cached
+// copy when there's no connection. Cache-first would freeze the app on
+// whatever version happened to be cached on first install, forever.
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   const isShellAsset = url.origin === self.location.origin;
@@ -34,13 +36,12 @@ self.addEventListener("fetch", (event) => {
   if (!isShellAsset) return;
 
   event.respondWith(
-    caches.match(event.request).then((cached) => {
-      if (cached) return cached;
-      return fetch(event.request).then((response) => {
+    fetch(event.request)
+      .then((response) => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         return response;
-      });
-    })
+      })
+      .catch(() => caches.match(event.request))
   );
 });
