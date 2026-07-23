@@ -145,6 +145,39 @@
     font-size: 1rem;
   }
 
+  input[type="date"] {
+    accent-color: var(--accent);
+    min-height: 44px;
+    font-size: 1.05rem;
+  }
+
+  .date-field {
+    display: flex;
+    gap: 6px;
+  }
+
+  .date-field input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .today-btn {
+    flex-shrink: 0;
+    padding: 0 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .today-btn:active {
+    background: var(--accent);
+    color: var(--accent-contrast);
+  }
+
   button.submit {
     margin-top: 4px;
     padding: 12px;
@@ -261,11 +294,14 @@
         <div class="row">
           <div>
             <label for="weightDate">Datum</label>
-            <input type="date" id="weightDate" required />
+            <div class="date-field">
+              <input type="date" id="weightDate" required />
+              <button type="button" class="today-btn" data-target="weightDate">Vandaag</button>
+            </div>
           </div>
           <div>
-            <label for="weightGrams">Gewicht (gram)</label>
-            <input type="number" id="weightGrams" inputmode="numeric" min="0" step="1" placeholder="4200" required />
+            <label for="weightKg">Gewicht (kg)</label>
+            <input type="number" id="weightKg" inputmode="decimal" min="0" step="0.1" placeholder="4.2" required />
           </div>
         </div>
         <div>
@@ -296,7 +332,10 @@
         <div class="row">
           <div>
             <label for="bloodDate">Datum</label>
-            <input type="date" id="bloodDate" required />
+            <div class="date-field">
+              <input type="date" id="bloodDate" required />
+              <button type="button" class="today-btn" data-target="bloodDate">Vandaag</button>
+            </div>
           </div>
           <div>
             <label for="bloodMarker">Marker</label>
@@ -365,6 +404,12 @@
     return `${d}-${m}-${y}`;
   }
 
+  document.querySelectorAll(".today-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      document.getElementById(btn.dataset.target).valueAsDate = new Date();
+    });
+  });
+
   // --- Weight --------------------------------------------------------------
   const weightForm = document.getElementById("weightForm");
   const weightList = document.getElementById("weightList");
@@ -380,7 +425,7 @@
     submitBtn.disabled = true;
 
     const date = document.getElementById("weightDate").value;
-    const weight_grams = parseInt(document.getElementById("weightGrams").value, 10);
+    const weight_grams = Math.round(parseFloat(document.getElementById("weightKg").value) * 1000);
     const note = document.getElementById("weightNote").value.trim() || null;
 
     const { error } = await supabaseClient
@@ -419,7 +464,7 @@
   function renderWeightChart(data) {
     const ctx = document.getElementById("weightChart");
 
-    const points = data.map((row) => ({ x: row.date, y: row.weight_grams }));
+    const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
 
     if (weightChart) {
       weightChart.data.datasets[0].data = points;
@@ -427,18 +472,32 @@
       return;
     }
 
+    const canvasCtx = ctx.getContext("2d");
+    const gradientLine = canvasCtx.createLinearGradient(0, 0, ctx.width || 600, 0);
+    gradientLine.addColorStop(0, "#7c3aed");
+    gradientLine.addColorStop(1, "#06b6d4");
+
+    const gradientFill = canvasCtx.createLinearGradient(0, 0, 0, 240);
+    gradientFill.addColorStop(0, "rgba(124, 58, 237, 0.35)");
+    gradientFill.addColorStop(1, "rgba(6, 182, 212, 0.02)");
+
     weightChart = new Chart(ctx, {
       type: "line",
       data: {
         datasets: [
           {
-            label: "Gewicht (g)",
+            label: "Gewicht (kg)",
             data: points,
-            borderColor: "#4f46e5",
-            backgroundColor: "rgba(79, 70, 229, 0.15)",
-            tension: 0.25,
+            borderColor: gradientLine,
+            backgroundColor: gradientFill,
+            borderWidth: 4,
+            tension: 0.3,
             fill: true,
-            pointRadius: 3,
+            pointRadius: 4,
+            pointBackgroundColor: "#ffffff",
+            pointBorderColor: "#7c3aed",
+            pointBorderWidth: 2,
+            pointHoverRadius: 6,
           },
         ],
       },
@@ -448,14 +507,20 @@
         scales: {
           x: {
             type: "time",
-            time: { unit: "week", tooltipFormat: "dd-MM-yyyy" },
+            time: { tooltipFormat: "dd-MM-yyyy" },
+            grid: { display: false },
           },
           y: {
-            title: { display: true, text: "gram" },
+            title: { display: true, text: "kg" },
           },
         },
         plugins: {
           legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (item) => item.parsed.y.toFixed(1) + " kg",
+            },
+          },
         },
       },
     });
@@ -473,7 +538,7 @@
       const li = document.createElement("li");
       li.innerHTML = `
         <div class="entry-main">
-          <span class="primary">${row.weight_grams} g</span>
+          <span class="primary">${(row.weight_grams / 1000).toFixed(1)} kg</span>
           <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
         <button class="delete-btn" aria-label="Verwijderen">×</button>
