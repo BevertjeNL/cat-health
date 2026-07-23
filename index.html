@@ -18,6 +18,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 
 <style>
   :root {
@@ -228,6 +230,28 @@
     color: var(--accent-contrast);
   }
 
+  .mode-toggle {
+    display: flex;
+    gap: 8px;
+  }
+
+  .mode-btn {
+    flex: 1;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.9rem;
+  }
+
+  .mode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
+  }
+
   button.submit {
     margin-top: 4px;
     padding: 12px;
@@ -310,17 +334,21 @@
     top: 0;
     right: 0;
     bottom: 0;
-    width: 84px;
     display: flex;
   }
 
   .delete-action {
     flex: 1;
+    width: 84px;
     border: none;
     background: var(--danger);
     color: #fff;
     font-weight: 600;
     font-size: 0.85rem;
+  }
+
+  .delete-action.edit-action {
+    background: var(--accent);
   }
 
   .swipe-hint {
@@ -335,28 +363,6 @@
     color: var(--text-muted);
     margin: 0;
     line-height: 1.4;
-  }
-
-  .legend-row {
-    display: flex;
-    gap: 14px;
-    flex-wrap: wrap;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-    margin-top: 10px;
-  }
-
-  .legend-row span {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-  }
-
-  .legend-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 50%;
-    display: inline-block;
   }
 
   .empty-state {
@@ -411,7 +417,7 @@
 <main>
   <section id="tabWeight" class="tab-panel active">
     <div class="card">
-      <h2>Nieuwe meting</h2>
+      <h2 id="weightFormTitle">Nieuwe meting</h2>
       <form class="entry-form" id="weightForm">
         <div class="row">
           <div>
@@ -431,6 +437,7 @@
           <input type="text" id="weightNote" placeholder="bijv. na het eten" />
         </div>
         <button class="submit" type="submit">Opslaan</button>
+        <button type="button" class="today-btn" id="weightCancelEditBtn" style="display:none;" onclick="cancelWeightEdit()">Bewerken annuleren</button>
       </form>
     </div>
 
@@ -438,12 +445,6 @@
       <h2>Verloop</h2>
       <div class="chart-wrap">
         <canvas id="weightChart"></canvas>
-      </div>
-      <div class="legend-row">
-        <span><span class="legend-dot" style="background:#34c759;"></span> optimaal</span>
-        <span><span class="legend-dot" style="background:#ff3b30;"></span> te zwaar</span>
-        <span><span class="legend-dot" style="background:#ff9500;"></span> te licht</span>
-        <span><span class="legend-dot" style="background:rgba(52,199,89,0.5);"></span> streefzone</span>
       </div>
       <p class="hint-text" style="margin-top:6px;">
         Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.
@@ -460,7 +461,35 @@
 
   <section id="tabBlood" class="tab-panel">
     <div class="card">
-      <h2>Nieuwe bloedwaarde</h2>
+      <h2>Type onderzoek</h2>
+      <div class="mode-toggle">
+        <button type="button" id="modeKeyBtn" class="mode-btn active" onclick="setMarkerMode('key')">Hoofdwaarden</button>
+        <button type="button" id="modeAllBtn" class="mode-btn" onclick="setMarkerMode('all')">Uitgebreid</button>
+      </div>
+      <p class="hint-text" style="margin-top:8px;">
+        Hoofdwaarden toont de meest gangbare markers; Uitgebreid geeft de volledige lijst van een compleet bloedonderzoek.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Uit foto/pdf overnemen</h2>
+      <input type="file" id="bloodFileInput" accept="image/*,application/pdf" style="display:none;" />
+      <button type="button" class="today-btn" style="width:100%;padding:12px;" onclick="document.getElementById('bloodFileInput').click()">📄 Kies bestand om te analyseren</button>
+      <p class="hint-text" id="ocrStatus" style="margin-top:8px;">Upload een foto of pdf van de uitslag — herkende waarden kun je hierna controleren voor je ze opslaat.</p>
+      <div id="ocrReview" style="display:none;">
+        <div class="row" style="margin-top:10px;">
+          <div>
+            <label for="ocrDate">Datum van deze uitslag</label>
+            <input type="date" id="ocrDate" />
+          </div>
+        </div>
+        <ul class="entry-list" id="ocrList" style="margin-top:10px;"></ul>
+        <button type="button" class="submit" id="ocrSaveBtn" style="margin-top:10px;" onclick="saveOcrResults()">Geselecteerde waarden opslaan</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 id="bloodFormTitle">Nieuwe bloedwaarde</h2>
       <form class="entry-form" id="bloodForm">
         <div class="row">
           <div>
@@ -472,7 +501,13 @@
           </div>
           <div>
             <label for="bloodMarker">Marker</label>
-            <input type="text" id="bloodMarker" placeholder="bijv. creatinine" required />
+            <select id="bloodMarker" required></select>
+          </div>
+        </div>
+        <div id="bloodCustomMarkerRow" class="row" style="display:none;">
+          <div>
+            <label for="bloodCustomMarker">Naam marker</label>
+            <input type="text" id="bloodCustomMarker" placeholder="bijv. T4" />
           </div>
         </div>
         <div class="row">
@@ -485,17 +520,28 @@
             <input type="text" id="bloodUnit" placeholder="mg/dL" />
           </div>
         </div>
+        <p class="hint-text" id="bloodRefHint"></p>
         <div>
           <label for="bloodNote">Notitie (optioneel)</label>
           <input type="text" id="bloodNote" placeholder="bijv. nuchter geprikt" />
         </div>
         <button class="submit" type="submit">Opslaan</button>
+        <button type="button" class="today-btn" id="bloodCancelEditBtn" style="display:none;" onclick="cancelBloodEdit()">Bewerken annuleren</button>
       </form>
     </div>
 
     <div class="card">
+      <h2>Verloop per waarde</h2>
+      <select id="bloodChartMarker" style="margin-bottom:10px;"></select>
+      <div class="chart-wrap" style="height:200px;">
+        <canvas id="bloodChart"></canvas>
+      </div>
+      <p class="hint-text" id="bloodChartEmpty">Nog geen metingen voor deze marker.</p>
+    </div>
+
+    <div class="card">
       <h2>Resultaten</h2>
-      <p class="swipe-hint">Veeg een rij naar links om te verwijderen</p>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
       <ul class="entry-list" id="bloodList"></ul>
     </div>
   </section>
@@ -620,30 +666,8 @@
   });
 
   // --- Cat profile & ideal weight -----------------------------------------
-  // Rough averages for domestic cats, kg by age in months, based on
-  // veterinary growth-chart sources (see chat for citations). Values
-  // between 10 and 12 months blend into the computed adult target.
-  const KITTEN_GROWTH_CURVE = [
-    [0, 0.1],
-    [1, 0.45],
-    [2, 0.9],
-    [3, 1.36],
-    [4, 1.8],
-    [5, 2.27],
-    [6, 2.7],
-    [8, 3.4],
-    [10, 3.8],
-  ];
-
   let catProfile = {};
   let latestWeightData = [];
-
-  function ageInMonths(birthDateStr, atDateStr) {
-    if (!birthDateStr) return null;
-    const birth = new Date(birthDateStr + "T00:00:00");
-    const at = new Date(atDateStr + "T00:00:00");
-    return (at - birth) / (1000 * 60 * 60 * 24 * 30.44);
-  }
 
   function computeAdultBase(profile) {
     let base = 4.0;
@@ -654,21 +678,6 @@
     return base;
   }
 
-  function idealWeightForMonths(months, adultBase) {
-    if (months === null || months >= 12) return adultBase;
-    if (months <= 0) return KITTEN_GROWTH_CURVE[0][1];
-
-    const curve = [...KITTEN_GROWTH_CURVE, [12, adultBase]];
-    for (let i = 0; i < curve.length - 1; i++) {
-      const [m1, w1] = curve[i];
-      const [m2, w2] = curve[i + 1];
-      if (months >= m1 && months <= m2) {
-        return w1 + ((w2 - w1) * (months - m1)) / (m2 - m1);
-      }
-    }
-    return adultBase;
-  }
-
   function computeTargetRange(profile, adultBase) {
     if (profile.target_min_kg != null && profile.target_max_kg != null) {
       return { min: profile.target_min_kg, max: profile.target_max_kg };
@@ -676,22 +685,14 @@
     return { min: adultBase - 0.4, max: adultBase + 0.4 };
   }
 
+  // Uses the exact same continuous color scale as the chart's background
+  // and line gradient, so a point's color always matches what's behind it.
   function weightStatusColor(row) {
     const adultBase = computeAdultBase(catProfile);
     const range = computeTargetRange(catProfile, adultBase);
-    const birthDate = catProfile.birth_date || null;
     const kg = row.weight_grams / 1000;
-    const months = ageInMonths(birthDate, row.date);
-
-    if (months !== null && months < 12) {
-      const expected = idealWeightForMonths(months, adultBase);
-      if (kg > expected * 1.15) return "#ff3b30";
-      if (kg < expected * 0.85) return "#ff9500";
-      return "#34c759";
-    }
-    if (kg > range.max) return "#ff3b30";
-    if (kg < range.min) return "#ff9500";
-    return "#34c759";
+    const [r, g, b] = targetZoneColorAt(kg, range);
+    return `rgb(${r}, ${g}, ${b})`;
   }
 
   // --- Swipe-to-delete list items -----------------------------------------
@@ -704,16 +705,21 @@
     });
   }
 
-  function createSwipeableListItem(innerHtml, onDelete) {
+  function createSwipeableListItem(innerHtml, actions) {
+    // actions: array of { label, onClick, className }; first is rightmost.
+    const actionsHtml = actions
+      .map((a) => `<button class="delete-action ${a.className || ""}">${a.label}</button>`)
+      .join("");
+
     const li = document.createElement("li");
     li.className = "entry-item";
     li.innerHTML = `
-      <div class="entry-actions"><button class="delete-action">Verwijder</button></div>
+      <div class="entry-actions">${actionsHtml}</div>
       <div class="entry-row">${innerHtml}</div>
     `;
 
     const row = li.querySelector(".entry-row");
-    const REVEAL = 84;
+    const REVEAL = actions.length * 84;
     let startX = 0;
     let startY = 0;
     let deltaX = 0;
@@ -760,7 +766,9 @@
     row.addEventListener("pointerup", endDrag);
     row.addEventListener("pointercancel", endDrag);
 
-    li.querySelector(".delete-action").addEventListener("click", onDelete);
+    li.querySelectorAll(".delete-action").forEach((btn, i) => {
+      btn.addEventListener("click", actions[i].onClick);
+    });
 
     return li;
   }
@@ -769,8 +777,30 @@
   const weightForm = document.getElementById("weightForm");
   const weightList = document.getElementById("weightList");
   let weightChart;
+  let editingWeightId = null;
 
   document.getElementById("weightDate").valueAsDate = new Date();
+
+  function editWeight(row) {
+    editingWeightId = row.id;
+    document.getElementById("weightDate").value = row.date;
+    document.getElementById("weightKg").value = (row.weight_grams / 1000).toFixed(1);
+    document.getElementById("weightNote").value = row.note || "";
+    document.getElementById("weightFormTitle").textContent = "Meting bewerken";
+    weightForm.querySelector("button.submit").textContent = "Bijwerken";
+    document.getElementById("weightCancelEditBtn").style.display = "";
+    switchTab("weight");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelWeightEdit() {
+    editingWeightId = null;
+    weightForm.reset();
+    document.getElementById("weightDate").valueAsDate = new Date();
+    document.getElementById("weightFormTitle").textContent = "Nieuwe meting";
+    weightForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("weightCancelEditBtn").style.display = "none";
+  }
 
   weightForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -783,9 +813,9 @@
     const weight_grams = Math.round(parseFloat(document.getElementById("weightKg").value) * 1000);
     const note = document.getElementById("weightNote").value.trim() || null;
 
-    const { error } = await supabaseClient
-      .from("weight_measurements")
-      .insert([{ date, weight_grams, note }]);
+    const { error } = editingWeightId
+      ? await supabaseClient.from("weight_measurements").update({ date, weight_grams, note }).eq("id", editingWeightId)
+      : await supabaseClient.from("weight_measurements").insert([{ date, weight_grams, note }]);
 
     submitBtn.disabled = false;
 
@@ -794,8 +824,7 @@
       return;
     }
 
-    weightForm.reset();
-    document.getElementById("weightDate").valueAsDate = new Date();
+    cancelWeightEdit();
     await loadWeights();
   });
 
@@ -1014,7 +1043,10 @@
           <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
-      const li = createSwipeableListItem(innerHtml, () => deleteWeight(row.id));
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteWeight(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editWeight(row) },
+      ]);
       weightList.appendChild(li);
     });
   }
@@ -1029,10 +1061,153 @@
   }
 
   // --- Blood values --------------------------------------------------------
+  // Reference ranges from Bailey's IDEXX ProCyte Dx / Catalyst One panel
+  // (20-12-2024). "key" markers are the ones shown in "Hoofdwaarden" mode;
+  // "Uitgebreid" shows the full catalog.
+  const BLOOD_MARKERS = [
+    { code: "RBC", label: "RBC (rode bloedcellen)", unit: "x10^12/L", min: 6.54, max: 12.2, key: true, cat: "Hematologie" },
+    { code: "HCT", label: "HCT (hematocriet)", unit: "%", min: 30.3, max: 52.3, key: true, cat: "Hematologie" },
+    { code: "HGB", label: "HGB (hemoglobine)", unit: "g/dL", min: 9.8, max: 16.2, key: true, cat: "Hematologie" },
+    { code: "MCV", label: "MCV", unit: "fL", min: 35.9, max: 53.1, key: false, cat: "Hematologie" },
+    { code: "MCH", label: "MCH", unit: "pg", min: 11.8, max: 17.3, key: false, cat: "Hematologie" },
+    { code: "MCHC", label: "MCHC", unit: "g/dL", min: 28.1, max: 35.8, key: false, cat: "Hematologie" },
+    { code: "RDW", label: "RDW", unit: "%", min: 15.0, max: 27.0, key: false, cat: "Hematologie" },
+    { code: "RETIC", label: "Reticulocyten", unit: "K/uL", min: 3.0, max: 50.0, key: false, cat: "Hematologie" },
+    { code: "RETIC-HGB", label: "Reticulocyten-Hgb", unit: "pg", min: 13.2, max: 20.8, key: false, cat: "Hematologie" },
+    { code: "WBC", label: "WBC (witte bloedcellen)", unit: "x10^9/L", min: 2.87, max: 17.02, key: true, cat: "Hematologie" },
+    { code: "NEU", label: "Neutrofielen", unit: "x10^9/L", min: 2.30, max: 10.29, key: true, cat: "Hematologie" },
+    { code: "LYM", label: "Lymfocyten", unit: "x10^9/L", min: 0.92, max: 6.88, key: true, cat: "Hematologie" },
+    { code: "MONO", label: "Monocyten", unit: "x10^9/L", min: 0.05, max: 0.67, key: false, cat: "Hematologie" },
+    { code: "EOS", label: "Eosinofielen", unit: "x10^9/L", min: 0.17, max: 1.57, key: false, cat: "Hematologie" },
+    { code: "BASO", label: "Basofielen", unit: "x10^9/L", min: 0.01, max: 0.26, key: false, cat: "Hematologie" },
+    { code: "PLT", label: "Trombocyten (PLT)", unit: "K/uL", min: 151, max: 600, key: true, cat: "Hematologie" },
+    { code: "MPV", label: "MPV", unit: "fL", min: 11.4, max: 21.6, key: false, cat: "Hematologie" },
+    { code: "PCT", label: "PCT", unit: "%", min: 0.17, max: 0.86, key: false, cat: "Hematologie" },
+    { code: "GLU", label: "Glucose", unit: "mmol/L", min: 3.95, max: 8.84, key: true, cat: "Chemie" },
+    { code: "CREA", label: "Creatinine", unit: "umol/L", min: 71, max: 212, key: true, cat: "Chemie" },
+    { code: "UREA", label: "Ureum", unit: "mmol/L", min: 5.7, max: 12.9, key: true, cat: "Chemie" },
+    { code: "PHOS", label: "Fosfaat", unit: "mmol/L", min: 1.00, max: 2.42, key: true, cat: "Chemie" },
+    { code: "CA", label: "Calcium", unit: "mmol/L", min: 1.95, max: 2.83, key: false, cat: "Chemie" },
+    { code: "TP", label: "Totaal eiwit", unit: "g/L", min: 57, max: 89, key: true, cat: "Chemie" },
+    { code: "ALB", label: "Albumine", unit: "g/L", min: 23, max: 39, key: true, cat: "Chemie" },
+    { code: "GLOB", label: "Globuline", unit: "g/L", min: 28, max: 51, key: false, cat: "Chemie" },
+    { code: "ALT", label: "ALT (leverenzym)", unit: "U/L", min: 12, max: 130, key: true, cat: "Chemie" },
+    { code: "ALKP", label: "ALKP (leverenzym)", unit: "U/L", min: 14, max: 111, key: true, cat: "Chemie" },
+    { code: "GGT", label: "GGT (leverenzym)", unit: "U/L", min: 0, max: 4, key: false, cat: "Chemie" },
+    { code: "TBIL", label: "Bilirubine", unit: "umol/L", min: 0, max: 15, key: false, cat: "Chemie" },
+    { code: "CHOL", label: "Cholesterol", unit: "mmol/L", min: 1.68, max: 5.81, key: true, cat: "Chemie" },
+    { code: "AMYL", label: "Amylase", unit: "U/L", min: 500, max: 1500, key: false, cat: "Chemie" },
+    { code: "LIPA", label: "Lipase", unit: "U/L", min: 100, max: 1400, key: false, cat: "Chemie" },
+  ];
+
+  function findMarker(code) {
+    return BLOOD_MARKERS.find((m) => m.code.toLowerCase() === String(code).toLowerCase());
+  }
+
+  let markerMode = "key";
+
+  function setMarkerMode(mode) {
+    markerMode = mode;
+    document.getElementById("modeKeyBtn").classList.toggle("active", mode === "key");
+    document.getElementById("modeAllBtn").classList.toggle("active", mode === "all");
+    populateMarkerSelect();
+  }
+
+  function populateMarkerSelect() {
+    const select = document.getElementById("bloodMarker");
+    const prev = select.value;
+    select.innerHTML = "";
+
+    ["Hematologie", "Chemie"].forEach((cat) => {
+      const relevant = BLOOD_MARKERS.filter((m) => m.cat === cat && (markerMode === "all" || m.key));
+      if (!relevant.length) return;
+      const group = document.createElement("optgroup");
+      group.label = cat;
+      relevant.forEach((m) => {
+        const opt = document.createElement("option");
+        opt.value = m.code;
+        opt.textContent = `${m.label} (${m.code})`;
+        group.appendChild(opt);
+      });
+      select.appendChild(group);
+    });
+
+    const customOpt = document.createElement("option");
+    customOpt.value = "__custom__";
+    customOpt.textContent = "Andere marker...";
+    select.appendChild(customOpt);
+
+    if ([...select.options].some((o) => o.value === prev)) select.value = prev;
+    updateMarkerFields();
+  }
+
+  function updateMarkerFields() {
+    const code = document.getElementById("bloodMarker").value;
+    const customRow = document.getElementById("bloodCustomMarkerRow");
+    const unitInput = document.getElementById("bloodUnit");
+    const refHint = document.getElementById("bloodRefHint");
+
+    if (code === "__custom__") {
+      customRow.style.display = "";
+      refHint.textContent = "";
+      return;
+    }
+
+    customRow.style.display = "none";
+    const m = findMarker(code);
+    if (m) {
+      unitInput.value = m.unit;
+      refHint.textContent = `Referentie: ${m.min} - ${m.max} ${m.unit}`;
+    }
+  }
+
   const bloodForm = document.getElementById("bloodForm");
   const bloodList = document.getElementById("bloodList");
+  let editingBloodId = null;
+  let latestBloodData = [];
 
   document.getElementById("bloodDate").valueAsDate = new Date();
+  document.getElementById("bloodMarker").addEventListener("change", updateMarkerFields);
+  populateMarkerSelect();
+
+  function editBloodValue(row) {
+    editingBloodId = row.id;
+    document.getElementById("bloodDate").value = row.date;
+
+    const known = findMarker(row.marker);
+    const select = document.getElementById("bloodMarker");
+    if (known && [...select.options].some((o) => o.value === known.code)) {
+      select.value = known.code;
+      document.getElementById("bloodCustomMarkerRow").style.display = "none";
+    } else {
+      select.value = "__custom__";
+      document.getElementById("bloodCustomMarkerRow").style.display = "";
+      document.getElementById("bloodCustomMarker").value = row.marker;
+    }
+
+    document.getElementById("bloodValue").value = row.value;
+    document.getElementById("bloodUnit").value = row.unit || "";
+    document.getElementById("bloodNote").value = row.note || "";
+    updateMarkerFields();
+    if (known) document.getElementById("bloodUnit").value = row.unit || known.unit;
+
+    document.getElementById("bloodFormTitle").textContent = "Bloedwaarde bewerken";
+    bloodForm.querySelector("button.submit").textContent = "Bijwerken";
+    document.getElementById("bloodCancelEditBtn").style.display = "";
+    switchTab("blood");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelBloodEdit() {
+    editingBloodId = null;
+    bloodForm.reset();
+    document.getElementById("bloodDate").valueAsDate = new Date();
+    document.getElementById("bloodCustomMarkerRow").style.display = "none";
+    populateMarkerSelect();
+    document.getElementById("bloodFormTitle").textContent = "Nieuwe bloedwaarde";
+    bloodForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("bloodCancelEditBtn").style.display = "none";
+  }
 
   bloodForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1042,14 +1217,18 @@
     submitBtn.disabled = true;
 
     const date = document.getElementById("bloodDate").value;
-    const marker = document.getElementById("bloodMarker").value.trim();
+    const markerSelect = document.getElementById("bloodMarker").value;
+    const marker =
+      markerSelect === "__custom__"
+        ? document.getElementById("bloodCustomMarker").value.trim()
+        : markerSelect;
     const value = parseFloat(document.getElementById("bloodValue").value);
     const unit = document.getElementById("bloodUnit").value.trim() || null;
     const note = document.getElementById("bloodNote").value.trim() || null;
 
-    const { error } = await supabaseClient
-      .from("blood_values")
-      .insert([{ date, marker, value, unit, note }]);
+    const { error } = editingBloodId
+      ? await supabaseClient.from("blood_values").update({ date, marker, value, unit, note }).eq("id", editingBloodId)
+      : await supabaseClient.from("blood_values").insert([{ date, marker, value, unit, note }]);
 
     submitBtn.disabled = false;
 
@@ -1058,8 +1237,7 @@
       return;
     }
 
-    bloodForm.reset();
-    document.getElementById("bloodDate").valueAsDate = new Date();
+    cancelBloodEdit();
     await loadBloodValues();
   });
 
@@ -1076,7 +1254,9 @@
       return;
     }
 
+    latestBloodData = data;
     renderBloodList(data);
+    populateBloodChartMarkerSelect(data);
   }
 
   function renderBloodList(data) {
@@ -1088,13 +1268,18 @@
     }
 
     data.forEach((row) => {
+      const known = findMarker(row.marker);
+      const label = known ? `${known.label} (${known.code})` : row.marker;
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary">${escapeHtml(row.marker)}: ${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
+          <span class="primary">${escapeHtml(label)}: ${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
           <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
-      const li = createSwipeableListItem(innerHtml, () => deleteBloodValue(row.id));
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteBloodValue(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editBloodValue(row) },
+      ]);
       bloodList.appendChild(li);
     });
   }
@@ -1105,6 +1290,291 @@
       showError("Verwijderen mislukt: " + error.message);
       return;
     }
+    await loadBloodValues();
+  }
+
+  // --- Blood chart -----------------------------------------------------
+  let bloodChart;
+
+  function populateBloodChartMarkerSelect(data) {
+    const select = document.getElementById("bloodChartMarker");
+    const prev = select.value;
+    const distinctMarkers = [...new Set(data.map((r) => r.marker))].sort();
+
+    select.innerHTML = "";
+    distinctMarkers.forEach((code) => {
+      const known = findMarker(code);
+      const opt = document.createElement("option");
+      opt.value = code;
+      opt.textContent = known ? `${known.label} (${known.code})` : code;
+      select.appendChild(opt);
+    });
+
+    if (distinctMarkers.length === 0) {
+      renderBloodChart(null);
+      return;
+    }
+
+    select.value = distinctMarkers.includes(prev) ? prev : distinctMarkers[0];
+    renderBloodChart(select.value);
+  }
+
+  document.getElementById("bloodChartMarker").addEventListener("change", (e) => renderBloodChart(e.target.value));
+
+  function renderBloodChart(marker) {
+    const canvas = document.getElementById("bloodChart");
+    const emptyMsg = document.getElementById("bloodChartEmpty");
+
+    const rows = marker
+      ? [...latestBloodData].filter((r) => r.marker === marker).sort((a, b) => (a.date > b.date ? 1 : -1))
+      : [];
+
+    if (!marker || rows.length === 0) {
+      canvas.style.display = "none";
+      emptyMsg.style.display = "";
+      if (bloodChart) {
+        bloodChart.destroy();
+        bloodChart = null;
+      }
+      return;
+    }
+
+    canvas.style.display = "";
+    emptyMsg.style.display = "none";
+
+    const known = findMarker(marker);
+    const points = rows.map((r) => ({ x: r.date, y: r.value }));
+    const values = rows.map((r) => r.value);
+    const dataMin = Math.min(...values, known ? known.min : Infinity);
+    const dataMax = Math.max(...values, known ? known.max : -Infinity);
+    const pad = Math.max((dataMax - dataMin) * 0.15, dataMax * 0.05, 0.1);
+    const yMin = dataMin - pad;
+    const yMax = dataMax + pad;
+
+    const bandDates = [rows[0].date, rows[rows.length - 1].date];
+    const bandTop = known ? bandDates.map((d) => ({ x: d, y: known.max })) : [];
+    const bandBottom = known ? bandDates.map((d) => ({ x: d, y: known.min })) : [];
+
+    const pointColors = rows.map((r) => {
+      if (!known) return "#8b5cf6";
+      if (r.value > known.max) return "#ff3b30";
+      if (r.value < known.min) return "#ff9500";
+      return "#34c759";
+    });
+
+    if (bloodChart) bloodChart.destroy();
+
+    bloodChart = new Chart(canvas, {
+      type: "line",
+      data: {
+        datasets: known
+          ? [
+              { label: "max", data: bandTop, borderWidth: 0, pointRadius: 0, fill: false, order: 3 },
+              {
+                label: "Referentie",
+                data: bandBottom,
+                borderWidth: 0,
+                pointRadius: 0,
+                fill: "-1",
+                backgroundColor: "rgba(52, 199, 89, 0.12)",
+                order: 3,
+              },
+              {
+                label: known.label,
+                data: points,
+                borderColor: "#8b5cf6",
+                borderWidth: 3,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+                pointBackgroundColor: pointColors,
+                pointBorderColor: "#ffffff",
+                pointBorderWidth: 1.5,
+                order: 1,
+              },
+            ]
+          : [
+              {
+                label: marker,
+                data: points,
+                borderColor: "#8b5cf6",
+                borderWidth: 3,
+                tension: 0.3,
+                fill: false,
+                pointRadius: 4,
+                pointBackgroundColor: "#8b5cf6",
+                order: 1,
+              },
+            ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 8, right: 8, left: 0, bottom: 0 } },
+        scales: {
+          x: {
+            type: "time",
+            time: { tooltipFormat: "dd-MM-yyyy" },
+            grid: { display: false },
+            min: rows[0].date,
+            max: rows[rows.length - 1].date,
+          },
+          y: {
+            title: { display: true, text: known ? known.unit : "" },
+            min: yMin,
+            max: yMax,
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            filter: (item) => item.dataset.label === (known ? known.label : marker),
+            callbacks: {
+              label: (item) => item.parsed.y + (known ? " " + known.unit : ""),
+            },
+          },
+        },
+      },
+    });
+  }
+
+  // --- Blood result photo/PDF upload (OCR) --------------------------------
+  let ocrCandidates = [];
+
+  document.getElementById("bloodFileInput").addEventListener("change", handleBloodFileUpload);
+
+  async function renderPdfToCanvas(file) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const page = await pdf.getPage(1);
+    const viewport = page.getViewport({ scale: 2.5 });
+    const canvas = document.createElement("canvas");
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({ canvasContext: canvas.getContext("2d"), viewport }).promise;
+    return canvas;
+  }
+
+  function parseOcrText(text) {
+    const found = [];
+    const seen = new Set();
+
+    // Match only when a line *starts* with the marker code (so "%NEU" never
+    // matches "NEU", and "RETIC-HGB" doesn't get mistaken for "RETIC") and
+    // is immediately followed by whitespace, not another code character.
+    for (const rawLine of text.split("\n")) {
+      // Strip leading OCR noise from handwritten marks/checkmarks (e.g.
+      // ": ' " or stray symbols), but keep a leading "%" intact so percentage
+      // rows still can't match their absolute-count counterpart.
+      const line = rawLine.trim().replace(/^[^A-Za-z%]+/, "");
+      const lineUpper = line.toUpperCase();
+
+      for (const m of BLOOD_MARKERS) {
+        if (seen.has(m.code)) continue;
+        if (!lineUpper.startsWith(m.code.toUpperCase())) continue;
+
+        const nextChar = line[m.code.length] || " ";
+        if (!/\s/.test(nextChar)) continue;
+
+        const rest = line.slice(m.code.length);
+        const numMatch = rest.match(/([<>]?\s?-?\d+[.,]?\d*)/);
+        if (numMatch) {
+          const raw = numMatch[1].replace("<", "").replace(">", "").replace(",", ".").trim();
+          const value = parseFloat(raw);
+          if (!isNaN(value)) {
+            found.push({ code: m.code, label: m.label, unit: m.unit, value, min: m.min, max: m.max });
+            seen.add(m.code);
+          }
+        }
+      }
+    }
+    return found;
+  }
+
+  async function handleBloodFileUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const statusEl = document.getElementById("ocrStatus");
+    statusEl.textContent = "Bestand wordt geanalyseerd... dit kan een halve minuut duren.";
+
+    try {
+      const source = file.type === "application/pdf" ? await renderPdfToCanvas(file) : file;
+      const { data } = await Tesseract.recognize(source, "eng");
+      const candidates = parseOcrText(data.text);
+
+      if (!candidates.length) {
+        statusEl.textContent = "Geen bekende waarden herkend. Probeer een scherpere foto, of vul handmatig in.";
+        return;
+      }
+
+      showOcrReview(candidates);
+      statusEl.textContent = `${candidates.length} waarde(n) herkend — controleer en pas aan waar nodig.`;
+    } catch (err) {
+      statusEl.textContent = "Analyseren mislukt: " + err.message;
+    }
+  }
+
+  function showOcrReview(candidates) {
+    ocrCandidates = candidates;
+    document.getElementById("ocrReview").style.display = "";
+    document.getElementById("ocrDate").valueAsDate = new Date();
+
+    const list = document.getElementById("ocrList");
+    list.innerHTML = "";
+
+    candidates.forEach((c, i) => {
+      const li = document.createElement("li");
+      li.className = "entry-item";
+      li.innerHTML = `
+        <div class="entry-row" style="gap:8px;">
+          <input type="checkbox" checked data-idx="${i}" class="ocr-check" style="width:20px;height:20px;flex-shrink:0;" />
+          <div class="entry-main" style="flex:1;min-width:0;">
+            <span class="primary">${escapeHtml(c.label)} (${c.code})</span>
+            <span class="secondary">Referentie: ${c.min} - ${c.max} ${c.unit}</span>
+          </div>
+          <input type="number" step="any" value="${c.value}" data-idx="${i}" class="ocr-value" style="width:80px;flex-shrink:0;" />
+        </div>
+      `;
+      list.appendChild(li);
+    });
+  }
+
+  async function saveOcrResults() {
+    const date = document.getElementById("ocrDate").value;
+    if (!date) {
+      showError("Kies een datum voor deze uitslag.");
+      return;
+    }
+
+    const rows = [];
+    document.querySelectorAll(".ocr-check").forEach((chk) => {
+      if (!chk.checked) return;
+      const idx = parseInt(chk.dataset.idx, 10);
+      const valueInput = document.querySelector(`.ocr-value[data-idx="${idx}"]`);
+      const c = ocrCandidates[idx];
+      rows.push({ date, marker: c.code, value: parseFloat(valueInput.value), unit: c.unit, note: "via foto/pdf" });
+    });
+
+    if (!rows.length) {
+      showError("Selecteer minstens één waarde.");
+      return;
+    }
+
+    const saveBtn = document.getElementById("ocrSaveBtn");
+    saveBtn.disabled = true;
+    const { error } = await supabaseClient.from("blood_values").insert(rows);
+    saveBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    document.getElementById("ocrReview").style.display = "none";
+    document.getElementById("bloodFileInput").value = "";
+    document.getElementById("ocrStatus").textContent = `${rows.length} waarde(n) opgeslagen.`;
     await loadBloodValues();
   }
 
