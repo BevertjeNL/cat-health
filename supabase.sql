@@ -39,3 +39,11 @@ create policy "anon full access blood_values"
   to anon
   using (true)
   with check (true);
+
+-- Table-level privileges: RLS policies above only take effect once the
+-- anon role can touch the tables at all. Needed because "Automatically
+-- expose new tables" was left off when creating the project.
+grant usage on schema public to anon;
+grant select, insert, update, delete on weight_measurements to anon;
+grant select, insert, update, delete on blood_values to anon;
+grant usage, select on all sequences in schema public to anon;
