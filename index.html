@@ -245,6 +245,35 @@
     flex-shrink: 0;
   }
 
+  .hint-text {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+    line-height: 1.4;
+  }
+
+  .legend-row {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+
+  .legend-row span {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .legend-dot {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
   .empty-state {
     color: var(--text-muted);
     font-size: 0.9rem;
@@ -284,6 +313,7 @@
 <nav class="tabs">
   <button id="tabBtnWeight" class="active" onclick="switchTab('weight')">Gewicht</button>
   <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
+  <button id="tabBtnProfile" onclick="switchTab('profile')">Profiel</button>
 </nav>
 
 <main>
@@ -316,6 +346,12 @@
       <h2>Verloop</h2>
       <div class="chart-wrap">
         <canvas id="weightChart"></canvas>
+      </div>
+      <div class="legend-row">
+        <span><span class="legend-dot" style="background:#22c55e;"></span> optimaal</span>
+        <span><span class="legend-dot" style="background:#ef4444;"></span> te zwaar</span>
+        <span><span class="legend-dot" style="background:#f59e0b;"></span> te licht</span>
+        <span><span class="legend-dot" style="background:#9ca3af;"></span> streefzone / ideaallijn</span>
       </div>
     </div>
 
@@ -365,6 +401,67 @@
       <ul class="entry-list" id="bloodList"></ul>
     </div>
   </section>
+
+  <section id="tabProfile" class="tab-panel">
+    <div class="card">
+      <h2>Kattenprofiel</h2>
+      <form class="entry-form" id="profileForm">
+        <div>
+          <label for="catName">Naam</label>
+          <input type="text" id="catName" placeholder="bijv. Bailey" />
+        </div>
+        <div class="row">
+          <div>
+            <label for="catBirthDate">Geboortedatum</label>
+            <input type="date" id="catBirthDate" />
+          </div>
+          <div>
+            <label for="catSex">Geslacht</label>
+            <select id="catSex">
+              <option value="">Onbekend</option>
+              <option value="mannelijk">Mannelijk</option>
+              <option value="vrouwelijk">Vrouwelijk</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="catNeutered">Gecastreerd/gesteriliseerd</label>
+            <select id="catNeutered">
+              <option value="">Onbekend</option>
+              <option value="true">Ja</option>
+              <option value="false">Nee</option>
+            </select>
+          </div>
+          <div>
+            <label for="catActivity">Bewegingsgraad</label>
+            <select id="catActivity">
+              <option value="">Onbekend</option>
+              <option value="laag">Laag</option>
+              <option value="matig">Matig</option>
+              <option value="hoog">Hoog</option>
+            </select>
+          </div>
+        </div>
+        <div class="row">
+          <div>
+            <label for="catTargetMin">Streefgewicht min (kg)</label>
+            <input type="number" id="catTargetMin" inputmode="decimal" step="0.1" placeholder="auto" />
+          </div>
+          <div>
+            <label for="catTargetMax">Streefgewicht max (kg)</label>
+            <input type="number" id="catTargetMax" inputmode="decimal" step="0.1" placeholder="auto" />
+          </div>
+        </div>
+        <p class="hint-text">
+          Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en bewegingsgraad.
+          Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor
+          advies van je dierenarts.
+        </p>
+        <button class="submit" type="submit">Profiel opslaan</button>
+      </form>
+    </div>
+  </section>
 </main>
 
 <script>
@@ -385,8 +482,10 @@
   function switchTab(tab) {
     document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
+    document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
+    document.getElementById("tabBtnProfile").classList.toggle("active", tab === "profile");
   }
 
   function showError(message) {
@@ -409,6 +508,63 @@
       document.getElementById(btn.dataset.target).valueAsDate = new Date();
     });
   });
+
+  // --- Cat profile & ideal weight -----------------------------------------
+  // Rough averages for domestic cats, kg by age in months, based on
+  // veterinary growth-chart sources (see chat for citations). Values
+  // between 10 and 12 months blend into the computed adult target.
+  const KITTEN_GROWTH_CURVE = [
+    [0, 0.1],
+    [1, 0.45],
+    [2, 0.9],
+    [3, 1.36],
+    [4, 1.8],
+    [5, 2.27],
+    [6, 2.7],
+    [8, 3.4],
+    [10, 3.8],
+  ];
+
+  let catProfile = {};
+  let latestWeightData = [];
+
+  function ageInMonths(birthDateStr, atDateStr) {
+    if (!birthDateStr) return null;
+    const birth = new Date(birthDateStr + "T00:00:00");
+    const at = new Date(atDateStr + "T00:00:00");
+    return (at - birth) / (1000 * 60 * 60 * 24 * 30.44);
+  }
+
+  function computeAdultBase(profile) {
+    let base = 4.0;
+    if (profile.sex === "mannelijk") base += 0.7;
+    if (profile.sex === "vrouwelijk") base -= 0.3;
+    if (profile.activity_level === "laag") base -= 0.2;
+    if (profile.activity_level === "hoog") base += 0.2;
+    return base;
+  }
+
+  function idealWeightForMonths(months, adultBase) {
+    if (months === null || months >= 12) return adultBase;
+    if (months <= 0) return KITTEN_GROWTH_CURVE[0][1];
+
+    const curve = [...KITTEN_GROWTH_CURVE, [12, adultBase]];
+    for (let i = 0; i < curve.length - 1; i++) {
+      const [m1, w1] = curve[i];
+      const [m2, w2] = curve[i + 1];
+      if (months >= m1 && months <= m2) {
+        return w1 + ((w2 - w1) * (months - m1)) / (m2 - m1);
+      }
+    }
+    return adultBase;
+  }
+
+  function computeTargetRange(profile, adultBase) {
+    if (profile.target_min_kg != null && profile.target_max_kg != null) {
+      return { min: profile.target_min_kg, max: profile.target_max_kg };
+    }
+    return { min: adultBase - 0.4, max: adultBase + 0.4 };
+  }
 
   // --- Weight --------------------------------------------------------------
   const weightForm = document.getElementById("weightForm");
@@ -457,17 +613,58 @@
       return;
     }
 
+    latestWeightData = data;
     renderWeightChart(data);
     renderWeightList(data);
   }
 
+  function dateToISO(d) {
+    return d.toISOString().slice(0, 10);
+  }
+
   function renderWeightChart(data) {
     const ctx = document.getElementById("weightChart");
+    const adultBase = computeAdultBase(catProfile);
+    const range = computeTargetRange(catProfile, adultBase);
+    const birthDate = catProfile.birth_date || null;
+
+    // Sample dates for the ideal-weight line & target band: every measurement
+    // date plus the birth date and today, so both render smoothly even with
+    // sparse measurements.
+    const sampleDates = new Set([dateToISO(new Date())]);
+    data.forEach((row) => sampleDates.add(row.date));
+    if (birthDate) sampleDates.add(birthDate);
+    const sortedDates = [...sampleDates].sort();
+
+    const idealPoints = sortedDates.map((date) => ({
+      x: date,
+      y: idealWeightForMonths(ageInMonths(birthDate, date), adultBase),
+    }));
+    const rangeMaxPoints = sortedDates.map((date) => ({ x: date, y: range.max }));
+    const rangeMinPoints = sortedDates.map((date) => ({ x: date, y: range.min }));
+
+    const pointColors = data.map((row) => {
+      const kg = row.weight_grams / 1000;
+      const months = ageInMonths(birthDate, row.date);
+      if (months !== null && months < 12) {
+        const expected = idealWeightForMonths(months, adultBase);
+        if (kg > expected * 1.15) return "#ef4444";
+        if (kg < expected * 0.85) return "#f59e0b";
+        return "#22c55e";
+      }
+      if (kg > range.max) return "#ef4444";
+      if (kg < range.min) return "#f59e0b";
+      return "#22c55e";
+    });
 
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
 
     if (weightChart) {
-      weightChart.data.datasets[0].data = points;
+      weightChart.data.datasets[0].data = rangeMaxPoints;
+      weightChart.data.datasets[1].data = rangeMinPoints;
+      weightChart.data.datasets[2].data = idealPoints;
+      weightChart.data.datasets[3].data = points;
+      weightChart.data.datasets[3].pointBackgroundColor = pointColors;
       weightChart.update();
       return;
     }
@@ -477,27 +674,52 @@
     gradientLine.addColorStop(0, "#7c3aed");
     gradientLine.addColorStop(1, "#06b6d4");
 
-    const gradientFill = canvasCtx.createLinearGradient(0, 0, 0, 240);
-    gradientFill.addColorStop(0, "rgba(124, 58, 237, 0.35)");
-    gradientFill.addColorStop(1, "rgba(6, 182, 212, 0.02)");
-
     weightChart = new Chart(ctx, {
       type: "line",
       data: {
         datasets: [
           {
+            label: "Bovengrens streefzone",
+            data: rangeMaxPoints,
+            borderWidth: 0,
+            pointRadius: 0,
+            fill: false,
+            order: 4,
+          },
+          {
+            label: "Streefzone",
+            data: rangeMinPoints,
+            borderWidth: 0,
+            pointRadius: 0,
+            fill: "-1",
+            backgroundColor: "rgba(34, 197, 94, 0.15)",
+            order: 4,
+          },
+          {
+            label: "Ideaalgewicht",
+            data: idealPoints,
+            borderColor: "#9ca3af",
+            borderDash: [6, 4],
+            borderWidth: 1.5,
+            pointRadius: 0,
+            fill: false,
+            tension: 0.2,
+            order: 2,
+          },
+          {
             label: "Gewicht (kg)",
             data: points,
             borderColor: gradientLine,
-            backgroundColor: gradientFill,
+            backgroundColor: "rgba(124, 58, 237, 0.12)",
             borderWidth: 4,
             tension: 0.3,
-            fill: true,
+            fill: false,
             pointRadius: 4,
-            pointBackgroundColor: "#ffffff",
-            pointBorderColor: "#7c3aed",
-            pointBorderWidth: 2,
+            pointBackgroundColor: pointColors,
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 1.5,
             pointHoverRadius: 6,
+            order: 1,
           },
         ],
       },
@@ -517,6 +739,7 @@
         plugins: {
           legend: { display: false },
           tooltip: {
+            filter: (item) => item.datasetIndex === 3,
             callbacks: {
               label: (item) => item.parsed.y.toFixed(1) + " kg",
             },
@@ -639,6 +862,76 @@
     await loadBloodValues();
   }
 
+  // --- Profile ---------------------------------------------------------
+  const profileForm = document.getElementById("profileForm");
+
+  profileForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = profileForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const toNullableFloat = (val) => (val === "" ? null : parseFloat(val));
+    const toNullableBool = (val) => (val === "" ? null : val === "true");
+
+    const profile = {
+      id: 1,
+      name: document.getElementById("catName").value.trim() || null,
+      birth_date: document.getElementById("catBirthDate").value || null,
+      sex: document.getElementById("catSex").value || null,
+      neutered: toNullableBool(document.getElementById("catNeutered").value),
+      activity_level: document.getElementById("catActivity").value || null,
+      target_min_kg: toNullableFloat(document.getElementById("catTargetMin").value),
+      target_max_kg: toNullableFloat(document.getElementById("catTargetMax").value),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { error } = await supabaseClient.from("cat_profile").upsert(profile);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Profiel opslaan mislukt: " + error.message);
+      return;
+    }
+
+    catProfile = profile;
+    renderWeightChart(latestWeightData);
+  });
+
+  async function loadProfile() {
+    if (!isConfigured) return;
+
+    const { data, error } = await supabaseClient
+      .from("cat_profile")
+      .select("*")
+      .eq("id", 1)
+      .maybeSingle();
+
+    if (error) {
+      showError("Profiel laden mislukt: " + error.message);
+      return;
+    }
+
+    catProfile = data || {};
+
+    document.getElementById("catName").value = catProfile.name || "";
+    document.getElementById("catBirthDate").value = catProfile.birth_date || "";
+    document.getElementById("catSex").value = catProfile.sex || "";
+    document.getElementById("catNeutered").value =
+      catProfile.neutered === true ? "true" : catProfile.neutered === false ? "false" : "";
+    document.getElementById("catActivity").value = catProfile.activity_level || "";
+    document.getElementById("catTargetMin").value = catProfile.target_min_kg ?? "";
+    document.getElementById("catTargetMax").value = catProfile.target_max_kg ?? "";
+
+    if (catProfile.name) {
+      document.querySelector("header h1").textContent = "🐱 " + catProfile.name;
+    }
+
+    renderWeightChart(latestWeightData);
+  }
+
   // --- Utils ---------------------------------------------------------------
   function escapeHtml(str) {
     const div = document.createElement("div");
@@ -649,6 +942,7 @@
   // --- Init ------------------------------------------------------------
   loadWeights();
   loadBloodValues();
+  loadProfile();
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
