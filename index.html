@@ -121,6 +121,18 @@
     border-color: var(--accent);
   }
 
+  nav.tabs button.tab-profile {
+    flex: 0.85;
+    border-style: dashed;
+  }
+
+  nav.tabs button.tab-profile.active {
+    background: #f59e0b;
+    border-color: #f59e0b;
+    border-style: solid;
+    color: #1c1c1e;
+  }
+
   main {
     max-width: 640px;
     margin: 0 auto;
@@ -153,8 +165,17 @@
 
   form.entry-form .row {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
+  }
+
+  form.entry-form .row > div {
+    min-width: 0;
+  }
+
+  input[type="date"] {
+    width: 100%;
+    box-sizing: border-box;
   }
 
   label {
@@ -384,7 +405,7 @@
 <nav class="tabs">
   <button id="tabBtnWeight" class="active" onclick="switchTab('weight')">Gewicht</button>
   <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
-  <button id="tabBtnProfile" onclick="switchTab('profile')">Profiel</button>
+  <button id="tabBtnProfile" class="tab-profile" onclick="switchTab('profile')">🐾 Profiel</button>
 </nav>
 
 <main>
@@ -419,10 +440,10 @@
         <canvas id="weightChart"></canvas>
       </div>
       <div class="legend-row">
-        <span><span class="legend-dot" style="background:#22c55e;"></span> optimaal</span>
-        <span><span class="legend-dot" style="background:#ef4444;"></span> te zwaar</span>
-        <span><span class="legend-dot" style="background:#f59e0b;"></span> te licht</span>
-        <span><span class="legend-dot" style="background:rgba(34,197,94,0.5);"></span> streefzone</span>
+        <span><span class="legend-dot" style="background:#34c759;"></span> optimaal</span>
+        <span><span class="legend-dot" style="background:#ff3b30;"></span> te zwaar</span>
+        <span><span class="legend-dot" style="background:#ff9500;"></span> te licht</span>
+        <span><span class="legend-dot" style="background:rgba(52,199,89,0.5);"></span> streefzone</span>
       </div>
       <p class="hint-text" style="margin-top:6px;">
         Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.
@@ -481,7 +502,10 @@
 
   <section id="tabProfile" class="tab-panel">
     <div class="card">
-      <h2>Kattenprofiel</h2>
+      <h2>🐾 Vertel over je kat</h2>
+      <p class="hint-text" style="margin-bottom:12px;">
+        Hoe meer we van je huisgenoot weten, hoe beter we het ideale gewicht kunnen inschatten.
+      </p>
       <form class="entry-form" id="profileForm">
         <div>
           <label for="catName">Naam</label>
@@ -489,7 +513,7 @@
         </div>
         <div class="row">
           <div>
-            <label for="catBirthDate">Geboortedatum</label>
+            <label for="catBirthDate">🎂 Geboortedatum</label>
             <input type="date" id="catBirthDate" />
           </div>
           <div>
@@ -503,7 +527,7 @@
         </div>
         <div class="row">
           <div>
-            <label for="catNeutered">Gecastreerd/gesteriliseerd</label>
+            <label for="catNeutered">✂️ Gecastreerd/gesteriliseerd</label>
             <select id="catNeutered">
               <option value="">Onbekend</option>
               <option value="true">Ja</option>
@@ -511,27 +535,27 @@
             </select>
           </div>
           <div>
-            <label for="catActivity">Bewegingsgraad</label>
+            <label for="catActivity">⚡ Energieniveau</label>
             <select id="catActivity">
               <option value="">Onbekend</option>
-              <option value="laag">Laag</option>
-              <option value="matig">Matig</option>
-              <option value="hoog">Hoog</option>
+              <option value="laag">Rustig — heel weinig beweging</option>
+              <option value="matig">Gemiddeld</option>
+              <option value="hoog">Levendig — heel veel beweging</option>
             </select>
           </div>
         </div>
         <div class="row">
           <div>
-            <label for="catTargetMin">Streefgewicht min (kg)</label>
+            <label for="catTargetMin">⚖️ Streefgewicht min (kg)</label>
             <input type="number" id="catTargetMin" inputmode="decimal" step="0.1" placeholder="auto" />
           </div>
           <div>
-            <label for="catTargetMax">Streefgewicht max (kg)</label>
+            <label for="catTargetMax">⚖️ Streefgewicht max (kg)</label>
             <input type="number" id="catTargetMax" inputmode="decimal" step="0.1" placeholder="auto" />
           </div>
         </div>
         <p class="hint-text">
-          Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en bewegingsgraad.
+          Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en energieniveau.
           Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor
           advies van je dierenarts.
         </p>
@@ -661,13 +685,13 @@
 
     if (months !== null && months < 12) {
       const expected = idealWeightForMonths(months, adultBase);
-      if (kg > expected * 1.15) return "#ef4444";
-      if (kg < expected * 0.85) return "#f59e0b";
-      return "#22c55e";
+      if (kg > expected * 1.15) return "#ff3b30";
+      if (kg < expected * 0.85) return "#ff9500";
+      return "#34c759";
     }
-    if (kg > range.max) return "#ef4444";
-    if (kg < range.min) return "#f59e0b";
-    return "#22c55e";
+    if (kg > range.max) return "#ff3b30";
+    if (kg < range.min) return "#ff9500";
+    return "#34c759";
   }
 
   // --- Swipe-to-delete list items -----------------------------------------
@@ -807,10 +831,10 @@
 
   function targetZoneColorAt(value, range) {
     const bw = Math.max(range.max - range.min, 0.2);
-    const GREEN = [34, 197, 94];
-    const YELLOW = [234, 179, 8];
-    const ORANGE = [245, 158, 11];
-    const RED = [239, 68, 68];
+    const GREEN = [52, 199, 89];
+    const YELLOW = [255, 204, 0];
+    const ORANGE = [255, 149, 0];
+    const RED = [255, 59, 48];
     const stops = [
       { v: range.min - 1.5 * bw, c: RED },
       { v: range.min - 1.0 * bw, c: ORANGE },
@@ -846,20 +870,30 @@
 
       const topValue = yScale.getValueForPixel(chartArea.top);
       const bottomValue = yScale.getValueForPixel(chartArea.bottom);
-      const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
       const steps = 24;
+
+      // Calm, low-alpha wash behind the plot area.
+      const bgGradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+      // The line itself picks up the same hues, but fully saturated, so its
+      // color reflects height on the chart (green in range, warmer toward
+      // the edges) instead of an unrelated brand color.
+      const lineGradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
 
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         const value = topValue + (bottomValue - topValue) * t;
         const [r, g, b] = targetZoneColorAt(value, opts.range);
-        gradient.addColorStop(t, `rgba(${r}, ${g}, ${b}, 0.16)`);
+        bgGradient.addColorStop(t, `rgba(${r}, ${g}, ${b}, 0.08)`);
+        lineGradient.addColorStop(t, `rgba(${r}, ${g}, ${b}, 0.92)`);
       }
 
       ctx.save();
-      ctx.fillStyle = gradient;
+      ctx.fillStyle = bgGradient;
       ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
       ctx.restore();
+
+      const weightDataset = chart.data.datasets[0];
+      if (weightDataset) weightDataset.borderColor = lineGradient;
     },
   };
 
@@ -900,11 +934,6 @@
       return;
     }
 
-    const canvasCtx = ctx.getContext("2d");
-    const gradientLine = canvasCtx.createLinearGradient(0, 0, ctx.width || 600, 0);
-    gradientLine.addColorStop(0, "#7c3aed");
-    gradientLine.addColorStop(1, "#06b6d4");
-
     weightChart = new Chart(ctx, {
       type: "line",
       plugins: [targetZoneGradientPlugin],
@@ -913,9 +942,9 @@
           {
             label: "Gewicht (kg)",
             data: points,
-            borderColor: gradientLine,
-            backgroundColor: "rgba(124, 58, 237, 0.12)",
-            borderWidth: 4,
+            borderColor: "#34c759",
+            backgroundColor: "transparent",
+            borderWidth: 3,
             tension: 0.3,
             fill: false,
             pointRadius: 4,
