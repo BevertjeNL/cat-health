@@ -1218,8 +1218,10 @@
     { code: "BASO", label: "Basofielen", unit: "x10^9/L", min: 0.01, max: 0.26, key: false, cat: "Hematologie" },
     { code: "PLT", label: "Trombocyten (PLT)", unit: "K/uL", min: 151, max: 600, key: true, cat: "Hematologie" },
     { code: "MPV", label: "MPV", unit: "fL", min: 11.4, max: 21.6, key: false, cat: "Hematologie" },
+    { code: "PDW", label: "PDW", unit: "%", min: null, max: null, key: false, cat: "Hematologie" },
     { code: "PCT", label: "PCT", unit: "%", min: 0.17, max: 0.86, key: false, cat: "Hematologie" },
     { code: "GLU", label: "Glucose", unit: "mmol/L", min: 3.95, max: 8.84, key: true, cat: "Chemie" },
+    { code: "SDMA", label: "SDMA (nierfunctie)", unit: "μg/dL", min: 0, max: 14, key: true, cat: "Chemie" },
     { code: "CREA", label: "Creatinine", unit: "umol/L", min: 71, max: 212, key: true, cat: "Chemie" },
     { code: "UREA", label: "Ureum", unit: "mmol/L", min: 5.7, max: 12.9, key: true, cat: "Chemie" },
     { code: "PHOS", label: "Fosfaat", unit: "mmol/L", min: 1.00, max: 2.42, key: true, cat: "Chemie" },
@@ -1234,6 +1236,9 @@
     { code: "CHOL", label: "Cholesterol", unit: "mmol/L", min: 1.68, max: 5.81, key: true, cat: "Chemie" },
     { code: "AMYL", label: "Amylase", unit: "U/L", min: 500, max: 1500, key: false, cat: "Chemie" },
     { code: "LIPA", label: "Lipase", unit: "U/L", min: 100, max: 1400, key: false, cat: "Chemie" },
+    { code: "Na", label: "Natrium", unit: "mmol/L", min: 150, max: 165, key: false, cat: "Chemie" },
+    { code: "K", label: "Kalium", unit: "mmol/L", min: 3.5, max: 5.8, key: false, cat: "Chemie" },
+    { code: "Cl", label: "Chloride", unit: "mmol/L", min: 112, max: 129, key: false, cat: "Chemie" },
   ];
 
   function findMarker(code) {
@@ -1247,17 +1252,20 @@
       .map((cat) => {
         const rows = markers
           .filter((m) => m.cat === cat)
-          .map(
-            (m) => `
+          .map((m) => {
+            const hasRange = m.min != null && m.max != null;
+            const title = hasRange ? `Referentie: ${m.min} - ${m.max} ${m.unit}` : "Geen referentie-interval bekend";
+            const placeholder = hasRange ? `${m.min}–${m.max}` : "waarde";
+            return `
           <div class="marker-field-row" data-code="${m.code}">
-            <label title="Referentie: ${m.min} - ${m.max} ${escapeHtml(m.unit)}">${escapeHtml(m.label)} (${m.code})</label>
+            <label title="${title}">${escapeHtml(m.label)} (${m.code})</label>
             <div class="marker-input-wrap">
-              <input type="number" step="any" class="marker-value-input" data-code="${m.code}" placeholder="${m.min}–${m.max}" />
+              <input type="number" step="any" class="marker-value-input" data-code="${m.code}" placeholder="${placeholder}" />
             </div>
             <span class="marker-unit">${escapeHtml(m.unit)}</span>
           </div>
-        `
-          )
+        `;
+          })
           .join("");
         return `<div class="marker-cat-label">${cat}</div><div class="marker-fields">${rows}</div>`;
       })
@@ -1530,20 +1538,21 @@
     emptyMsg.style.display = "none";
 
     const known = findMarker(marker);
+    const hasRange = known && known.min != null && known.max != null;
     const points = rows.map((r) => ({ x: r.date, y: r.value }));
     const values = rows.map((r) => r.value);
-    const dataMin = Math.min(...values, known ? known.min : Infinity);
-    const dataMax = Math.max(...values, known ? known.max : -Infinity);
+    const dataMin = Math.min(...values, hasRange ? known.min : Infinity);
+    const dataMax = Math.max(...values, hasRange ? known.max : -Infinity);
     const pad = Math.max((dataMax - dataMin) * 0.15, dataMax * 0.05, 0.1);
     const yMin = dataMin - pad;
     const yMax = dataMax + pad;
 
     const bandDates = [rows[0].date, rows[rows.length - 1].date];
-    const bandTop = known ? bandDates.map((d) => ({ x: d, y: known.max })) : [];
-    const bandBottom = known ? bandDates.map((d) => ({ x: d, y: known.min })) : [];
+    const bandTop = hasRange ? bandDates.map((d) => ({ x: d, y: known.max })) : [];
+    const bandBottom = hasRange ? bandDates.map((d) => ({ x: d, y: known.min })) : [];
 
     const pointColors = rows.map((r) => {
-      if (!known) return "#8b5cf6";
+      if (!hasRange) return "#8b5cf6";
       if (r.value > known.max) return "#ff3b30";
       if (r.value < known.min) return "#ff9500";
       return "#34c759";
@@ -1554,7 +1563,7 @@
     bloodChart = new Chart(canvas, {
       type: "line",
       data: {
-        datasets: known
+        datasets: hasRange
           ? [
               { label: "max", data: bandTop, borderWidth: 0, pointRadius: 0, fill: false, order: 3 },
               {
