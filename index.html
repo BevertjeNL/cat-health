@@ -1698,9 +1698,13 @@
     }
 
     latestBloodData = data;
-    renderBloodList(data);
     populateBloodChartMarkerSelect(data);
   }
+
+  // Which marker's value the results list shows per date — kept in sync
+  // with the "Verloop per waarde" dropdown so picking a marker there
+  // immediately reflects in the list below, and vice versa on reload.
+  let selectedBloodChartMarker = null;
 
   function renderBloodList(data) {
     bloodList.innerHTML = "";
@@ -1711,14 +1715,36 @@
     }
 
     const dates = [...new Set(data.map((r) => r.date))].sort((a, b) => (a < b ? 1 : -1));
+    const marker = selectedBloodChartMarker;
+    const known = marker ? findMarker(marker) : null;
 
     dates.forEach((date) => {
       const rows = data.filter((r) => r.date === date);
-      const labels = rows.map((r) => (findMarker(r.marker) || { code: r.marker }).code).join(", ");
+      let secondaryHtml;
+
+      if (marker) {
+        const match = rows.find((r) => r.marker === marker);
+        if (match) {
+          const hasRange = known && known.min != null && known.max != null;
+          let dotColor = "var(--text-muted)";
+          if (hasRange) {
+            const [r2, g2, b2] = targetZoneColorAt(match.value, { min: known.min, max: known.max });
+            dotColor = `rgb(${r2}, ${g2}, ${b2})`;
+          }
+          const label = known ? known.label : marker;
+          secondaryHtml = `<span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(label)}: ${match.value}${match.unit ? " " + escapeHtml(match.unit) : ""}`;
+        } else {
+          secondaryHtml = `Geen meting van ${escapeHtml(known ? known.code : marker)} op deze datum`;
+        }
+      } else {
+        const labels = rows.map((r) => (findMarker(r.marker) || { code: r.marker }).code).join(", ");
+        secondaryHtml = escapeHtml(labels);
+      }
+
       const innerHtml = `
         <div class="entry-main">
           <span class="primary">${formatDate(date)}<span style="color:var(--text-muted);font-weight:400;margin-left:6px;">${rows.length} waarde${rows.length === 1 ? "" : "n"}</span></span>
-          <span class="secondary">${escapeHtml(labels)}</span>
+          <span class="secondary">${secondaryHtml}</span>
         </div>
       `;
       const li = createSwipeableListItem(
@@ -1871,15 +1897,23 @@
 
     const allCodes = [...knownUsed.map((m) => m.code), ...customUsed];
     if (allCodes.length === 0) {
+      selectedBloodChartMarker = null;
       renderBloodChart(null);
+      renderBloodList(data);
       return;
     }
 
     select.value = allCodes.includes(prev) ? prev : allCodes[0];
+    selectedBloodChartMarker = select.value;
     renderBloodChart(select.value);
+    renderBloodList(data);
   }
 
-  document.getElementById("bloodChartMarker").addEventListener("change", (e) => renderBloodChart(e.target.value));
+  document.getElementById("bloodChartMarker").addEventListener("change", (e) => {
+    selectedBloodChartMarker = e.target.value;
+    renderBloodChart(e.target.value);
+    renderBloodList(latestBloodData);
+  });
 
   function addDaysToDateStr(dateStr, days) {
     const d = new Date(dateStr);
