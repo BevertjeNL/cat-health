@@ -663,6 +663,18 @@
     font-size: 0.85rem;
     white-space: nowrap;
   }
+
+  .detail-row-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  .detail-watch-star {
+    font-size: 1.2rem;
+    padding: 2px 2px 2px 6px;
+  }
 </style>
 </head>
 <body>
@@ -1742,16 +1754,38 @@
     const watched = isWatchedMarker(code);
     const label = known ? `${known.label} (${known.code})` : row.marker;
     const refText = hasRange ? `<span class="detail-ref">ref. ${known.min}–${known.max} ${known.unit}</span>` : "";
+    // Encode rather than HTML-escape: this attribute holds an arbitrary
+    // custom-marker name, and encodeURIComponent sidesteps quote/HTML
+    // escaping edge cases entirely instead of trying to patch them.
+    const codeAttr = encodeURIComponent(code);
     return `
       <div class="detail-row${watched ? " watched" : ""}">
         <div class="detail-row-label">
-          <span>${escapeHtml(label)}${watched ? ' <span class="watch-badge">★</span>' : ""}</span>
+          <span>${escapeHtml(label)}</span>
           ${refText}
         </div>
-        <span class="detail-value-pill" style="${pillStyle}">${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
+        <div class="detail-row-right">
+          <span class="detail-value-pill" style="${pillStyle}">${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
+          <button type="button" class="watch-star detail-watch-star${watched ? " active" : ""}" title="Extra bewaken" data-watch-code="${codeAttr}">${watched ? "★" : "☆"}</button>
+        </div>
       </div>
     `;
   }
+
+  function toggleDetailWatch(code, btnEl) {
+    toggleWatchMarker(code);
+    const watched = isWatchedMarker(code);
+    btnEl.textContent = watched ? "★" : "☆";
+    btnEl.classList.toggle("active", watched);
+    const rowEl = btnEl.closest(".detail-row");
+    if (rowEl) rowEl.classList.toggle("watched", watched);
+  }
+
+  document.getElementById("bloodDetailBody").addEventListener("click", (e) => {
+    const btn = e.target.closest(".detail-watch-star");
+    if (!btn) return;
+    toggleDetailWatch(decodeURIComponent(btn.dataset.watchCode), btn);
+  });
 
   function buildDetailRowsHtml(rows) {
     const byCode = {};
