@@ -160,6 +160,131 @@
     letter-spacing: 0.03em;
   }
 
+  .collapsible-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .collapsible-header h2 {
+    margin: 0;
+  }
+
+  .collapsible-header .chevron {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+    padding: 4px 4px 4px 12px;
+  }
+
+  .collapsible-header.open .chevron {
+    transform: rotate(90deg);
+  }
+
+  .collapsible-body {
+    margin-top: 14px;
+  }
+
+  .marker-fields {
+    display: grid;
+    gap: 8px;
+    margin: 4px 0;
+  }
+
+  .marker-cat-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin: 8px 0 -2px;
+  }
+
+  .marker-field-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 84px;
+    grid-template-areas: "label label" "input unit";
+    gap: 4px 8px;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .marker-field-row:last-child {
+    border-bottom: none;
+  }
+
+  .marker-field-row label {
+    grid-area: label;
+    margin: 0;
+    font-size: 0.82rem;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .marker-input-wrap {
+    grid-area: input;
+    min-width: 0;
+  }
+
+  .marker-input-wrap input {
+    width: 100%;
+    font-size: 0.95rem;
+    text-align: right;
+  }
+
+  .marker-input-wrap input.autofilled {
+    border-color: var(--accent);
+    background: rgba(79, 70, 229, 0.08);
+  }
+
+  .marker-unit {
+    grid-area: unit;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .custom-marker-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 0.75fr) minmax(0, 0.65fr) 26px;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .custom-marker-row input {
+    padding: 8px 8px;
+    font-size: 0.85rem;
+    min-height: 40px;
+  }
+
+  .custom-marker-remove {
+    border: none;
+    background: none;
+    color: var(--danger);
+    font-size: 1.3rem;
+    line-height: 1;
+    padding: 0;
+  }
+
+  .add-custom-marker-btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--border);
+    background: none;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
   form.entry-form {
     display: grid;
     gap: 10px;
@@ -195,26 +320,43 @@
     background: var(--bg);
     color: var(--text);
     font-size: 1rem;
+    min-height: 44px;
+    line-height: 1.2;
+  }
+
+  select {
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%236e6e73'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 32px;
   }
 
   input[type="date"] {
     accent-color: var(--accent);
     min-height: 44px;
-    font-size: 1.05rem;
+    font-size: 1rem;
+    min-width: 0;
+  }
+
+  input[type="number"] {
+    -moz-appearance: textfield;
   }
 
   .date-field {
     display: flex;
-    gap: 6px;
+    gap: 8px;
+    min-width: 0;
   }
 
   .date-field input {
-    flex: 1;
+    flex: 1 1 auto;
     min-width: 0;
   }
 
   .today-btn {
-    flex-shrink: 0;
+    flex: 0 0 auto;
     padding: 0 14px;
     border-radius: 10px;
     border: 1px solid var(--border);
@@ -223,6 +365,7 @@
     font-weight: 600;
     font-size: 0.85rem;
     white-space: nowrap;
+    min-height: 44px;
   }
 
   .today-btn:active {
@@ -417,9 +560,12 @@
 <main>
   <section id="tabWeight" class="tab-panel active">
     <div class="card">
-      <h2 id="weightFormTitle">Nieuwe meting</h2>
-      <form class="entry-form" id="weightForm">
-        <div class="row">
+      <div class="collapsible-header" id="weightFormHeader" onclick="toggleWeightForm()">
+        <h2 id="weightFormTitle">+ Nieuwe meting</h2>
+        <span class="chevron">▸</span>
+      </div>
+      <div class="collapsible-body" id="weightFormBody" style="display:none;">
+        <form class="entry-form" id="weightForm">
           <div>
             <label for="weightDate">Datum</label>
             <div class="date-field">
@@ -431,14 +577,14 @@
             <label for="weightKg">Gewicht (kg)</label>
             <input type="number" id="weightKg" inputmode="decimal" min="0" step="0.1" placeholder="4.2" required />
           </div>
-        </div>
-        <div>
-          <label for="weightNote">Notitie (optioneel)</label>
-          <input type="text" id="weightNote" placeholder="bijv. na het eten" />
-        </div>
-        <button class="submit" type="submit">Opslaan</button>
-        <button type="button" class="today-btn" id="weightCancelEditBtn" style="display:none;" onclick="cancelWeightEdit()">Bewerken annuleren</button>
-      </form>
+          <div>
+            <label for="weightNote">Notitie (optioneel)</label>
+            <input type="text" id="weightNote" placeholder="bijv. na het eten" />
+          </div>
+          <button class="submit" type="submit">Opslaan</button>
+          <button type="button" class="today-btn" id="weightCancelEditBtn" style="display:none;" onclick="cancelWeightEdit()">Bewerken annuleren</button>
+        </form>
+      </div>
     </div>
 
     <div class="card">
@@ -461,37 +607,12 @@
 
   <section id="tabBlood" class="tab-panel">
     <div class="card">
-      <h2>Type onderzoek</h2>
-      <div class="mode-toggle">
-        <button type="button" id="modeKeyBtn" class="mode-btn active" onclick="setMarkerMode('key')">Hoofdwaarden</button>
-        <button type="button" id="modeAllBtn" class="mode-btn" onclick="setMarkerMode('all')">Uitgebreid</button>
+      <div class="collapsible-header" id="bloodFormHeader" onclick="toggleBloodForm()">
+        <h2 id="bloodFormTitle">+ Nieuwe bloeduitslag</h2>
+        <span class="chevron">▸</span>
       </div>
-      <p class="hint-text" style="margin-top:8px;">
-        Hoofdwaarden toont de meest gangbare markers; Uitgebreid geeft de volledige lijst van een compleet bloedonderzoek.
-      </p>
-    </div>
-
-    <div class="card">
-      <h2>Uit foto/pdf overnemen</h2>
-      <input type="file" id="bloodFileInput" accept="image/*,application/pdf" style="display:none;" />
-      <button type="button" class="today-btn" style="width:100%;padding:12px;" onclick="document.getElementById('bloodFileInput').click()">📄 Kies bestand om te analyseren</button>
-      <p class="hint-text" id="ocrStatus" style="margin-top:8px;">Upload een foto of pdf van de uitslag — herkende waarden kun je hierna controleren voor je ze opslaat.</p>
-      <div id="ocrReview" style="display:none;">
-        <div class="row" style="margin-top:10px;">
-          <div>
-            <label for="ocrDate">Datum van deze uitslag</label>
-            <input type="date" id="ocrDate" />
-          </div>
-        </div>
-        <ul class="entry-list" id="ocrList" style="margin-top:10px;"></ul>
-        <button type="button" class="submit" id="ocrSaveBtn" style="margin-top:10px;" onclick="saveOcrResults()">Geselecteerde waarden opslaan</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2 id="bloodFormTitle">Nieuwe bloedwaarde</h2>
-      <form class="entry-form" id="bloodForm">
-        <div class="row">
+      <div class="collapsible-body" id="bloodFormBody" style="display:none;">
+        <form class="entry-form" id="bloodForm">
           <div>
             <label for="bloodDate">Datum</label>
             <div class="date-field">
@@ -499,35 +620,33 @@
               <button type="button" class="today-btn" data-target="bloodDate">Vandaag</button>
             </div>
           </div>
+
           <div>
-            <label for="bloodMarker">Marker</label>
-            <select id="bloodMarker" required></select>
+            <input type="file" id="bloodFileInput" accept="image/*,application/pdf" style="display:none;" />
+            <button type="button" class="today-btn" style="width:100%;padding:12px;" onclick="document.getElementById('bloodFileInput').click()">📄 Uit foto/pdf overnemen</button>
+            <p class="hint-text" id="ocrStatus" style="margin-top:6px;">Herkende waarden worden automatisch in de velden hieronder ingevuld.</p>
           </div>
-        </div>
-        <div id="bloodCustomMarkerRow" class="row" style="display:none;">
+
+          <div id="bloodFieldsKey"></div>
+
+          <button type="button" class="mode-btn" id="expandModeBtn" style="width:100%;" onclick="toggleExtendedMode()">+ Uitgebreid onderzoek</button>
+
+          <div id="bloodFieldsExtra" style="display:none;"></div>
+
           <div>
-            <label for="bloodCustomMarker">Naam marker</label>
-            <input type="text" id="bloodCustomMarker" placeholder="bijv. T4" />
+            <label>Overige markers (optioneel)</label>
+            <div id="bloodCustomList" style="display:grid;gap:8px;"></div>
+            <button type="button" class="add-custom-marker-btn" style="width:100%;margin-top:6px;" onclick="addCustomMarkerRow()">+ Andere marker toevoegen</button>
           </div>
-        </div>
-        <div class="row">
+
           <div>
-            <label for="bloodValue">Waarde</label>
-            <input type="number" id="bloodValue" step="any" placeholder="1.6" required />
+            <label for="bloodNote">Notitie (optioneel)</label>
+            <input type="text" id="bloodNote" placeholder="bijv. nuchter geprikt" />
           </div>
-          <div>
-            <label for="bloodUnit">Eenheid</label>
-            <input type="text" id="bloodUnit" placeholder="mg/dL" />
-          </div>
-        </div>
-        <p class="hint-text" id="bloodRefHint"></p>
-        <div>
-          <label for="bloodNote">Notitie (optioneel)</label>
-          <input type="text" id="bloodNote" placeholder="bijv. nuchter geprikt" />
-        </div>
-        <button class="submit" type="submit">Opslaan</button>
-        <button type="button" class="today-btn" id="bloodCancelEditBtn" style="display:none;" onclick="cancelBloodEdit()">Bewerken annuleren</button>
-      </form>
+          <button class="submit" type="submit">Opslaan</button>
+          <button type="button" class="today-btn" id="bloodCancelEditBtn" style="display:none;" onclick="cancelBloodEdit()">Bewerken annuleren</button>
+        </form>
+      </div>
     </div>
 
     <div class="card">
@@ -781,6 +900,21 @@
 
   document.getElementById("weightDate").valueAsDate = new Date();
 
+  function toggleWeightForm(forceOpen) {
+    const header = document.getElementById("weightFormHeader");
+    const body = document.getElementById("weightFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingWeightId) {
+      document.getElementById("weightFormTitle").textContent = open ? "Nieuwe meting" : "+ Nieuwe meting";
+    }
+  }
+
+  function openWeightForm() {
+    toggleWeightForm(true);
+  }
+
   function editWeight(row) {
     editingWeightId = row.id;
     document.getElementById("weightDate").value = row.date;
@@ -789,6 +923,7 @@
     document.getElementById("weightFormTitle").textContent = "Meting bewerken";
     weightForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("weightCancelEditBtn").style.display = "";
+    openWeightForm();
     switchTab("weight");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -797,9 +932,10 @@
     editingWeightId = null;
     weightForm.reset();
     document.getElementById("weightDate").valueAsDate = new Date();
-    document.getElementById("weightFormTitle").textContent = "Nieuwe meting";
+    document.getElementById("weightFormTitle").textContent = "+ Nieuwe meting";
     weightForm.querySelector("button.submit").textContent = "Opslaan";
     document.getElementById("weightCancelEditBtn").style.display = "none";
+    toggleWeightForm(false);
   }
 
   weightForm.addEventListener("submit", async (e) => {
@@ -1104,109 +1240,150 @@
     return BLOOD_MARKERS.find((m) => m.code.toLowerCase() === String(code).toLowerCase());
   }
 
-  let markerMode = "key";
-
-  function setMarkerMode(mode) {
-    markerMode = mode;
-    document.getElementById("modeKeyBtn").classList.toggle("active", mode === "key");
-    document.getElementById("modeAllBtn").classList.toggle("active", mode === "all");
-    populateMarkerSelect();
+  // --- Blood value fields (fixed catalog fields, key vs. extended) --------
+  function buildMarkerFieldsHtml(markers) {
+    const cats = [...new Set(markers.map((m) => m.cat))];
+    return cats
+      .map((cat) => {
+        const rows = markers
+          .filter((m) => m.cat === cat)
+          .map(
+            (m) => `
+          <div class="marker-field-row" data-code="${m.code}">
+            <label title="Referentie: ${m.min} - ${m.max} ${escapeHtml(m.unit)}">${escapeHtml(m.label)} (${m.code})</label>
+            <div class="marker-input-wrap">
+              <input type="number" step="any" class="marker-value-input" data-code="${m.code}" placeholder="${m.min}–${m.max}" />
+            </div>
+            <span class="marker-unit">${escapeHtml(m.unit)}</span>
+          </div>
+        `
+          )
+          .join("");
+        return `<div class="marker-cat-label">${cat}</div><div class="marker-fields">${rows}</div>`;
+      })
+      .join("");
   }
 
-  function populateMarkerSelect() {
-    const select = document.getElementById("bloodMarker");
-    const prev = select.value;
-    select.innerHTML = "";
+  function initMarkerFields() {
+    document.getElementById("bloodFieldsKey").innerHTML = buildMarkerFieldsHtml(BLOOD_MARKERS.filter((m) => m.key));
+    document.getElementById("bloodFieldsExtra").innerHTML = buildMarkerFieldsHtml(BLOOD_MARKERS.filter((m) => !m.key));
+  }
 
-    ["Hematologie", "Chemie"].forEach((cat) => {
-      const relevant = BLOOD_MARKERS.filter((m) => m.cat === cat && (markerMode === "all" || m.key));
-      if (!relevant.length) return;
-      const group = document.createElement("optgroup");
-      group.label = cat;
-      relevant.forEach((m) => {
-        const opt = document.createElement("option");
-        opt.value = m.code;
-        opt.textContent = `${m.label} (${m.code})`;
-        group.appendChild(opt);
-      });
-      select.appendChild(group);
+  let extendedOpen = false;
+
+  function toggleExtendedMode(forceOpen) {
+    extendedOpen = forceOpen !== undefined ? forceOpen : !extendedOpen;
+    document.getElementById("bloodFieldsExtra").style.display = extendedOpen ? "" : "none";
+    document.getElementById("expandModeBtn").textContent = extendedOpen
+      ? "− Alleen hoofdwaarden tonen"
+      : "+ Uitgebreid onderzoek";
+  }
+
+  function addCustomMarkerRow(prefill) {
+    const container = document.getElementById("bloodCustomList");
+    const row = document.createElement("div");
+    row.className = "custom-marker-row";
+    row.innerHTML = `
+      <input type="text" class="custom-marker-name" placeholder="Naam marker" value="${prefill ? escapeHtml(prefill.marker) : ""}" />
+      <input type="number" step="any" class="custom-marker-value" placeholder="Waarde" value="${prefill ? prefill.value : ""}" />
+      <input type="text" class="custom-marker-unit" placeholder="Eenh." value="${prefill && prefill.unit ? escapeHtml(prefill.unit) : ""}" />
+      <button type="button" class="custom-marker-remove" onclick="this.closest('.custom-marker-row').remove()">✕</button>
+    `;
+    container.appendChild(row);
+  }
+
+  function resetBloodFields() {
+    document.querySelectorAll(".marker-value-input").forEach((inp) => {
+      inp.value = "";
+      inp.classList.remove("autofilled");
     });
-
-    const customOpt = document.createElement("option");
-    customOpt.value = "__custom__";
-    customOpt.textContent = "Andere marker...";
-    select.appendChild(customOpt);
-
-    if ([...select.options].some((o) => o.value === prev)) select.value = prev;
-    updateMarkerFields();
+    document.getElementById("bloodCustomList").innerHTML = "";
+    toggleExtendedMode(false);
   }
 
-  function updateMarkerFields() {
-    const code = document.getElementById("bloodMarker").value;
-    const customRow = document.getElementById("bloodCustomMarkerRow");
-    const unitInput = document.getElementById("bloodUnit");
-    const refHint = document.getElementById("bloodRefHint");
+  function fillBloodFormFromRows(rows) {
+    resetBloodFields();
+    let needsExtended = false;
+    rows.forEach((row) => {
+      const known = findMarker(row.marker);
+      if (known) {
+        const input = document.querySelector(`.marker-value-input[data-code="${known.code}"]`);
+        if (input) {
+          input.value = row.value;
+          if (!known.key) needsExtended = true;
+          return;
+        }
+      }
+      addCustomMarkerRow(row);
+    });
+    if (needsExtended) toggleExtendedMode(true);
+  }
 
-    if (code === "__custom__") {
-      customRow.style.display = "";
-      refHint.textContent = "";
-      return;
-    }
-
-    customRow.style.display = "none";
-    const m = findMarker(code);
-    if (m) {
-      unitInput.value = m.unit;
-      refHint.textContent = `Referentie: ${m.min} - ${m.max} ${m.unit}`;
-    }
+  function gatherBloodFormRows(date, note) {
+    const rows = [];
+    document.querySelectorAll(".marker-value-input").forEach((inp) => {
+      const v = inp.value.trim();
+      if (v === "") return;
+      const m = findMarker(inp.dataset.code);
+      rows.push({ date, marker: m.code, value: parseFloat(v), unit: m.unit, note });
+    });
+    document.querySelectorAll("#bloodCustomList .custom-marker-row").forEach((row) => {
+      const name = row.querySelector(".custom-marker-name").value.trim();
+      const value = row.querySelector(".custom-marker-value").value.trim();
+      const unit = row.querySelector(".custom-marker-unit").value.trim();
+      if (!name || value === "") return;
+      rows.push({ date, marker: name, value: parseFloat(value), unit: unit || null, note });
+    });
+    return rows;
   }
 
   const bloodForm = document.getElementById("bloodForm");
   const bloodList = document.getElementById("bloodList");
-  let editingBloodId = null;
+  let editingBloodDate = null;
   let latestBloodData = [];
 
   document.getElementById("bloodDate").valueAsDate = new Date();
-  document.getElementById("bloodMarker").addEventListener("change", updateMarkerFields);
-  populateMarkerSelect();
+  initMarkerFields();
 
-  function editBloodValue(row) {
-    editingBloodId = row.id;
-    document.getElementById("bloodDate").value = row.date;
-
-    const known = findMarker(row.marker);
-    const select = document.getElementById("bloodMarker");
-    if (known && [...select.options].some((o) => o.value === known.code)) {
-      select.value = known.code;
-      document.getElementById("bloodCustomMarkerRow").style.display = "none";
-    } else {
-      select.value = "__custom__";
-      document.getElementById("bloodCustomMarkerRow").style.display = "";
-      document.getElementById("bloodCustomMarker").value = row.marker;
+  function toggleBloodForm(forceOpen) {
+    const header = document.getElementById("bloodFormHeader");
+    const body = document.getElementById("bloodFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingBloodDate) {
+      document.getElementById("bloodFormTitle").textContent = open ? "Nieuwe bloeduitslag" : "+ Nieuwe bloeduitslag";
     }
+  }
 
-    document.getElementById("bloodValue").value = row.value;
-    document.getElementById("bloodUnit").value = row.unit || "";
-    document.getElementById("bloodNote").value = row.note || "";
-    updateMarkerFields();
-    if (known) document.getElementById("bloodUnit").value = row.unit || known.unit;
+  function openBloodForm() {
+    toggleBloodForm(true);
+  }
 
-    document.getElementById("bloodFormTitle").textContent = "Bloedwaarde bewerken";
+  function editBloodGroup(date) {
+    editingBloodDate = date;
+    document.getElementById("bloodDate").value = date;
+    const rows = latestBloodData.filter((r) => r.date === date);
+    fillBloodFormFromRows(rows);
+    document.getElementById("bloodNote").value = rows.find((r) => r.note)?.note || "";
+    document.getElementById("bloodFormTitle").textContent = "Bloeduitslag bewerken — " + formatDate(date);
     bloodForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("bloodCancelEditBtn").style.display = "";
+    openBloodForm();
     switchTab("blood");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function cancelBloodEdit() {
-    editingBloodId = null;
-    bloodForm.reset();
+    editingBloodDate = null;
     document.getElementById("bloodDate").valueAsDate = new Date();
-    document.getElementById("bloodCustomMarkerRow").style.display = "none";
-    populateMarkerSelect();
-    document.getElementById("bloodFormTitle").textContent = "Nieuwe bloedwaarde";
+    document.getElementById("bloodNote").value = "";
+    resetBloodFields();
+    document.getElementById("ocrStatus").textContent = "Herkende waarden worden automatisch in de velden hieronder ingevuld.";
+    document.getElementById("bloodFormTitle").textContent = "+ Nieuwe bloeduitslag";
     bloodForm.querySelector("button.submit").textContent = "Opslaan";
     document.getElementById("bloodCancelEditBtn").style.display = "none";
+    toggleBloodForm(false);
   }
 
   bloodForm.addEventListener("submit", async (e) => {
@@ -1217,18 +1394,25 @@
     submitBtn.disabled = true;
 
     const date = document.getElementById("bloodDate").value;
-    const markerSelect = document.getElementById("bloodMarker").value;
-    const marker =
-      markerSelect === "__custom__"
-        ? document.getElementById("bloodCustomMarker").value.trim()
-        : markerSelect;
-    const value = parseFloat(document.getElementById("bloodValue").value);
-    const unit = document.getElementById("bloodUnit").value.trim() || null;
     const note = document.getElementById("bloodNote").value.trim() || null;
+    const rows = gatherBloodFormRows(date, note);
 
-    const { error } = editingBloodId
-      ? await supabaseClient.from("blood_values").update({ date, marker, value, unit, note }).eq("id", editingBloodId)
-      : await supabaseClient.from("blood_values").insert([{ date, marker, value, unit, note }]);
+    if (!rows.length) {
+      showError("Vul minstens één waarde in.");
+      submitBtn.disabled = false;
+      return;
+    }
+
+    if (editingBloodDate) {
+      const { error: delError } = await supabaseClient.from("blood_values").delete().eq("date", editingBloodDate);
+      if (delError) {
+        showError("Bijwerken mislukt: " + delError.message);
+        submitBtn.disabled = false;
+        return;
+      }
+    }
+
+    const { error } = await supabaseClient.from("blood_values").insert(rows);
 
     submitBtn.disabled = false;
 
@@ -1238,6 +1422,7 @@
     }
 
     cancelBloodEdit();
+    showSuccess("Bloeduitslag opgeslagen ✓");
     await loadBloodValues();
   });
 
@@ -1267,25 +1452,27 @@
       return;
     }
 
-    data.forEach((row) => {
-      const known = findMarker(row.marker);
-      const label = known ? `${known.label} (${known.code})` : row.marker;
+    const dates = [...new Set(data.map((r) => r.date))].sort((a, b) => (a < b ? 1 : -1));
+
+    dates.forEach((date) => {
+      const rows = data.filter((r) => r.date === date);
+      const labels = rows.map((r) => (findMarker(r.marker) || { code: r.marker }).code).join(", ");
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary">${escapeHtml(label)}: ${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
-          <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="primary">${formatDate(date)}<span style="color:var(--text-muted);font-weight:400;margin-left:6px;">${rows.length} waarde${rows.length === 1 ? "" : "n"}</span></span>
+          <span class="secondary">${escapeHtml(labels)}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
-        { label: "Verwijder", onClick: () => deleteBloodValue(row.id) },
-        { label: "Bewerk", className: "edit-action", onClick: () => editBloodValue(row) },
+        { label: "Verwijder", onClick: () => deleteBloodGroup(date) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editBloodGroup(date) },
       ]);
       bloodList.appendChild(li);
     });
   }
 
-  async function deleteBloodValue(id) {
-    const { error } = await supabaseClient.from("blood_values").delete().eq("id", id);
+  async function deleteBloodGroup(date) {
+    const { error } = await supabaseClient.from("blood_values").delete().eq("date", date);
     if (error) {
       showError("Verwijderen mislukt: " + error.message);
       return;
@@ -1439,8 +1626,6 @@
   }
 
   // --- Blood result photo/PDF upload (OCR) --------------------------------
-  let ocrCandidates = [];
-
   document.getElementById("bloodFileInput").addEventListener("change", handleBloodFileUpload);
 
   async function renderPdfToCanvas(file) {
@@ -1498,6 +1683,7 @@
 
     const statusEl = document.getElementById("ocrStatus");
     statusEl.textContent = "Bestand wordt geanalyseerd... dit kan een halve minuut duren.";
+    openBloodForm();
 
     try {
       const source = file.type === "application/pdf" ? await renderPdfToCanvas(file) : file;
@@ -1509,73 +1695,28 @@
         return;
       }
 
-      showOcrReview(candidates);
-      statusEl.textContent = `${candidates.length} waarde(n) herkend — controleer en pas aan waar nodig.`;
+      let needsExtended = false;
+      let filled = 0;
+      candidates.forEach((c) => {
+        const input = document.querySelector(`.marker-value-input[data-code="${c.code}"]`);
+        if (!input) return;
+        input.value = c.value;
+        input.classList.add("autofilled");
+        filled++;
+        const known = findMarker(c.code);
+        if (known && !known.key) needsExtended = true;
+      });
+      if (needsExtended) toggleExtendedMode(true);
+      if (!document.getElementById("bloodDate").value) {
+        document.getElementById("bloodDate").valueAsDate = new Date();
+      }
+
+      statusEl.textContent = `${filled} waarde(n) herkend en ingevuld — controleer hieronder en pas aan waar nodig.`;
     } catch (err) {
       statusEl.textContent = "Analyseren mislukt: " + err.message;
+    } finally {
+      e.target.value = "";
     }
-  }
-
-  function showOcrReview(candidates) {
-    ocrCandidates = candidates;
-    document.getElementById("ocrReview").style.display = "";
-    document.getElementById("ocrDate").valueAsDate = new Date();
-
-    const list = document.getElementById("ocrList");
-    list.innerHTML = "";
-
-    candidates.forEach((c, i) => {
-      const li = document.createElement("li");
-      li.className = "entry-item";
-      li.innerHTML = `
-        <div class="entry-row" style="gap:8px;">
-          <input type="checkbox" checked data-idx="${i}" class="ocr-check" style="width:20px;height:20px;flex-shrink:0;" />
-          <div class="entry-main" style="flex:1;min-width:0;">
-            <span class="primary">${escapeHtml(c.label)} (${c.code})</span>
-            <span class="secondary">Referentie: ${c.min} - ${c.max} ${c.unit}</span>
-          </div>
-          <input type="number" step="any" value="${c.value}" data-idx="${i}" class="ocr-value" style="width:80px;flex-shrink:0;" />
-        </div>
-      `;
-      list.appendChild(li);
-    });
-  }
-
-  async function saveOcrResults() {
-    const date = document.getElementById("ocrDate").value;
-    if (!date) {
-      showError("Kies een datum voor deze uitslag.");
-      return;
-    }
-
-    const rows = [];
-    document.querySelectorAll(".ocr-check").forEach((chk) => {
-      if (!chk.checked) return;
-      const idx = parseInt(chk.dataset.idx, 10);
-      const valueInput = document.querySelector(`.ocr-value[data-idx="${idx}"]`);
-      const c = ocrCandidates[idx];
-      rows.push({ date, marker: c.code, value: parseFloat(valueInput.value), unit: c.unit, note: "via foto/pdf" });
-    });
-
-    if (!rows.length) {
-      showError("Selecteer minstens één waarde.");
-      return;
-    }
-
-    const saveBtn = document.getElementById("ocrSaveBtn");
-    saveBtn.disabled = true;
-    const { error } = await supabaseClient.from("blood_values").insert(rows);
-    saveBtn.disabled = false;
-
-    if (error) {
-      showError("Opslaan mislukt: " + error.message);
-      return;
-    }
-
-    document.getElementById("ocrReview").style.display = "none";
-    document.getElementById("bloodFileInput").value = "";
-    document.getElementById("ocrStatus").textContent = `${rows.length} waarde(n) opgeslagen.`;
-    await loadBloodValues();
   }
 
   // --- Profile ---------------------------------------------------------
