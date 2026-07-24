@@ -207,7 +207,7 @@
     gap: 6px;
   }
 
-  .organ-badge-liver {
+  .watch-badge {
     background: #f59e0b;
     color: #1c1c1e;
     font-size: 0.65rem;
@@ -229,7 +229,7 @@
     border-bottom: 1px solid var(--border);
   }
 
-  .marker-field-row.marker-liver {
+  .marker-field-row.marker-watched {
     border-left-color: #f59e0b;
     background: rgba(245, 158, 11, 0.07);
     border-radius: 6px;
@@ -239,14 +239,36 @@
     border-bottom: none;
   }
 
-  .marker-field-row label {
+  .marker-label-row {
     grid-area: label;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .marker-label-row label {
     margin: 0;
     font-size: 0.82rem;
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    min-width: 0;
+  }
+
+  .watch-star {
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    font-size: 1.05rem;
+    line-height: 1;
+    color: var(--text-muted);
+    padding: 2px 4px;
+  }
+
+  .watch-star.active {
+    color: #f59e0b;
   }
 
   .marker-input-wrap {
@@ -561,6 +583,86 @@
     .status-banner.error { background: #3a1a16; color: #ff8f7a; }
     .status-banner.success { background: #123a24; color: #6ee7a0; }
   }
+
+  .detail-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 1000;
+  }
+
+  .detail-overlay.show {
+    display: flex;
+  }
+
+  .detail-sheet {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 640px;
+    max-height: 85vh;
+    overflow-y: auto;
+    border-radius: 20px 20px 0 0;
+    padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+  }
+
+  .detail-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    position: sticky;
+    top: 0;
+    background: var(--card-bg);
+  }
+
+  .detail-header h2 {
+    margin: 0;
+    font-size: 1.1rem;
+  }
+
+  .detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0 9px 8px;
+    border-left: 3px solid transparent;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-row:last-child {
+    border-bottom: none;
+  }
+
+  .detail-row.watched {
+    border-left-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.07);
+    border-radius: 6px;
+  }
+
+  .detail-row-label {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    font-size: 0.9rem;
+  }
+
+  .detail-ref {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+  }
+
+  .detail-value-pill {
+    flex-shrink: 0;
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -751,6 +853,17 @@
   </section>
 </main>
 
+<div class="detail-overlay" id="bloodDetailOverlay" onclick="if (event.target === this) closeBloodDetail();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2 id="bloodDetailDate"></h2>
+      <button type="button" class="today-btn" onclick="closeBloodDetail()">Sluiten</button>
+    </div>
+    <div id="bloodDetailBody"></div>
+    <button type="button" class="submit" id="bloodDetailEditBtn" style="width:100%;margin-top:14px;">Bewerken</button>
+  </div>
+</div>
+
 <script>
   // --- Supabase config -------------------------------------------------
   // Fill these in with your project's URL and public anon key
@@ -845,8 +958,11 @@
     });
   }
 
-  function createSwipeableListItem(innerHtml, actions) {
+  function createSwipeableListItem(innerHtml, actions, onTap) {
     // actions: array of { label, onClick, className }; first is rightmost.
+    // onTap (optional): fires on a plain tap (no real drag) when the row
+    // wasn't already swiped open — used for a "view details" row action
+    // distinct from the swipe-revealed Verwijder/Bewerk buttons.
     const actionsHtml = actions
       .map((a) => `<button class="delete-action ${a.className || ""}">${a.label}</button>`)
       .join("");
@@ -865,12 +981,14 @@
     let deltaX = 0;
     let dragging = false;
     let axisLocked = null;
+    let wasSwipedAtStart = false;
 
     row.addEventListener("pointerdown", (e) => {
       closeAllSwipes(row);
       startX = e.clientX;
       startY = e.clientY;
-      deltaX = row.classList.contains("swiped") ? -REVEAL : 0;
+      wasSwipedAtStart = row.classList.contains("swiped");
+      deltaX = wasSwipedAtStart ? -REVEAL : 0;
       dragging = true;
       axisLocked = null;
       row.style.transition = "none";
@@ -901,6 +1019,10 @@
       const revealed = deltaX < -REVEAL / 2;
       row.classList.toggle("swiped", revealed);
       row.style.transform = revealed ? `translateX(-${REVEAL}px)` : "";
+
+      if (axisLocked === null && !wasSwipedAtStart && onTap) {
+        onTap();
+      }
     }
 
     row.addEventListener("pointerup", endDrag);
@@ -1293,6 +1415,48 @@
     return [...markers].sort((a, b) => ORGAN_ORDER.indexOf(a.organ) - ORGAN_ORDER.indexOf(b.organ));
   }
 
+  // --- User-configurable "extra bewaken" markers ---------------------------
+  // Which markers get a highlighted star + amber accent is a personal
+  // preference (e.g. liver values after a history of jaundice), not a fixed
+  // property of the marker itself, so it's a per-device toggle rather than
+  // hardcoded to any organ group. Defaults to the liver panel as a sensible
+  // starting point, but every marker can be starred or unstarred freely.
+  const DEFAULT_WATCH_MARKERS = ["ALT", "ALKP", "GGT", "TBIL"];
+
+  function getWatchMarkers() {
+    try {
+      const raw = localStorage.getItem("watchMarkers");
+      return raw ? JSON.parse(raw) : [...DEFAULT_WATCH_MARKERS];
+    } catch {
+      return [...DEFAULT_WATCH_MARKERS];
+    }
+  }
+
+  function isWatchedMarker(code) {
+    return getWatchMarkers().includes(code);
+  }
+
+  function toggleWatchMarker(code) {
+    const list = getWatchMarkers();
+    const idx = list.indexOf(code);
+    if (idx >= 0) list.splice(idx, 1);
+    else list.push(code);
+    localStorage.setItem("watchMarkers", JSON.stringify(list));
+    applyWatchMarkerStyling();
+  }
+
+  function applyWatchMarkerStyling() {
+    document.querySelectorAll(".marker-field-row").forEach((rowEl) => {
+      const on = isWatchedMarker(rowEl.dataset.code);
+      rowEl.classList.toggle("marker-watched", on);
+      const star = rowEl.querySelector(".watch-star");
+      if (star) {
+        star.textContent = on ? "★" : "☆";
+        star.classList.toggle("active", on);
+      }
+    });
+  }
+
   // --- Blood value fields (fixed catalog fields, key vs. extended) --------
   function buildMarkerFieldsHtml(markers) {
     const sorted = sortByOrganOrder(markers);
@@ -1305,10 +1469,13 @@
             const hasRange = m.min != null && m.max != null;
             const title = hasRange ? `Referentie: ${m.min} - ${m.max} ${m.unit}` : "Geen referentie-interval bekend";
             const placeholder = hasRange ? `${m.min}–${m.max}` : "waarde";
-            const isLiver = organ === "Lever";
+            const watched = isWatchedMarker(m.code);
             return `
-          <div class="marker-field-row${isLiver ? " marker-liver" : ""}" data-code="${m.code}">
-            <label title="${title}">${escapeHtml(m.label)} (${m.code})</label>
+          <div class="marker-field-row${watched ? " marker-watched" : ""}" data-code="${m.code}">
+            <div class="marker-label-row">
+              <label title="${title}">${escapeHtml(m.label)} (${m.code})</label>
+              <button type="button" class="watch-star${watched ? " active" : ""}" data-code="${m.code}" title="Extra bewaken" onclick="toggleWatchMarker('${m.code}')">${watched ? "★" : "☆"}</button>
+            </div>
             <div class="marker-input-wrap">
               <input type="number" step="any" class="marker-value-input" data-code="${m.code}" placeholder="${placeholder}" />
             </div>
@@ -1317,16 +1484,33 @@
         `;
           })
           .join("");
-        const liverBadge = organ === "Lever" ? ' <span class="organ-badge-liver">let op</span>' : "";
-        return `<div class="marker-cat-label">${organ}${liverBadge}</div><div class="marker-fields">${rows}</div>`;
+        return `<div class="marker-cat-label">${organ}</div><div class="marker-fields">${rows}</div>`;
       })
       .join("");
+  }
+
+  // --- Live color-coding of entered values, same scale as the charts -------
+  function applyMarkerValueColor(input) {
+    const known = findMarker(input.dataset.code);
+    const val = input.value.trim();
+    if (!known || known.min == null || known.max == null || val === "" || isNaN(parseFloat(val))) {
+      input.style.borderColor = "";
+      input.style.background = "";
+      return;
+    }
+    const [r, g, b] = targetZoneColorAt(parseFloat(val), { min: known.min, max: known.max });
+    input.style.borderColor = `rgb(${r}, ${g}, ${b})`;
+    input.style.background = `rgba(${r}, ${g}, ${b}, 0.14)`;
   }
 
   function initMarkerFields() {
     document.getElementById("bloodFieldsKey").innerHTML = buildMarkerFieldsHtml(BLOOD_MARKERS.filter((m) => m.key));
     document.getElementById("bloodFieldsExtra").innerHTML = buildMarkerFieldsHtml(BLOOD_MARKERS.filter((m) => !m.key));
   }
+
+  document.getElementById("bloodForm").addEventListener("input", (e) => {
+    if (e.target.classList.contains("marker-value-input")) applyMarkerValueColor(e.target);
+  });
 
   let extendedOpen = false;
 
@@ -1355,6 +1539,8 @@
     document.querySelectorAll(".marker-value-input").forEach((inp) => {
       inp.value = "";
       inp.classList.remove("autofilled");
+      inp.style.borderColor = "";
+      inp.style.background = "";
     });
     document.getElementById("bloodCustomList").innerHTML = "";
     toggleExtendedMode(false);
@@ -1369,6 +1555,7 @@
         const input = document.querySelector(`.marker-value-input[data-code="${known.code}"]`);
         if (input) {
           input.value = row.value;
+          applyMarkerValueColor(input);
           if (!known.key) needsExtended = true;
           return;
         }
@@ -1522,10 +1709,14 @@
           <span class="secondary">${escapeHtml(labels)}</span>
         </div>
       `;
-      const li = createSwipeableListItem(innerHtml, [
-        { label: "Verwijder", onClick: () => deleteBloodGroup(date) },
-        { label: "Bewerk", className: "edit-action", onClick: () => editBloodGroup(date) },
-      ]);
+      const li = createSwipeableListItem(
+        innerHtml,
+        [
+          { label: "Verwijder", onClick: () => deleteBloodGroup(date) },
+          { label: "Bewerk", className: "edit-action", onClick: () => editBloodGroup(date) },
+        ],
+        () => openBloodDetail(date)
+      );
       bloodList.appendChild(li);
     });
   }
@@ -1537,6 +1728,69 @@
       return;
     }
     await loadBloodValues();
+  }
+
+  // --- Blood result detail overview (tap a result row) --------------------
+  function detailRowHtml(row, known) {
+    const hasRange = known && known.min != null && known.max != null;
+    let pillStyle = "background:var(--border);color:var(--text);";
+    if (hasRange) {
+      const [r, g, b] = targetZoneColorAt(row.value, { min: known.min, max: known.max });
+      pillStyle = `background:rgb(${r}, ${g}, ${b});color:#1c1c1e;`;
+    }
+    const code = known ? known.code : row.marker;
+    const watched = isWatchedMarker(code);
+    const label = known ? `${known.label} (${known.code})` : row.marker;
+    const refText = hasRange ? `<span class="detail-ref">ref. ${known.min}–${known.max} ${known.unit}</span>` : "";
+    return `
+      <div class="detail-row${watched ? " watched" : ""}">
+        <div class="detail-row-label">
+          <span>${escapeHtml(label)}${watched ? ' <span class="watch-badge">★</span>' : ""}</span>
+          ${refText}
+        </div>
+        <span class="detail-value-pill" style="${pillStyle}">${row.value}${row.unit ? " " + escapeHtml(row.unit) : ""}</span>
+      </div>
+    `;
+  }
+
+  function buildDetailRowsHtml(rows) {
+    const byCode = {};
+    rows.forEach((row) => {
+      byCode[row.marker] = row;
+    });
+
+    // Walk the catalog in its defined (organ, then clinical) order so rows
+    // appear consistently regardless of the order they were saved/queried in.
+    const usedOrgans = ORGAN_ORDER.filter((organ) => BLOOD_MARKERS.some((m) => m.organ === organ && byCode[m.code]));
+    let html = usedOrgans
+      .map((organ) => {
+        const rowsHtml = BLOOD_MARKERS.filter((m) => m.organ === organ && byCode[m.code])
+          .map((m) => detailRowHtml(byCode[m.code], m))
+          .join("");
+        return `<div class="marker-cat-label">${organ}</div>${rowsHtml}`;
+      })
+      .join("");
+
+    const customRows = rows.filter((r) => !findMarker(r.marker));
+    if (customRows.length) {
+      html += `<div class="marker-cat-label">Overig</div>${customRows.map((r) => detailRowHtml(r, null)).join("")}`;
+    }
+    return html;
+  }
+
+  function openBloodDetail(date) {
+    const rows = latestBloodData.filter((r) => r.date === date);
+    document.getElementById("bloodDetailDate").textContent = formatDate(date);
+    document.getElementById("bloodDetailBody").innerHTML = buildDetailRowsHtml(rows);
+    document.getElementById("bloodDetailEditBtn").onclick = () => {
+      closeBloodDetail();
+      editBloodGroup(date);
+    };
+    document.getElementById("bloodDetailOverlay").classList.add("show");
+  }
+
+  function closeBloodDetail() {
+    document.getElementById("bloodDetailOverlay").classList.remove("show");
   }
 
   // --- Blood chart -----------------------------------------------------
@@ -1775,6 +2029,7 @@
         if (!input) return;
         input.value = c.value;
         input.classList.add("autofilled");
+        applyMarkerValueColor(input);
         filled++;
         const known = findMarker(c.code);
         if (known && !known.key) needsExtended = true;
