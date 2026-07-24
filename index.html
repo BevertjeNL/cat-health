@@ -2350,8 +2350,20 @@
   // Shown once per calendar day (not on every tab switch/resume) so it's a
   // helpful nudge instead of a nag, per the "geen achtergrond-pushmeldingen,
   // wel een pop-up bij openen" decision.
+  function latestPerVaccine(data) {
+    const latest = {};
+    data.forEach((row) => {
+      const existing = latest[row.vaccine];
+      if (!existing || row.date > existing.date) latest[row.vaccine] = row;
+    });
+    return Object.values(latest);
+  }
+
   function maybeShowVaxReminder(data) {
-    const due = data
+    // Only the most recent shot per vaccine matters for "what needs action
+    // now" — an old entry that's since been renewed shouldn't trigger a
+    // false "verlopen" alert just because it's still sitting in the history.
+    const due = latestPerVaccine(data)
       .map((row) => ({ row, status: vaccinationStatus(row) }))
       .filter((x) => x.row.valid_until && x.status.daysLeft <= 30)
       .sort((a, b) => a.status.daysLeft - b.status.daysLeft);
