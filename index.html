@@ -202,6 +202,20 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     margin: 8px 0 -2px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .organ-badge-liver {
+    background: #f59e0b;
+    color: #1c1c1e;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: none;
+    letter-spacing: 0;
+    padding: 1px 7px;
+    border-radius: 999px;
   }
 
   .marker-field-row {
@@ -210,8 +224,15 @@
     grid-template-areas: "label label" "input unit";
     gap: 4px 8px;
     align-items: center;
-    padding: 4px 0;
+    padding: 4px 0 4px 8px;
+    border-left: 3px solid transparent;
     border-bottom: 1px solid var(--border);
+  }
+
+  .marker-field-row.marker-liver {
+    border-left-color: #f59e0b;
+    background: rgba(245, 158, 11, 0.07);
+    border-radius: 6px;
   }
 
   .marker-field-row:last-child {
@@ -1023,10 +1044,16 @@
     return GREEN;
   }
 
-  const targetZoneGradientPlugin = {
-    id: "targetZoneGradient",
+  // Generic version of the same effect, reusable for any chart with a
+  // reference range: reads options.plugins.zoneGradient = { range, lineDatasetIndex }
+  // and colors both the background wash and the given dataset's line to
+  // match the value at that height. Used by both the weight chart and the
+  // per-marker blood chart so switching the selected marker recolors the
+  // whole chart to that marker's own reference range.
+  const zoneGradientPlugin = {
+    id: "zoneGradient",
     beforeDatasetsDraw(chart) {
-      const opts = chart.options.plugins.targetZoneGradient;
+      const opts = chart.options.plugins.zoneGradient;
       if (!opts || !opts.range) return;
 
       const { ctx, chartArea, scales } = chart;
@@ -1057,8 +1084,9 @@
       ctx.fillRect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
       ctx.restore();
 
-      const weightDataset = chart.data.datasets[0];
-      if (weightDataset) weightDataset.borderColor = lineGradient;
+      const idx = opts.lineDatasetIndex ?? 0;
+      const targetDataset = chart.data.datasets[idx];
+      if (targetDataset) targetDataset.borderColor = lineGradient;
     },
   };
 
@@ -1092,7 +1120,7 @@
       weightChart.options.scales.x.max = xMax;
       weightChart.options.scales.y.min = yMin;
       weightChart.options.scales.y.max = yMax;
-      weightChart.options.plugins.targetZoneGradient = { range };
+      weightChart.options.plugins.zoneGradient = { range };
       weightChart.options.plugins.zoom.limits = zoomLimits;
       weightChart.resetZoom();
       weightChart.update();
@@ -1101,7 +1129,7 @@
 
     weightChart = new Chart(ctx, {
       type: "line",
-      plugins: [targetZoneGradientPlugin],
+      plugins: [zoneGradientPlugin],
       data: {
         datasets: [
           {
@@ -1148,7 +1176,7 @@
               label: (item) => item.parsed.y.toFixed(1) + " kg",
             },
           },
-          targetZoneGradient: { range },
+          zoneGradient: { range },
           zoom: {
             pan: { enabled: true, mode: "x" },
             zoom: {
@@ -1197,67 +1225,89 @@
   }
 
   // --- Blood values --------------------------------------------------------
-  // Reference ranges from Bailey's IDEXX ProCyte Dx / Catalyst One panel
-  // (20-12-2024). "key" markers are the ones shown in "Hoofdwaarden" mode;
-  // "Uitgebreid" shows the full catalog.
+  // Reference ranges are the standard adult-feline IDEXX intervals, cross-
+  // checked against 6 of Bailey's real lab reports (2020-2024) — the same
+  // codes and ranges recur across every report regardless of his age at the
+  // time, so no age/sex-tiering is applied here. "key" markers show in
+  // "Hoofdwaarden" mode; "Uitgebreid" shows the full catalog. "organ" groups
+  // markers by what they say something about, so related values (e.g. all
+  // liver markers) sit together instead of being scattered alphabetically.
+  const ORGAN_ORDER = [
+    "Rode bloedcellen",
+    "Witte bloedcellen",
+    "Bloedplaatjes",
+    "Lever",
+    "Nier",
+    "Eiwitten",
+    "Pancreas",
+    "Stofwisseling",
+    "Elektrolyten",
+  ];
+
   const BLOOD_MARKERS = [
-    { code: "RBC", label: "RBC (rode bloedcellen)", unit: "x10^12/L", min: 6.54, max: 12.2, key: true, cat: "Hematologie" },
-    { code: "HCT", label: "HCT (hematocriet)", unit: "%", min: 30.3, max: 52.3, key: true, cat: "Hematologie" },
-    { code: "HGB", label: "HGB (hemoglobine)", unit: "g/dL", min: 9.8, max: 16.2, key: true, cat: "Hematologie" },
-    { code: "MCV", label: "MCV", unit: "fL", min: 35.9, max: 53.1, key: false, cat: "Hematologie" },
-    { code: "MCH", label: "MCH", unit: "pg", min: 11.8, max: 17.3, key: false, cat: "Hematologie" },
-    { code: "MCHC", label: "MCHC", unit: "g/dL", min: 28.1, max: 35.8, key: false, cat: "Hematologie" },
-    { code: "RDW", label: "RDW", unit: "%", min: 15.0, max: 27.0, key: false, cat: "Hematologie" },
-    { code: "RETIC", label: "Reticulocyten", unit: "K/uL", min: 3.0, max: 50.0, key: false, cat: "Hematologie" },
-    { code: "RETIC-HGB", label: "Reticulocyten-Hgb", unit: "pg", min: 13.2, max: 20.8, key: false, cat: "Hematologie" },
-    { code: "WBC", label: "WBC (witte bloedcellen)", unit: "x10^9/L", min: 2.87, max: 17.02, key: true, cat: "Hematologie" },
-    { code: "NEU", label: "Neutrofielen", unit: "x10^9/L", min: 2.30, max: 10.29, key: true, cat: "Hematologie" },
-    { code: "LYM", label: "Lymfocyten", unit: "x10^9/L", min: 0.92, max: 6.88, key: true, cat: "Hematologie" },
-    { code: "MONO", label: "Monocyten", unit: "x10^9/L", min: 0.05, max: 0.67, key: false, cat: "Hematologie" },
-    { code: "EOS", label: "Eosinofielen", unit: "x10^9/L", min: 0.17, max: 1.57, key: false, cat: "Hematologie" },
-    { code: "BASO", label: "Basofielen", unit: "x10^9/L", min: 0.01, max: 0.26, key: false, cat: "Hematologie" },
-    { code: "PLT", label: "Trombocyten (PLT)", unit: "K/uL", min: 151, max: 600, key: true, cat: "Hematologie" },
-    { code: "MPV", label: "MPV", unit: "fL", min: 11.4, max: 21.6, key: false, cat: "Hematologie" },
-    { code: "PDW", label: "PDW", unit: "%", min: null, max: null, key: false, cat: "Hematologie" },
-    { code: "PCT", label: "PCT", unit: "%", min: 0.17, max: 0.86, key: false, cat: "Hematologie" },
-    { code: "GLU", label: "Glucose", unit: "mmol/L", min: 3.95, max: 8.84, key: true, cat: "Chemie" },
-    { code: "SDMA", label: "SDMA (nierfunctie)", unit: "μg/dL", min: 0, max: 14, key: true, cat: "Chemie" },
-    { code: "CREA", label: "Creatinine", unit: "umol/L", min: 71, max: 212, key: true, cat: "Chemie" },
-    { code: "UREA", label: "Ureum", unit: "mmol/L", min: 5.7, max: 12.9, key: true, cat: "Chemie" },
-    { code: "PHOS", label: "Fosfaat", unit: "mmol/L", min: 1.00, max: 2.42, key: true, cat: "Chemie" },
-    { code: "CA", label: "Calcium", unit: "mmol/L", min: 1.95, max: 2.83, key: false, cat: "Chemie" },
-    { code: "TP", label: "Totaal eiwit", unit: "g/L", min: 57, max: 89, key: true, cat: "Chemie" },
-    { code: "ALB", label: "Albumine", unit: "g/L", min: 23, max: 39, key: true, cat: "Chemie" },
-    { code: "GLOB", label: "Globuline", unit: "g/L", min: 28, max: 51, key: false, cat: "Chemie" },
-    { code: "ALT", label: "ALT (leverenzym)", unit: "U/L", min: 12, max: 130, key: true, cat: "Chemie" },
-    { code: "ALKP", label: "ALKP (leverenzym)", unit: "U/L", min: 14, max: 111, key: true, cat: "Chemie" },
-    { code: "GGT", label: "GGT (leverenzym)", unit: "U/L", min: 0, max: 4, key: false, cat: "Chemie" },
-    { code: "TBIL", label: "Bilirubine", unit: "umol/L", min: 0, max: 15, key: false, cat: "Chemie" },
-    { code: "CHOL", label: "Cholesterol", unit: "mmol/L", min: 1.68, max: 5.81, key: true, cat: "Chemie" },
-    { code: "AMYL", label: "Amylase", unit: "U/L", min: 500, max: 1500, key: false, cat: "Chemie" },
-    { code: "LIPA", label: "Lipase", unit: "U/L", min: 100, max: 1400, key: false, cat: "Chemie" },
-    { code: "Na", label: "Natrium", unit: "mmol/L", min: 150, max: 165, key: false, cat: "Chemie" },
-    { code: "K", label: "Kalium", unit: "mmol/L", min: 3.5, max: 5.8, key: false, cat: "Chemie" },
-    { code: "Cl", label: "Chloride", unit: "mmol/L", min: 112, max: 129, key: false, cat: "Chemie" },
+    { code: "RBC", label: "RBC (rode bloedcellen)", unit: "x10^12/L", min: 6.54, max: 12.2, key: true, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "HCT", label: "HCT (hematocriet)", unit: "%", min: 30.3, max: 52.3, key: true, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "HGB", label: "HGB (hemoglobine)", unit: "g/dL", min: 9.8, max: 16.2, key: true, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "MCV", label: "MCV", unit: "fL", min: 35.9, max: 53.1, key: false, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "MCH", label: "MCH", unit: "pg", min: 11.8, max: 17.3, key: false, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "MCHC", label: "MCHC", unit: "g/dL", min: 28.1, max: 35.8, key: false, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "RDW", label: "RDW", unit: "%", min: 15.0, max: 27.0, key: false, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "RETIC", label: "Reticulocyten", unit: "K/uL", min: 3.0, max: 50.0, key: false, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "RETIC-HGB", label: "Reticulocyten-Hgb", unit: "pg", min: 13.2, max: 20.8, key: false, cat: "Hematologie", organ: "Rode bloedcellen" },
+    { code: "WBC", label: "WBC (witte bloedcellen)", unit: "x10^9/L", min: 2.87, max: 17.02, key: true, cat: "Hematologie", organ: "Witte bloedcellen" },
+    { code: "NEU", label: "Neutrofielen", unit: "x10^9/L", min: 2.30, max: 10.29, key: true, cat: "Hematologie", organ: "Witte bloedcellen" },
+    { code: "LYM", label: "Lymfocyten", unit: "x10^9/L", min: 0.92, max: 6.88, key: true, cat: "Hematologie", organ: "Witte bloedcellen" },
+    { code: "MONO", label: "Monocyten", unit: "x10^9/L", min: 0.05, max: 0.67, key: false, cat: "Hematologie", organ: "Witte bloedcellen" },
+    { code: "EOS", label: "Eosinofielen", unit: "x10^9/L", min: 0.17, max: 1.57, key: false, cat: "Hematologie", organ: "Witte bloedcellen" },
+    { code: "BASO", label: "Basofielen", unit: "x10^9/L", min: 0.01, max: 0.26, key: false, cat: "Hematologie", organ: "Witte bloedcellen" },
+    { code: "PLT", label: "Trombocyten (PLT)", unit: "K/uL", min: 151, max: 600, key: true, cat: "Hematologie", organ: "Bloedplaatjes" },
+    { code: "MPV", label: "MPV", unit: "fL", min: 11.4, max: 21.6, key: false, cat: "Hematologie", organ: "Bloedplaatjes" },
+    { code: "PDW", label: "PDW", unit: "%", min: null, max: null, key: false, cat: "Hematologie", organ: "Bloedplaatjes" },
+    { code: "PCT", label: "PCT", unit: "%", min: 0.17, max: 0.86, key: false, cat: "Hematologie", organ: "Bloedplaatjes" },
+    { code: "ALT", label: "ALT (leverenzym)", unit: "U/L", min: 12, max: 130, key: true, cat: "Chemie", organ: "Lever" },
+    { code: "ALKP", label: "ALKP (leverenzym)", unit: "U/L", min: 14, max: 111, key: true, cat: "Chemie", organ: "Lever" },
+    { code: "GGT", label: "GGT (leverenzym)", unit: "U/L", min: 0, max: 4, key: true, cat: "Chemie", organ: "Lever" },
+    { code: "TBIL", label: "Bilirubine", unit: "umol/L", min: 0, max: 15, key: true, cat: "Chemie", organ: "Lever" },
+    { code: "SDMA", label: "SDMA (nierfunctie)", unit: "μg/dL", min: 0, max: 14, key: true, cat: "Chemie", organ: "Nier" },
+    { code: "CREA", label: "Creatinine", unit: "umol/L", min: 71, max: 212, key: true, cat: "Chemie", organ: "Nier" },
+    { code: "UREA", label: "Ureum", unit: "mmol/L", min: 5.7, max: 12.9, key: true, cat: "Chemie", organ: "Nier" },
+    { code: "PHOS", label: "Fosfaat", unit: "mmol/L", min: 1.00, max: 2.42, key: true, cat: "Chemie", organ: "Nier" },
+    { code: "CA", label: "Calcium", unit: "mmol/L", min: 1.95, max: 2.83, key: false, cat: "Chemie", organ: "Nier" },
+    { code: "TP", label: "Totaal eiwit", unit: "g/L", min: 57, max: 89, key: true, cat: "Chemie", organ: "Eiwitten" },
+    { code: "ALB", label: "Albumine", unit: "g/L", min: 23, max: 39, key: true, cat: "Chemie", organ: "Eiwitten" },
+    { code: "GLOB", label: "Globuline", unit: "g/L", min: 28, max: 51, key: false, cat: "Chemie", organ: "Eiwitten" },
+    { code: "AMYL", label: "Amylase", unit: "U/L", min: 500, max: 1500, key: false, cat: "Chemie", organ: "Pancreas" },
+    { code: "LIPA", label: "Lipase", unit: "U/L", min: 100, max: 1400, key: false, cat: "Chemie", organ: "Pancreas" },
+    { code: "GLU", label: "Glucose", unit: "mmol/L", min: 3.95, max: 8.84, key: true, cat: "Chemie", organ: "Stofwisseling" },
+    { code: "CHOL", label: "Cholesterol", unit: "mmol/L", min: 1.68, max: 5.81, key: true, cat: "Chemie", organ: "Stofwisseling" },
+    { code: "Na", label: "Natrium", unit: "mmol/L", min: 150, max: 165, key: false, cat: "Chemie", organ: "Elektrolyten" },
+    { code: "K", label: "Kalium", unit: "mmol/L", min: 3.5, max: 5.8, key: false, cat: "Chemie", organ: "Elektrolyten" },
+    { code: "Cl", label: "Chloride", unit: "mmol/L", min: 112, max: 129, key: false, cat: "Chemie", organ: "Elektrolyten" },
   ];
 
   function findMarker(code) {
     return BLOOD_MARKERS.find((m) => m.code.toLowerCase() === String(code).toLowerCase());
   }
 
+  function sortByOrganOrder(markers) {
+    return [...markers].sort((a, b) => ORGAN_ORDER.indexOf(a.organ) - ORGAN_ORDER.indexOf(b.organ));
+  }
+
   // --- Blood value fields (fixed catalog fields, key vs. extended) --------
   function buildMarkerFieldsHtml(markers) {
-    const cats = [...new Set(markers.map((m) => m.cat))];
-    return cats
-      .map((cat) => {
-        const rows = markers
-          .filter((m) => m.cat === cat)
+    const sorted = sortByOrganOrder(markers);
+    const organs = [...new Set(sorted.map((m) => m.organ))];
+    return organs
+      .map((organ) => {
+        const rows = sorted
+          .filter((m) => m.organ === organ)
           .map((m) => {
             const hasRange = m.min != null && m.max != null;
             const title = hasRange ? `Referentie: ${m.min} - ${m.max} ${m.unit}` : "Geen referentie-interval bekend";
             const placeholder = hasRange ? `${m.min}–${m.max}` : "waarde";
+            const isLiver = organ === "Lever";
             return `
-          <div class="marker-field-row" data-code="${m.code}">
+          <div class="marker-field-row${isLiver ? " marker-liver" : ""}" data-code="${m.code}">
             <label title="${title}">${escapeHtml(m.label)} (${m.code})</label>
             <div class="marker-input-wrap">
               <input type="number" step="any" class="marker-value-input" data-code="${m.code}" placeholder="${placeholder}" />
@@ -1267,7 +1317,8 @@
         `;
           })
           .join("");
-        return `<div class="marker-cat-label">${cat}</div><div class="marker-fields">${rows}</div>`;
+        const liverBadge = organ === "Lever" ? ' <span class="organ-badge-liver">let op</span>' : "";
+        return `<div class="marker-cat-label">${organ}${liverBadge}</div><div class="marker-fields">${rows}</div>`;
       })
       .join("");
   }
@@ -1494,27 +1545,59 @@
   function populateBloodChartMarkerSelect(data) {
     const select = document.getElementById("bloodChartMarker");
     const prev = select.value;
-    const distinctMarkers = [...new Set(data.map((r) => r.marker))].sort();
+    const distinctCodes = new Set(data.map((r) => r.marker));
+
+    // Known markers grouped by organ (liver first among used organs isn't
+    // forced — ORGAN_ORDER already puts it right after hematology); unknown
+    // custom markers get their own group at the end.
+    const knownUsed = sortByOrganOrder(BLOOD_MARKERS.filter((m) => distinctCodes.has(m.code)));
+    const customUsed = [...distinctCodes].filter((code) => !findMarker(code)).sort();
 
     select.innerHTML = "";
-    distinctMarkers.forEach((code) => {
-      const known = findMarker(code);
-      const opt = document.createElement("option");
-      opt.value = code;
-      opt.textContent = known ? `${known.label} (${known.code})` : code;
-      select.appendChild(opt);
+    const organs = [...new Set(knownUsed.map((m) => m.organ))];
+    organs.forEach((organ) => {
+      const group = document.createElement("optgroup");
+      group.label = organ === "Lever" ? "🔶 Lever" : organ;
+      knownUsed
+        .filter((m) => m.organ === organ)
+        .forEach((m) => {
+          const opt = document.createElement("option");
+          opt.value = m.code;
+          opt.textContent = `${m.label} (${m.code})`;
+          group.appendChild(opt);
+        });
+      select.appendChild(group);
     });
 
-    if (distinctMarkers.length === 0) {
+    if (customUsed.length) {
+      const group = document.createElement("optgroup");
+      group.label = "Overig";
+      customUsed.forEach((code) => {
+        const opt = document.createElement("option");
+        opt.value = code;
+        opt.textContent = code;
+        group.appendChild(opt);
+      });
+      select.appendChild(group);
+    }
+
+    const allCodes = [...knownUsed.map((m) => m.code), ...customUsed];
+    if (allCodes.length === 0) {
       renderBloodChart(null);
       return;
     }
 
-    select.value = distinctMarkers.includes(prev) ? prev : distinctMarkers[0];
+    select.value = allCodes.includes(prev) ? prev : allCodes[0];
     renderBloodChart(select.value);
   }
 
   document.getElementById("bloodChartMarker").addEventListener("change", (e) => renderBloodChart(e.target.value));
+
+  function addDaysToDateStr(dateStr, days) {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    return dateToISO(d);
+  }
 
   function renderBloodChart(marker) {
     const canvas = document.getElementById("bloodChart");
@@ -1539,69 +1622,50 @@
 
     const known = findMarker(marker);
     const hasRange = known && known.min != null && known.max != null;
+    const range = hasRange ? { min: known.min, max: known.max } : null;
     const points = rows.map((r) => ({ x: r.date, y: r.value }));
     const values = rows.map((r) => r.value);
-    const dataMin = Math.min(...values, hasRange ? known.min : Infinity);
-    const dataMax = Math.max(...values, hasRange ? known.max : -Infinity);
-    const pad = Math.max((dataMax - dataMin) * 0.15, dataMax * 0.05, 0.1);
+    const dataMin = Math.min(...values, hasRange ? range.min : Infinity);
+    const dataMax = Math.max(...values, hasRange ? range.max : -Infinity);
+    const pad = Math.max((dataMax - dataMin) * 0.2, dataMax * 0.05, 0.1);
     const yMin = dataMin - pad;
     const yMax = dataMax + pad;
 
-    const bandDates = [rows[0].date, rows[rows.length - 1].date];
-    const bandTop = hasRange ? bandDates.map((d) => ({ x: d, y: known.max })) : [];
-    const bandBottom = hasRange ? bandDates.map((d) => ({ x: d, y: known.min })) : [];
+    // A single data point collapses the time axis to one instant, which
+    // makes Chart.js fall back to a sub-second tick format. Pad the x-range
+    // artificially in that case so it renders as a sensible day scale.
+    const xMin = rows.length === 1 ? addDaysToDateStr(rows[0].date, -3) : rows[0].date;
+    const xMax = rows.length === 1 ? addDaysToDateStr(rows[0].date, 3) : rows[rows.length - 1].date;
 
     const pointColors = rows.map((r) => {
       if (!hasRange) return "#8b5cf6";
-      if (r.value > known.max) return "#ff3b30";
-      if (r.value < known.min) return "#ff9500";
-      return "#34c759";
+      const [pr, pg, pb] = targetZoneColorAt(r.value, range);
+      return `rgb(${pr}, ${pg}, ${pb})`;
     });
 
     if (bloodChart) bloodChart.destroy();
 
     bloodChart = new Chart(canvas, {
       type: "line",
+      plugins: [zoneGradientPlugin],
       data: {
-        datasets: hasRange
-          ? [
-              { label: "max", data: bandTop, borderWidth: 0, pointRadius: 0, fill: false, order: 3 },
-              {
-                label: "Referentie",
-                data: bandBottom,
-                borderWidth: 0,
-                pointRadius: 0,
-                fill: "-1",
-                backgroundColor: "rgba(52, 199, 89, 0.12)",
-                order: 3,
-              },
-              {
-                label: known.label,
-                data: points,
-                borderColor: "#8b5cf6",
-                borderWidth: 3,
-                tension: 0.3,
-                fill: false,
-                pointRadius: 4,
-                pointBackgroundColor: pointColors,
-                pointBorderColor: "#ffffff",
-                pointBorderWidth: 1.5,
-                order: 1,
-              },
-            ]
-          : [
-              {
-                label: marker,
-                data: points,
-                borderColor: "#8b5cf6",
-                borderWidth: 3,
-                tension: 0.3,
-                fill: false,
-                pointRadius: 4,
-                pointBackgroundColor: "#8b5cf6",
-                order: 1,
-              },
-            ],
+        datasets: [
+          {
+            label: known ? known.label : marker,
+            data: points,
+            borderColor: hasRange ? "#34c759" : "#8b5cf6",
+            backgroundColor: "transparent",
+            borderWidth: 3,
+            tension: 0.3,
+            fill: false,
+            pointRadius: 4,
+            pointBackgroundColor: pointColors,
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 1.5,
+            pointHoverRadius: 6,
+            clip: 8,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -1612,8 +1676,8 @@
             type: "time",
             time: { tooltipFormat: "dd-MM-yyyy" },
             grid: { display: false },
-            min: rows[0].date,
-            max: rows[rows.length - 1].date,
+            min: xMin,
+            max: xMax,
           },
           y: {
             title: { display: true, text: known ? known.unit : "" },
@@ -1624,11 +1688,11 @@
         plugins: {
           legend: { display: false },
           tooltip: {
-            filter: (item) => item.dataset.label === (known ? known.label : marker),
             callbacks: {
               label: (item) => item.parsed.y + (known ? " " + known.unit : ""),
             },
           },
+          zoneGradient: hasRange ? { range, lineDatasetIndex: 0 } : undefined,
         },
       },
     });
