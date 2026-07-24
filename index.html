@@ -98,7 +98,8 @@
   }
 
   nav.tabs {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     padding: 8px 16px 16px;
     max-width: 640px;
@@ -106,15 +107,18 @@
   }
 
   nav.tabs button {
-    flex: 1;
-    padding: 10px 12px;
+    min-width: 0;
+    padding: 10px 8px;
     border-radius: 10px;
     border: none;
     background: var(--card-bg);
     color: var(--text-muted);
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 600;
     border: 1px solid var(--border);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   nav.tabs button.active {
@@ -124,7 +128,6 @@
   }
 
   nav.tabs button.tab-profile {
-    flex: 0.85;
     border-style: dashed;
   }
 
@@ -700,6 +703,7 @@
 <nav class="tabs">
   <button id="tabBtnWeight" class="active" onclick="switchTab('weight')">Gewicht</button>
   <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
+  <button id="tabBtnVax" onclick="switchTab('vax')">Vaccinaties</button>
   <button id="tabBtnProfile" class="tab-profile" onclick="switchTab('profile')">🐾 Profiel</button>
 </nav>
 
@@ -811,6 +815,57 @@
     </div>
   </section>
 
+  <section id="tabVax" class="tab-panel">
+    <div class="card">
+      <div class="collapsible-header" id="vaxFormHeader" onclick="toggleVaxForm()">
+        <h2 id="vaxFormTitle">+ Nieuwe vaccinatie</h2>
+        <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      </div>
+      <div class="collapsible-body" id="vaxFormBody" style="display:none;">
+        <form class="entry-form" id="vaxForm">
+          <div>
+            <label for="vaxName">Vaccin</label>
+            <input type="text" id="vaxName" list="vaxSuggestions" placeholder="bijv. Tricat" required />
+            <datalist id="vaxSuggestions">
+              <option value="Tricat (RCP)"></option>
+              <option value="Rabiës"></option>
+              <option value="FeLV (leukemie)"></option>
+              <option value="Chlamydia"></option>
+            </datalist>
+          </div>
+          <div>
+            <label for="vaxDate">Datum gegeven</label>
+            <div class="date-field">
+              <input type="date" id="vaxDate" required />
+              <button type="button" class="today-btn" data-target="vaxDate">Vandaag</button>
+            </div>
+          </div>
+          <div>
+            <label for="vaxValidUntil">Geldig tot</label>
+            <div class="date-field">
+              <input type="date" id="vaxValidUntil" />
+              <button type="button" class="today-btn" onclick="setVaxValidUntil(1)">+1 jaar</button>
+              <button type="button" class="today-btn" onclick="setVaxValidUntil(3)">+3 jaar</button>
+            </div>
+            <p class="hint-text" style="margin-top:6px;">Vul zelf in, of gebruik een snelknop om automatisch te berekenen vanaf de datum hierboven.</p>
+          </div>
+          <div>
+            <label for="vaxNote">Notitie (optioneel)</label>
+            <input type="text" id="vaxNote" placeholder="bijv. bij Caressa Delft" />
+          </div>
+          <button class="submit" type="submit">Opslaan</button>
+          <button type="button" class="today-btn" id="vaxCancelEditBtn" style="display:none;" onclick="cancelVaxEdit()">Bewerken annuleren</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Overzicht</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <ul class="entry-list" id="vaxList"></ul>
+    </div>
+  </section>
+
   <section id="tabProfile" class="tab-panel">
     <div class="card">
       <h2>🐾 Vertel over je kat</h2>
@@ -887,6 +942,17 @@
   </div>
 </div>
 
+<div class="detail-overlay" id="vaxReminderOverlay" onclick="if (event.target === this) closeVaxReminder();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2>💉 Vaccinatie-herinnering</h2>
+      <button type="button" class="today-btn" onclick="closeVaxReminder()">Sluiten</button>
+    </div>
+    <div id="vaxReminderBody"></div>
+    <button type="button" class="submit" style="width:100%;margin-top:14px;" onclick="closeVaxReminder()">Begrepen</button>
+  </div>
+</div>
+
 <script>
   // --- Supabase config -------------------------------------------------
   // Fill these in with your project's URL and public anon key
@@ -905,9 +971,11 @@
   function switchTab(tab) {
     document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
+    document.getElementById("tabVax").classList.toggle("active", tab === "vax");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
+    document.getElementById("tabBtnVax").classList.toggle("active", tab === "vax");
     document.getElementById("tabBtnProfile").classList.toggle("active", tab === "profile");
   }
 
@@ -936,6 +1004,7 @@
   }
 
   document.querySelectorAll(".today-btn").forEach((btn) => {
+    if (!btn.dataset.target) return;
     btn.addEventListener("click", () => {
       document.getElementById(btn.dataset.target).valueAsDate = new Date();
     });
@@ -2125,6 +2194,201 @@
     }
   }
 
+  // --- Vaccinations ----------------------------------------------------
+  const vaxForm = document.getElementById("vaxForm");
+  const vaxList = document.getElementById("vaxList");
+  let editingVaxId = null;
+  let latestVaxData = [];
+
+  document.getElementById("vaxDate").valueAsDate = new Date();
+
+  function toggleVaxForm(forceOpen) {
+    const header = document.getElementById("vaxFormHeader");
+    const body = document.getElementById("vaxFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingVaxId) {
+      document.getElementById("vaxFormTitle").textContent = open ? "Nieuwe vaccinatie" : "+ Nieuwe vaccinatie";
+    }
+  }
+
+  function openVaxForm() {
+    toggleVaxForm(true);
+  }
+
+  function setVaxValidUntil(years) {
+    const dateInput = document.getElementById("vaxDate");
+    const base = dateInput.value ? new Date(dateInput.value) : new Date();
+    base.setFullYear(base.getFullYear() + years);
+    document.getElementById("vaxValidUntil").value = dateToISO(base);
+  }
+
+  // Discrete traffic-light status rather than the weight/blood continuous
+  // gradient — expiry is inherently a threshold thing (fine / soon / overdue),
+  // not a value sitting somewhere on a smooth scale.
+  function vaccinationStatus(v) {
+    if (!v.valid_until) return { color: "var(--text-muted)", daysLeft: null };
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const validUntil = new Date(v.valid_until);
+    const daysLeft = Math.round((validUntil - today) / 86400000);
+    if (daysLeft < 0) return { color: "#ff3b30", daysLeft };
+    if (daysLeft <= 30) return { color: "#ff9500", daysLeft };
+    return { color: "#34c759", daysLeft };
+  }
+
+  function editVax(row) {
+    editingVaxId = row.id;
+    document.getElementById("vaxName").value = row.vaccine;
+    document.getElementById("vaxDate").value = row.date;
+    document.getElementById("vaxValidUntil").value = row.valid_until || "";
+    document.getElementById("vaxNote").value = row.note || "";
+    document.getElementById("vaxFormTitle").textContent = "Vaccinatie bewerken";
+    vaxForm.querySelector("button.submit").textContent = "Bijwerken";
+    document.getElementById("vaxCancelEditBtn").style.display = "";
+    openVaxForm();
+    switchTab("vax");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelVaxEdit() {
+    editingVaxId = null;
+    vaxForm.reset();
+    document.getElementById("vaxDate").valueAsDate = new Date();
+    document.getElementById("vaxFormTitle").textContent = "+ Nieuwe vaccinatie";
+    vaxForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("vaxCancelEditBtn").style.display = "none";
+    toggleVaxForm(false);
+  }
+
+  vaxForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = vaxForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const vaccine = document.getElementById("vaxName").value.trim();
+    const date = document.getElementById("vaxDate").value;
+    const valid_until = document.getElementById("vaxValidUntil").value || null;
+    const note = document.getElementById("vaxNote").value.trim() || null;
+
+    const { error } = editingVaxId
+      ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, note }).eq("id", editingVaxId)
+      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, note }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    cancelVaxEdit();
+    showSuccess("Vaccinatie opgeslagen ✓");
+    await loadVaccinations();
+  });
+
+  async function loadVaccinations() {
+    if (!isConfigured) return;
+
+    const { data, error } = await supabaseClient
+      .from("vaccinations")
+      .select("*")
+      .order("date", { ascending: false });
+
+    if (error) {
+      showError("Laden mislukt: " + error.message);
+      return;
+    }
+
+    latestVaxData = data;
+    renderVaxList(data);
+    maybeShowVaxReminder(data);
+  }
+
+  function renderVaxList(data) {
+    vaxList.innerHTML = "";
+
+    if (data.length === 0) {
+      vaxList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen vaccinaties</li>';
+      return;
+    }
+
+    data.forEach((row) => {
+      const status = vaccinationStatus(row);
+      const validText = row.valid_until
+        ? status.daysLeft < 0
+          ? `Verlopen sinds ${formatDate(row.valid_until)}`
+          : `Geldig tot ${formatDate(row.valid_until)}`
+        : "Geen vervaldatum";
+      const innerHtml = `
+        <div class="entry-main">
+          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}</span>
+          <span class="secondary">${formatDate(row.date)} · ${validText}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+        </div>
+      `;
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteVax(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editVax(row) },
+      ]);
+      vaxList.appendChild(li);
+    });
+  }
+
+  async function deleteVax(id) {
+    const { error } = await supabaseClient.from("vaccinations").delete().eq("id", id);
+    if (error) {
+      showError("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    await loadVaccinations();
+  }
+
+  // --- Vaccination expiry reminder popup ------------------------------------
+  // Shown once per calendar day (not on every tab switch/resume) so it's a
+  // helpful nudge instead of a nag, per the "geen achtergrond-pushmeldingen,
+  // wel een pop-up bij openen" decision.
+  function maybeShowVaxReminder(data) {
+    const due = data
+      .map((row) => ({ row, status: vaccinationStatus(row) }))
+      .filter((x) => x.row.valid_until && x.status.daysLeft <= 30)
+      .sort((a, b) => a.status.daysLeft - b.status.daysLeft);
+
+    if (!due.length) return;
+
+    const today = dateToISO(new Date());
+    if (localStorage.getItem("vaxReminderShownDate") === today) return;
+
+    const body = due
+      .map(({ row, status }) => {
+        const text =
+          status.daysLeft < 0
+            ? `Verlopen sinds ${formatDate(row.valid_until)}`
+            : status.daysLeft === 0
+            ? "Verloopt vandaag"
+            : `Verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"} (${formatDate(row.valid_until)})`;
+        return `
+          <div class="detail-row">
+            <div class="detail-row-label">
+              <span><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}</span>
+              <span class="detail-ref">${text}</span>
+            </div>
+          </div>
+        `;
+      })
+      .join("");
+
+    document.getElementById("vaxReminderBody").innerHTML = body;
+    document.getElementById("vaxReminderOverlay").classList.add("show");
+    localStorage.setItem("vaxReminderShownDate", today);
+  }
+
+  function closeVaxReminder() {
+    document.getElementById("vaxReminderOverlay").classList.remove("show");
+  }
+
   // --- Profile ---------------------------------------------------------
   const profileForm = document.getElementById("profileForm");
 
@@ -2215,7 +2479,7 @@
     const btn = document.getElementById("refreshBtn");
     if (manual && btn) btn.classList.add("spinning");
 
-    await Promise.all([loadWeights(), loadBloodValues(), loadProfile()]);
+    await Promise.all([loadWeights(), loadBloodValues(), loadVaccinations(), loadProfile()]);
 
     if (manual && btn) setTimeout(() => btn.classList.remove("spinning"), 600);
     refreshing = false;
@@ -2232,6 +2496,7 @@
   // --- Init ------------------------------------------------------------
   loadWeights();
   loadBloodValues();
+  loadVaccinations();
   loadProfile();
 
   if ("serviceWorker" in navigator) {
