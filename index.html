@@ -689,12 +689,126 @@
     font-size: 1.2rem;
     padding: 2px 2px 2px 6px;
   }
+
+  /* --- Auth screen --- */
+  #authScreen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+  }
+
+  #authScreen .card {
+    width: 100%;
+    max-width: 380px;
+  }
+
+  #authScreen h1 {
+    font-size: 1.3rem;
+    text-align: center;
+    margin: 0 0 4px;
+  }
+
+  #authScreen .hint-text {
+    text-align: center;
+    margin: 0 0 16px;
+  }
+
+  .auth-switch-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 10px;
+    width: 100%;
+    text-align: center;
+  }
+
+  .auth-error {
+    color: var(--danger);
+    font-size: 0.88rem;
+    text-align: center;
+    margin: 0;
+  }
+
+  /* --- Pet switcher --- */
+  .pet-switch-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text);
+    padding: 4px 8px;
+    margin: 0 auto;
+  }
+
+  .pet-switch-btn .caret {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  .pet-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 8px;
+    border: none;
+    background: none;
+    border-bottom: 1px solid var(--border);
+    font-size: 1rem;
+    color: var(--text);
+    text-align: left;
+  }
+
+  .pet-menu-item:last-child {
+    border-bottom: none;
+  }
+
+  .pet-menu-item.active {
+    color: var(--accent);
+    font-weight: 700;
+  }
+
+  .pet-menu-item.danger {
+    color: var(--danger);
+  }
 </style>
 </head>
 <body>
 
+<div id="authScreen" style="display:none;">
+  <div class="card">
+    <h1>🐾 Huisdiergezondheid</h1>
+    <p class="hint-text" id="authSubtitle">Log in om verder te gaan.</p>
+    <form class="entry-form" id="loginForm">
+      <div>
+        <label for="authEmail">E-mailadres</label>
+        <input type="email" id="authEmail" autocomplete="email" required />
+      </div>
+      <div>
+        <label for="authPassword">Wachtwoord</label>
+        <input type="password" id="authPassword" autocomplete="current-password" required />
+      </div>
+      <p class="auth-error" id="authError" style="display:none;"></p>
+      <button class="submit" type="submit" id="authSubmitBtn">Inloggen</button>
+    </form>
+    <button type="button" class="auth-switch-link" id="authSwitchBtn" onclick="toggleAuthMode()">Nog geen account? Registreren</button>
+  </div>
+</div>
+
+<div id="appContent" style="display:none;">
+
 <header>
-  <h1 id="appTitle">🐱 Kattengezondheid</h1>
+  <button type="button" class="pet-switch-btn" id="petSwitchBtn" onclick="openPetMenu()">
+    <span id="appTitle">🐾 Huisdier</span>
+    <span class="caret">▾</span>
+  </button>
   <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">⟳</button>
 </header>
 
@@ -868,14 +982,28 @@
 
   <section id="tabProfile" class="tab-panel">
     <div class="card">
-      <h2>🐾 Vertel over je kat</h2>
+      <h2>🐾 Vertel over je huisdier</h2>
       <p class="hint-text" style="margin-bottom:12px;">
         Hoe meer we van je huisgenoot weten, hoe beter we het ideale gewicht kunnen inschatten.
       </p>
       <form class="entry-form" id="profileForm">
-        <div>
-          <label for="catName">Naam</label>
-          <input type="text" id="catName" placeholder="bijv. Bailey" />
+        <div class="row">
+          <div>
+            <label for="catName">Naam</label>
+            <input type="text" id="catName" placeholder="bijv. Bailey" required />
+          </div>
+          <div>
+            <label for="catSpecies">Diersoort</label>
+            <select id="catSpecies" onchange="onProfileSpeciesChange()">
+              <option value="kat">🐱 Kat</option>
+              <option value="hond">🐶 Hond</option>
+              <option value="overig">🐾 Overig</option>
+            </select>
+          </div>
+        </div>
+        <div id="catBreedRow" style="display:none;">
+          <label for="catBreed">Ras (optioneel)</label>
+          <input type="text" id="catBreed" placeholder="bijv. Labrador Retriever" />
         </div>
         <div class="row">
           <div>
@@ -920,7 +1048,7 @@
             <input type="number" id="catTargetMax" inputmode="decimal" step="0.1" placeholder="auto" />
           </div>
         </div>
-        <p class="hint-text">
+        <p class="hint-text" id="targetWeightHint">
           Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en energieniveau.
           Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor
           advies van je dierenarts.
@@ -928,8 +1056,51 @@
         <button class="submit" type="submit">Profiel opslaan</button>
       </form>
     </div>
+
+    <div class="card">
+      <h2>Account</h2>
+      <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
+      <button type="button" class="today-btn" style="width:100%;" onclick="logout()">Uitloggen</button>
+    </div>
   </section>
 </main>
+
+</div>
+
+<div class="detail-overlay" id="petMenuOverlay" onclick="if (event.target === this) closePetMenu();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2>Huisdieren</h2>
+      <button type="button" class="today-btn" onclick="closePetMenu()">Sluiten</button>
+    </div>
+    <div id="petMenuList"></div>
+    <button type="button" class="pet-menu-item" style="justify-content:center;color:var(--accent);font-weight:700;" onclick="openAddPetForm()">+ Nieuw huisdier toevoegen</button>
+  </div>
+</div>
+
+<div class="detail-overlay" id="addPetOverlay" onclick="if (event.target === this) closeAddPetForm();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2>Nieuw huisdier</h2>
+      <button type="button" class="today-btn" onclick="closeAddPetForm()">Annuleren</button>
+    </div>
+    <form class="entry-form" id="addPetForm">
+      <div>
+        <label for="newPetName">Naam</label>
+        <input type="text" id="newPetName" placeholder="bijv. Bailey" required />
+      </div>
+      <div>
+        <label for="newPetSpecies">Diersoort</label>
+        <select id="newPetSpecies">
+          <option value="kat">🐱 Kat</option>
+          <option value="hond">🐶 Hond</option>
+          <option value="overig">🐾 Overig</option>
+        </select>
+      </div>
+      <button class="submit" type="submit">Aanmaken</button>
+    </form>
+  </div>
+</div>
 
 <div class="detail-overlay" id="bloodDetailOverlay" onclick="if (event.target === this) closeBloodDetail();">
   <div class="detail-sheet">
@@ -966,6 +1137,198 @@
   if (isConfigured) {
     supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
+
+  // --- Auth ----------------------------------------------------------------
+  let currentUser = null;
+  let authMode = "login";
+
+  function toggleAuthMode() {
+    authMode = authMode === "login" ? "signup" : "login";
+    document.getElementById("authSubtitle").textContent =
+      authMode === "login" ? "Log in om verder te gaan." : "Maak een account aan.";
+    document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "Inloggen" : "Registreren";
+    document.getElementById("authSwitchBtn").textContent =
+      authMode === "login" ? "Nog geen account? Registreren" : "Al een account? Inloggen";
+    document.getElementById("authError").style.display = "none";
+  }
+
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("authEmail").value.trim();
+    const password = document.getElementById("authPassword").value;
+    const errEl = document.getElementById("authError");
+    const btn = document.getElementById("authSubmitBtn");
+    errEl.style.display = "none";
+    btn.disabled = true;
+
+    const { error } =
+      authMode === "login"
+        ? await supabaseClient.auth.signInWithPassword({ email, password })
+        : await supabaseClient.auth.signUp({ email, password });
+
+    btn.disabled = false;
+
+    if (error) {
+      errEl.textContent = error.message;
+      errEl.style.display = "";
+      return;
+    }
+
+    if (authMode === "signup") {
+      errEl.style.color = "var(--accent)";
+      errEl.textContent = "Account aangemaakt. Als e-mailbevestiging vereist is, check je inbox — anders ben je al ingelogd.";
+      errEl.style.display = "";
+    }
+  });
+
+  async function logout() {
+    await supabaseClient.auth.signOut();
+  }
+
+  function speciesEmoji(species) {
+    return species === "hond" ? "🐶" : species === "overig" ? "🐾" : "🐱";
+  }
+
+  function showAuthScreen() {
+    document.getElementById("authScreen").style.display = "";
+    document.getElementById("appContent").style.display = "none";
+  }
+
+  function showAppContent() {
+    document.getElementById("authScreen").style.display = "none";
+    document.getElementById("appContent").style.display = "";
+  }
+
+  supabaseClient?.auth.onAuthStateChange((event, session) => {
+    if (session) {
+      // TOKEN_REFRESHED etc. re-fire with the same user; only re-bootstrap
+      // (and refetch everything) when the logged-in user actually changed.
+      if (currentUser && currentUser.id === session.user.id) return;
+      bootstrapApp(session);
+    } else {
+      currentUser = null;
+      pets = [];
+      currentPetId = null;
+      showAuthScreen();
+    }
+  });
+
+  async function bootstrapApp(session) {
+    currentUser = session.user;
+    document.getElementById("accountEmailText").textContent = "Ingelogd als " + currentUser.email;
+    showAppContent();
+    await loadPets();
+  }
+
+  // --- Pets ------------------------------------------------------------
+  let pets = [];
+  let currentPetId = null;
+
+  function activePetIdStorageKey() {
+    return "activePetId:" + currentUser.id;
+  }
+
+  async function loadPets() {
+    const { data, error } = await supabaseClient
+      .from("pets")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    if (error) {
+      showError("Huisdieren laden mislukt: " + error.message);
+      return;
+    }
+
+    pets = data || [];
+
+    if (!pets.length) {
+      openAddPetForm();
+      return;
+    }
+
+    const savedId = parseInt(localStorage.getItem(activePetIdStorageKey()), 10);
+    const match = pets.find((p) => p.id === savedId);
+    currentPetId = match ? match.id : pets[0].id;
+
+    applyCurrentPetToHeader();
+    await refreshAll(false);
+  }
+
+  function currentPet() {
+    return pets.find((p) => p.id === currentPetId) || null;
+  }
+
+  function applyCurrentPetToHeader() {
+    const pet = currentPet();
+    if (!pet) return;
+    document.getElementById("appTitle").textContent = speciesEmoji(pet.species) + " " + pet.name;
+  }
+
+  function openPetMenu() {
+    const list = document.getElementById("petMenuList");
+    list.innerHTML = pets
+      .map(
+        (p) => `
+        <button type="button" class="pet-menu-item${p.id === currentPetId ? " active" : ""}" onclick="switchPet(${p.id})">
+          <span>${speciesEmoji(p.species)}</span>
+          <span>${escapeHtml(p.name)}</span>
+        </button>
+      `
+      )
+      .join("");
+    document.getElementById("petMenuOverlay").classList.add("show");
+  }
+
+  function closePetMenu() {
+    document.getElementById("petMenuOverlay").classList.remove("show");
+  }
+
+  async function switchPet(id) {
+    currentPetId = id;
+    localStorage.setItem(activePetIdStorageKey(), String(id));
+    closePetMenu();
+    applyCurrentPetToHeader();
+    await refreshAll(false);
+  }
+
+  function openAddPetForm() {
+    closePetMenu();
+    document.getElementById("newPetName").value = "";
+    document.getElementById("newPetSpecies").value = "kat";
+    document.getElementById("addPetOverlay").classList.add("show");
+  }
+
+  function closeAddPetForm() {
+    // Only allow closing if the user already has at least one pet —
+    // otherwise there'd be nothing for the app to show.
+    if (!pets.length) return;
+    document.getElementById("addPetOverlay").classList.remove("show");
+  }
+
+  document.getElementById("addPetForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const name = document.getElementById("newPetName").value.trim();
+    const species = document.getElementById("newPetSpecies").value;
+    if (!name) return;
+
+    const { data, error } = await supabaseClient
+      .from("pets")
+      .insert([{ user_id: currentUser.id, name, species }])
+      .select()
+      .single();
+
+    if (error) {
+      showError("Huisdier aanmaken mislukt: " + error.message);
+      return;
+    }
+
+    pets.push(data);
+    currentPetId = data.id;
+    localStorage.setItem(activePetIdStorageKey(), String(data.id));
+    document.getElementById("addPetOverlay").classList.remove("show");
+    applyCurrentPetToHeader();
+    await refreshAll(false);
+  });
 
   // --- Tabs --------------------------------------------------------------
   function switchTab(tab) {
@@ -1015,6 +1378,10 @@
   let latestWeightData = [];
 
   function computeAdultBase(profile) {
+    // This age/sex/activity curve was built from feline growth data — it
+    // doesn't transfer to other species, so only apply it for cats until
+    // a dedicated breed-weight model exists for dogs/other pets.
+    if (profile.species && profile.species !== "kat") return null;
     let base = 4.0;
     if (profile.sex === "mannelijk") base += 0.7;
     if (profile.sex === "vrouwelijk") base -= 0.3;
@@ -1023,19 +1390,26 @@
     return base;
   }
 
-  function computeTargetRange(profile, adultBase) {
+  function computeTargetRange(profile, adultBase, fallbackKg) {
     if (profile.target_min_kg != null && profile.target_max_kg != null) {
       return { min: profile.target_min_kg, max: profile.target_max_kg };
     }
-    return { min: adultBase - 0.4, max: adultBase + 0.4 };
+    if (adultBase != null) {
+      return { min: adultBase - 0.4, max: adultBase + 0.4 };
+    }
+    // No species model and no manual target weight set: fall back to a
+    // neutral range around the actual measurement so nothing is falsely
+    // judged against cat-only assumptions.
+    const v = fallbackKg != null ? fallbackKg : 5;
+    return { min: v * 0.85, max: v * 1.15 };
   }
 
   // Uses the exact same continuous color scale as the chart's background
   // and line gradient, so a point's color always matches what's behind it.
   function weightStatusColor(row) {
     const adultBase = computeAdultBase(catProfile);
-    const range = computeTargetRange(catProfile, adultBase);
     const kg = row.weight_grams / 1000;
+    const range = computeTargetRange(catProfile, adultBase, kg);
     const [r, g, b] = targetZoneColorAt(kg, range);
     return `rgb(${r}, ${g}, ${b})`;
   }
@@ -1186,7 +1560,7 @@
 
     const { error } = editingWeightId
       ? await supabaseClient.from("weight_measurements").update({ date, weight_grams, note }).eq("id", editingWeightId)
-      : await supabaseClient.from("weight_measurements").insert([{ date, weight_grams, note }]);
+      : await supabaseClient.from("weight_measurements").insert([{ date, weight_grams, note, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -1200,11 +1574,12 @@
   });
 
   async function loadWeights() {
-    if (!isConfigured) return;
+    if (!isConfigured || !currentPetId) return;
 
     const { data, error } = await supabaseClient
       .from("weight_measurements")
       .select("*")
+      .eq("pet_id", currentPetId)
       .order("date", { ascending: true });
 
     if (error) {
@@ -1306,15 +1681,15 @@
 
   function renderWeightChart(data) {
     const ctx = document.getElementById("weightChart");
+    const weights = data.map((row) => row.weight_grams / 1000);
     const adultBase = computeAdultBase(catProfile);
-    const range = computeTargetRange(catProfile, adultBase);
+    const range = computeTargetRange(catProfile, adultBase, weights.length ? weights[weights.length - 1] : null);
 
     const pointColors = data.map(weightStatusColor);
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
 
     // X-axis: only span the actual measurements. Y-axis: 10% padding
     // above/below the lowest and highest recorded weight.
-    const weights = data.map((row) => row.weight_grams / 1000);
     const xMin = data.length ? data[0].date : undefined;
     const xMax = data.length ? data[data.length - 1].date : undefined;
     const yMin = weights.length ? Math.min(...weights) * 0.9 : undefined;
@@ -1662,14 +2037,14 @@
       const v = inp.value.trim();
       if (v === "") return;
       const m = findMarker(inp.dataset.code);
-      rows.push({ date, marker: m.code, value: parseFloat(v), unit: m.unit, note });
+      rows.push({ date, marker: m.code, value: parseFloat(v), unit: m.unit, note, pet_id: currentPetId });
     });
     document.querySelectorAll("#bloodCustomList .custom-marker-row").forEach((row) => {
       const name = row.querySelector(".custom-marker-name").value.trim();
       const value = row.querySelector(".custom-marker-value").value.trim();
       const unit = row.querySelector(".custom-marker-unit").value.trim();
       if (!name || value === "") return;
-      rows.push({ date, marker: name, value: parseFloat(value), unit: unit || null, note });
+      rows.push({ date, marker: name, value: parseFloat(value), unit: unit || null, note, pet_id: currentPetId });
     });
     return rows;
   }
@@ -1741,7 +2116,11 @@
     }
 
     if (editingBloodDate) {
-      const { error: delError } = await supabaseClient.from("blood_values").delete().eq("date", editingBloodDate);
+      const { error: delError } = await supabaseClient
+        .from("blood_values")
+        .delete()
+        .eq("date", editingBloodDate)
+        .eq("pet_id", currentPetId);
       if (delError) {
         showError("Bijwerken mislukt: " + delError.message);
         submitBtn.disabled = false;
@@ -1764,11 +2143,12 @@
   });
 
   async function loadBloodValues() {
-    if (!isConfigured) return;
+    if (!isConfigured || !currentPetId) return;
 
     const { data, error } = await supabaseClient
       .from("blood_values")
       .select("*")
+      .eq("pet_id", currentPetId)
       .order("date", { ascending: false });
 
     if (error) {
@@ -1839,7 +2219,7 @@
   }
 
   async function deleteBloodGroup(date) {
-    const { error } = await supabaseClient.from("blood_values").delete().eq("date", date);
+    const { error } = await supabaseClient.from("blood_values").delete().eq("date", date).eq("pet_id", currentPetId);
     if (error) {
       showError("Verwijderen mislukt: " + error.message);
       return;
@@ -2276,7 +2656,7 @@
 
     const { error } = editingVaxId
       ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, note }).eq("id", editingVaxId)
-      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, note }]);
+      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, note, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -2291,11 +2671,12 @@
   });
 
   async function loadVaccinations() {
-    if (!isConfigured) return;
+    if (!isConfigured || !currentPetId) return;
 
     const { data, error } = await supabaseClient
       .from("vaccinations")
       .select("*")
+      .eq("pet_id", currentPetId)
       .order("date", { ascending: false });
 
     if (error) {
@@ -2404,9 +2785,18 @@
   // --- Profile ---------------------------------------------------------
   const profileForm = document.getElementById("profileForm");
 
+  function onProfileSpeciesChange() {
+    const species = document.getElementById("catSpecies").value;
+    document.getElementById("catBreedRow").style.display = species === "hond" ? "" : "none";
+    document.getElementById("targetWeightHint").textContent =
+      species === "kat"
+        ? "Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en energieniveau. Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor advies van je dierenarts."
+        : "Vul zelf een streefgewicht in — voor deze diersoort is er nog geen automatische schatting.";
+  }
+
   profileForm.addEventListener("submit", async (e) => {
     e.preventDefault();
-    if (!isConfigured) return;
+    if (!isConfigured || !currentPetId) return;
 
     if (document.activeElement) document.activeElement.blur();
 
@@ -2417,8 +2807,9 @@
     const toNullableBool = (val) => (val === "" ? null : val === "true");
 
     const profile = {
-      id: 1,
       name: document.getElementById("catName").value.trim() || null,
+      species: document.getElementById("catSpecies").value,
+      breed: document.getElementById("catBreed").value.trim() || null,
       birth_date: document.getElementById("catBirthDate").value || null,
       sex: document.getElementById("catSex").value || null,
       neutered: toNullableBool(document.getElementById("catNeutered").value),
@@ -2428,7 +2819,7 @@
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabaseClient.from("cat_profile").upsert(profile);
+    const { error } = await supabaseClient.from("pets").update(profile).eq("id", currentPetId);
 
     submitBtn.disabled = false;
 
@@ -2437,18 +2828,21 @@
       return;
     }
 
-    catProfile = profile;
+    Object.assign(catProfile, profile);
+    const pet = currentPet();
+    if (pet) Object.assign(pet, profile);
+    applyCurrentPetToHeader();
     renderWeightChart(latestWeightData);
     showSuccess("Profiel opgeslagen ✓");
   });
 
   async function loadProfile() {
-    if (!isConfigured) return;
+    if (!isConfigured || !currentPetId) return;
 
     const { data, error } = await supabaseClient
-      .from("cat_profile")
+      .from("pets")
       .select("*")
-      .eq("id", 1)
+      .eq("id", currentPetId)
       .maybeSingle();
 
     if (error) {
@@ -2459,6 +2853,8 @@
     catProfile = data || {};
 
     document.getElementById("catName").value = catProfile.name || "";
+    document.getElementById("catSpecies").value = catProfile.species || "kat";
+    document.getElementById("catBreed").value = catProfile.breed || "";
     document.getElementById("catBirthDate").value = catProfile.birth_date || "";
     document.getElementById("catSex").value = catProfile.sex || "";
     document.getElementById("catNeutered").value =
@@ -2466,11 +2862,9 @@
     document.getElementById("catActivity").value = catProfile.activity_level || "";
     document.getElementById("catTargetMin").value = catProfile.target_min_kg ?? "";
     document.getElementById("catTargetMax").value = catProfile.target_max_kg ?? "";
+    onProfileSpeciesChange();
 
-    if (catProfile.name) {
-      document.querySelector("header h1").textContent = "🐱 " + catProfile.name;
-    }
-
+    applyCurrentPetToHeader();
     renderWeightChart(latestWeightData);
   }
 
@@ -2506,10 +2900,9 @@
   window.addEventListener("pageshow", () => refreshAll(false));
 
   // --- Init ------------------------------------------------------------
-  loadWeights();
-  loadBloodValues();
-  loadVaccinations();
-  loadProfile();
+  // Auth state (including the session already on disk from a previous visit)
+  // drives everything else — see onAuthStateChange/bootstrapApp above, which
+  // calls loadPets() -> refreshAll() once a user is known.
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
