@@ -61,9 +61,21 @@
   }
 
   header {
-    padding: 20px 16px 8px;
+    padding: 34px 16px 14px;
     text-align: center;
     position: relative;
+    border-radius: 0 0 22px 22px;
+    background: linear-gradient(135deg, var(--accent), #7c6cf0);
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+  }
+
+  header.has-photo::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
   }
 
   header h1 {
@@ -76,17 +88,18 @@
     right: 16px;
     top: 50%;
     transform: translateY(-50%);
-    background: none;
+    background: rgba(0, 0, 0, 0.18);
     border: none;
-    color: var(--text-muted);
-    font-size: 1.4rem;
+    color: #fff;
+    font-size: 1.3rem;
     line-height: 1;
-    padding: 6px;
-    border-radius: 8px;
+    padding: 7px;
+    border-radius: 10px;
+    z-index: 1;
   }
 
   .refresh-btn:active {
-    color: var(--accent);
+    color: var(--accent-contrast);
   }
 
   .refresh-btn.spinning {
@@ -122,7 +135,7 @@
   }
 
   nav.tabs button.active {
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), #7c6cf0);
     color: var(--accent-contrast);
     border-color: var(--accent);
   }
@@ -132,7 +145,7 @@
   }
 
   nav.tabs button.tab-profile.active {
-    background: #f59e0b;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
     border-color: #f59e0b;
     border-style: solid;
     color: #1c1c1e;
@@ -153,6 +166,13 @@
     border: 1px solid var(--border);
     padding: 16px;
     margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .card {
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
+    }
   }
 
   .card h2 {
@@ -457,7 +477,7 @@
     padding: 12px;
     border-radius: 10px;
     border: none;
-    background: var(--accent);
+    background: linear-gradient(135deg, var(--accent), #7c6cf0);
     color: var(--accent-contrast);
     font-size: 1rem;
     font-weight: 600;
@@ -734,6 +754,15 @@
   }
 
   /* --- Pet switcher --- */
+  .pet-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+
   .pet-switch-btn {
     display: inline-flex;
     align-items: center;
@@ -742,14 +771,66 @@
     border: none;
     font-size: 1.4rem;
     font-weight: 700;
-    color: var(--text);
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     padding: 4px 8px;
-    margin: 0 auto;
   }
 
   .pet-switch-btn .caret {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.8);
+  }
+
+  .add-pet-quick-btn {
+    background: rgba(0, 0, 0, 0.18);
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    line-height: 1;
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .photo-upload-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .photo-preview {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+  }
+
+  .photo-upload-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    flex: 1;
+  }
+
+  .pet-menu-thumb {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
   }
 
   .pet-menu-item {
@@ -804,11 +885,14 @@
 
 <div id="appContent" style="display:none;">
 
-<header>
-  <button type="button" class="pet-switch-btn" id="petSwitchBtn" onclick="openPetMenu()">
-    <span id="appTitle">🐾 Huisdier</span>
-    <span class="caret">▾</span>
-  </button>
+<header id="appHeader">
+  <div class="pet-header-row">
+    <button type="button" class="pet-switch-btn" id="petSwitchBtn" onclick="openPetMenu()">
+      <span id="appTitle">🐾 Huisdier</span>
+      <span class="caret">▾</span>
+    </button>
+    <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
+  </div>
   <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">⟳</button>
 </header>
 
@@ -982,10 +1066,20 @@
 
   <section id="tabProfile" class="tab-panel">
     <div class="card">
-      <h2>🐾 Vertel over je huisdier</h2>
+      <h2 id="profileHeading">🐾 Bewerk huisdier</h2>
       <p class="hint-text" style="margin-bottom:12px;">
         Hoe meer we van je huisgenoot weten, hoe beter we het ideale gewicht kunnen inschatten.
+        Dit bewerkt het huisdier dat nu bovenin geselecteerd is — voor een extra huisdier gebruik je
+        de "+"-knop naast de naam bovenaan.
       </p>
+      <div class="photo-upload-row">
+        <div class="photo-preview" id="photoPreview">🐾</div>
+        <div class="photo-upload-actions">
+          <input type="file" id="petPhotoInput" accept="image/*" style="display:none;" />
+          <button type="button" class="today-btn" onclick="document.getElementById('petPhotoInput').click()">Foto kiezen</button>
+          <button type="button" class="today-btn" id="removePhotoBtn" style="display:none;" onclick="removePetPhoto()">Verwijderen</button>
+        </div>
+      </div>
       <form class="entry-form" id="profileForm">
         <div class="row">
           <div>
@@ -1002,7 +1096,7 @@
           </div>
         </div>
         <div id="catBreedRow" style="display:none;">
-          <label for="catBreed">Ras (optioneel)</label>
+          <label for="catBreed" id="catBreedLabel">Ras (optioneel)</label>
           <input type="text" id="catBreed" placeholder="bijv. Labrador Retriever" />
         </div>
         <div class="row">
@@ -1262,6 +1356,16 @@
     const pet = currentPet();
     if (!pet) return;
     document.getElementById("appTitle").textContent = speciesEmoji(pet.species) + " " + pet.name;
+    document.getElementById("profileHeading").textContent = "🐾 Bewerk " + pet.name;
+
+    const header = document.getElementById("appHeader");
+    if (pet.photo_data_url) {
+      header.style.backgroundImage = `url("${pet.photo_data_url}")`;
+      header.classList.add("has-photo");
+    } else {
+      header.style.backgroundImage = "";
+      header.classList.remove("has-photo");
+    }
   }
 
   function openPetMenu() {
@@ -1270,7 +1374,7 @@
       .map(
         (p) => `
         <button type="button" class="pet-menu-item${p.id === currentPetId ? " active" : ""}" onclick="switchPet(${p.id})">
-          <span>${speciesEmoji(p.species)}</span>
+          ${p.photo_data_url ? `<span class="pet-menu-thumb" style="background-image:url('${p.photo_data_url}')"></span>` : `<span>${speciesEmoji(p.species)}</span>`}
           <span>${escapeHtml(p.name)}</span>
         </button>
       `
@@ -2784,14 +2888,69 @@
 
   // --- Profile ---------------------------------------------------------
   const profileForm = document.getElementById("profileForm");
+  let pendingPhotoDataUrl = undefined; // undefined = unchanged, null = removed, string = new photo
 
   function onProfileSpeciesChange() {
     const species = document.getElementById("catSpecies").value;
-    document.getElementById("catBreedRow").style.display = species === "hond" ? "" : "none";
+    document.getElementById("catBreedRow").style.display = species === "kat" ? "none" : "";
+    document.getElementById("catBreedLabel").textContent =
+      species === "hond" ? "Ras (optioneel)" : "Wat voor dier? (optioneel)";
+    document.getElementById("catBreed").placeholder =
+      species === "hond" ? "bijv. Labrador Retriever" : "bijv. konijn, vogel, cavia";
     document.getElementById("targetWeightHint").textContent =
       species === "kat"
         ? "Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en energieniveau. Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor advies van je dierenarts."
         : "Vul zelf een streefgewicht in — voor deze diersoort is er nog geen automatische schatting.";
+  }
+
+  // Downscales + compresses the photo client-side so it stores comfortably
+  // as a data URL directly on the pets row, without needing a Storage bucket.
+  function resizeImageToDataUrl(file, maxDim) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const reader = new FileReader();
+      reader.onload = () => {
+        img.onload = () => {
+          const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = reader.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function setPhotoPreview(dataUrl) {
+    const preview = document.getElementById("photoPreview");
+    const removeBtn = document.getElementById("removePhotoBtn");
+    if (dataUrl) {
+      preview.style.backgroundImage = `url("${dataUrl}")`;
+      preview.textContent = "";
+      removeBtn.style.display = "";
+    } else {
+      preview.style.backgroundImage = "";
+      preview.textContent = "🐾";
+      removeBtn.style.display = "none";
+    }
+  }
+
+  document.getElementById("petPhotoInput").addEventListener("change", async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    pendingPhotoDataUrl = await resizeImageToDataUrl(file, 1000);
+    setPhotoPreview(pendingPhotoDataUrl);
+  });
+
+  function removePetPhoto() {
+    pendingPhotoDataUrl = null;
+    setPhotoPreview(null);
   }
 
   profileForm.addEventListener("submit", async (e) => {
@@ -2818,6 +2977,9 @@
       target_max_kg: toNullableFloat(document.getElementById("catTargetMax").value),
       updated_at: new Date().toISOString(),
     };
+    if (pendingPhotoDataUrl !== undefined) {
+      profile.photo_data_url = pendingPhotoDataUrl;
+    }
 
     const { error } = await supabaseClient.from("pets").update(profile).eq("id", currentPetId);
 
@@ -2828,6 +2990,7 @@
       return;
     }
 
+    pendingPhotoDataUrl = undefined;
     Object.assign(catProfile, profile);
     const pet = currentPet();
     if (pet) Object.assign(pet, profile);
@@ -2851,6 +3014,7 @@
     }
 
     catProfile = data || {};
+    pendingPhotoDataUrl = undefined;
 
     document.getElementById("catName").value = catProfile.name || "";
     document.getElementById("catSpecies").value = catProfile.species || "kat";
@@ -2863,6 +3027,7 @@
     document.getElementById("catTargetMin").value = catProfile.target_min_kg ?? "";
     document.getElementById("catTargetMax").value = catProfile.target_max_kg ?? "";
     onProfileSpeciesChange();
+    setPhotoPreview(catProfile.photo_data_url || null);
 
     applyCurrentPetToHeader();
     renderWeightChart(latestWeightData);

@@ -135,3 +135,13 @@ revoke all on cat_profile from anon;
 -- ------------------------------------------------------------
 
 -- drop table if exists cat_profile;
+
+
+-- ------------------------------------------------------------
+-- STAP 6: huisdierfoto (opgeslagen als comprimeerde data-URL,
+-- geen aparte Storage-bucket nodig — simpeler en erft dezelfde
+-- RLS als de rest van de pets-tabel).
+-- Veilig om nu te draaien, additief.
+-- ------------------------------------------------------------
+
+alter table pets add column if not exists photo_data_url text;
