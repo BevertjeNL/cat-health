@@ -7,7 +7,7 @@
 <meta name="description" content="Volg het gewicht en de bloedwaarden van je kat" />
 
 <link rel="manifest" href="manifest.json" />
-<meta name="theme-color" content="#4f46e5" />
+<meta name="theme-color" content="#D97757" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
@@ -23,24 +23,25 @@
 
 <style>
   :root {
-    --bg: #f5f5f7;
+    --bg: #f6f5f1;
     --card-bg: #ffffff;
-    --text: #1c1c1e;
-    --text-muted: #6e6e73;
-    --accent: #4f46e5;
+    --text: #2b2a26;
+    --text-muted: #6f6b60;
+    --accent: #D97757;
+    --accent-secondary: #8FA876;
     --accent-contrast: #ffffff;
-    --border: #e5e5ea;
+    --border: #e6e2d8;
     --danger: #d9432c;
     --radius: 14px;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --bg: #000000;
-      --card-bg: #1c1c1e;
-      --text: #f2f2f7;
-      --text-muted: #98989f;
-      --border: #2c2c2e;
+      --bg: #17160f;
+      --card-bg: #242019;
+      --text: #f2f0e8;
+      --text-muted: #a39d8f;
+      --border: #3a352a;
     }
   }
 
@@ -61,35 +62,46 @@
   }
 
   header {
-    padding: 34px 16px 14px;
-    text-align: center;
     position: relative;
     border-radius: 0 0 22px 22px;
-    background: linear-gradient(135deg, var(--accent), #7c6cf0);
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
     background-size: cover;
     background-position: center;
     overflow: hidden;
+    min-height: 108px;
+    display: flex;
+    align-items: flex-end;
+    padding-top: env(safe-area-inset-top);
   }
 
-  header.has-photo::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
+  header.has-photo {
+    min-height: 230px;
+  }
+
+  /* A frosted strip anchored to the bottom of the photo — legible against
+     any photo's brightness/colors, without darkening the photo itself like
+     a full-height overlay would (the whole point of the bigger banner is to
+     actually see the photo). */
+  .header-bar {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 10px 54px 10px 16px;
+    background: rgba(0, 0, 0, 0.34);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
   .header-icons {
     position: absolute;
     right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: calc(12px + env(safe-area-inset-top));
     display: flex;
     gap: 6px;
     z-index: 1;
   }
 
-  .refresh-btn,
-  .profile-icon-btn {
+  .refresh-btn {
     background: rgba(0, 0, 0, 0.18);
     border: none;
     color: #fff;
@@ -99,13 +111,28 @@
     border-radius: 10px;
   }
 
-  .refresh-btn:active,
-  .profile-icon-btn:active {
+  .refresh-btn:active {
     color: var(--accent-contrast);
   }
 
-  .refresh-btn:active {
-    color: var(--accent-contrast);
+  /* Solid, high-contrast circle so this stays visible against any photo,
+     unlike a translucent-dark icon that can vanish on a light background. */
+  .profile-icon-btn {
+    background: rgba(255, 255, 255, 0.95);
+    color: var(--accent);
+    border: none;
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  }
+
+  .profile-icon-btn:active {
+    background: #fff;
   }
 
   .refresh-btn.spinning {
@@ -116,46 +143,51 @@
     to { transform: translateY(-50%) rotate(360deg); }
   }
 
-  nav.tabs {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
-    padding: 8px 16px 16px;
-    max-width: 640px;
-    margin: 0 auto;
+  .bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    display: flex;
+    background: var(--card-bg);
+    border-top: 1px solid var(--border);
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
   }
 
-  nav.tabs button {
+  .bottom-nav button {
+    flex: 1;
     min-width: 0;
-    padding: 10px 8px;
-    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: none;
     border: none;
-    background: var(--card-bg);
     color: var(--text-muted);
-    font-size: 0.9rem;
+    font-size: 0.66rem;
     font-weight: 600;
-    border: 1px solid var(--border);
+    padding: 6px 2px;
+    border-radius: 10px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
 
-  nav.tabs button.active {
-    background: linear-gradient(135deg, var(--accent), #7c6cf0);
-    color: var(--accent-contrast);
-    border-color: var(--accent);
+  .bottom-nav .bottom-nav-icon {
+    font-size: 1.25rem;
+    line-height: 1;
   }
 
-  nav.tabs button.tab-dashboard.active {
-    background: linear-gradient(135deg, #f59e0b, #fbbf24);
-    border-color: #f59e0b;
-    color: #1c1c1e;
+  .bottom-nav button.active {
+    color: var(--accent);
   }
 
   main {
     max-width: 640px;
     margin: 0 auto;
-    padding: 0 16px 40px;
+    padding: 16px 16px calc(84px + env(safe-area-inset-bottom));
   }
 
   section.tab-panel { display: none; }
@@ -478,7 +510,7 @@
     padding: 12px;
     border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, var(--accent), #7c6cf0);
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
     color: var(--accent-contrast);
     font-size: 1rem;
     font-weight: 600;
@@ -639,6 +671,33 @@
     padding: 8px 10px;
     border-radius: 10px;
     background: var(--bg);
+  }
+
+  .inline-edit-link {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-weight: 600;
+    font-size: inherit;
+    padding: 0;
+    text-decoration: underline;
+  }
+
+  .inline-edit-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .inline-edit-form input {
+    width: 56px;
+    padding: 4px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    font-size: 0.85rem;
   }
 
   /* --- Dashboard --- */
@@ -1011,12 +1070,14 @@
 <div id="appContent" style="display:none;">
 
 <header id="appHeader">
-  <div class="pet-header-row">
-    <button type="button" class="pet-switch-btn" id="petSwitchBtn" onclick="openPetMenu()">
-      <span id="appTitle">🐾 Huisdier</span>
-      <span class="caret">▾</span>
-    </button>
-    <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
+  <div class="header-bar">
+    <div class="pet-header-row">
+      <button type="button" class="pet-switch-btn" id="petSwitchBtn" onclick="openPetMenu()">
+        <span id="appTitle">🐾 Huisdier</span>
+        <span class="caret">▾</span>
+      </button>
+      <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
+    </div>
   </div>
   <div class="header-icons">
     <button type="button" class="profile-icon-btn" aria-label="Profiel" onclick="switchTab('profile')">🐾</button>
@@ -1025,15 +1086,6 @@
 </header>
 
 <div id="statusBanner" class="status-banner"></div>
-
-<nav class="tabs">
-  <button id="tabBtnDashboard" class="tab-dashboard active" onclick="switchTab('dashboard')">Dashboard</button>
-  <button id="tabBtnWeight" onclick="switchTab('weight')">Gewicht</button>
-  <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
-  <button id="tabBtnVax" onclick="switchTab('vax')">Vaccinaties</button>
-  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')">Afwijkingen</button>
-  <button id="tabBtnMedication" onclick="switchTab('medication')">Medicatie</button>
-</nav>
 
 <main>
   <section id="tabDashboard" class="tab-panel active">
@@ -1242,6 +1294,14 @@
     </div>
 
     <div class="card">
+      <h2>Tijdlijn</h2>
+      <p class="hint-text" id="vaxChartEmpty" style="margin-bottom:8px;">Nog geen vaccinaties om een tijdlijn te tonen.</p>
+      <div class="chart-wrap" id="vaxChartWrap" style="display:none;">
+        <canvas id="vaxChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Overzicht</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
       <ul class="entry-list" id="vaxList"></ul>
@@ -1284,6 +1344,14 @@
           <button class="submit" type="submit">Opslaan</button>
           <button type="button" class="today-btn" id="symptomCancelEditBtn" style="display:none;" onclick="cancelSymptomEdit()">Bewerken annuleren</button>
         </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Tijdlijn</h2>
+      <p class="hint-text" id="symptomChartEmpty" style="margin-bottom:8px;">Nog geen afwijkingen om een tijdlijn te tonen.</p>
+      <div class="chart-wrap" id="symptomChartWrap" style="display:none;">
+        <canvas id="symptomChart"></canvas>
       </div>
     </div>
 
@@ -1462,6 +1530,15 @@
   </section>
 </main>
 
+<nav class="bottom-nav">
+  <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon">🏠</span><span>Start</span></button>
+  <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon">⚖️</span><span>Gewicht</span></button>
+  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon">🩸</span><span>Bloed</span></button>
+  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon">💉</span><span>Vaccins</span></button>
+  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon">🩹</span><span>Afwijking</span></button>
+  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon">💊</span><span>Medicatie</span></button>
+</nav>
+
 </div>
 
 <div class="detail-overlay" id="petMenuOverlay" onclick="if (event.target === this) closePetMenu();">
@@ -1509,6 +1586,7 @@
     <button type="button" class="pet-menu-item" onclick="quickAdd('vax')">💉 Vaccinatie</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('medication')">💊 Medicatie</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('blood')">🩸 Bloedwaarden</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('vetvisit')">🩺 Dierenartsbezoek</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('symptoms')">🩹 Afwijking</button>
   </div>
 </div>
@@ -2178,7 +2256,21 @@
         scales: {
           x: {
             type: "time",
-            time: { tooltipFormat: "dd-MM-yyyy" },
+            time: {
+              tooltipFormat: "dd-MM-yyyy",
+              // Never drop to hour/minute/second ticks, even fully zoomed
+              // in — a health log doesn't need that precision, and it made
+              // zoomed-in charts look noisy. Coarser zoom levels get calm,
+              // short labels instead of the adapter's default verbose ones.
+              minUnit: "day",
+              displayFormats: {
+                day: "d MMM",
+                week: "d MMM",
+                month: "MMM yyyy",
+                quarter: "QQQ yyyy",
+                year: "yyyy",
+              },
+            },
             grid: { display: false },
             min: xMin,
             max: xMax,
@@ -2267,8 +2359,8 @@
         <span class="metric-sub">Gemeten op ${formatDate(s.lastDate)} · ${formatDaysAgo(s.daysSinceLast)}</span>
         ${
           s.reminderDue
-            ? `<div class="metric-note">Er is ${formatDaysAgo(s.daysSinceLast)} niet meer gewogen (zelf ingestelde herinnering: ${s.reminderDays} dag${s.reminderDays === 1 ? "" : "en"}).</div>`
-            : ""
+            ? `<div class="metric-note" id="weightReminderNote">Er is ${formatDaysAgo(s.daysSinceLast)} niet meer gewogen (zelf ingestelde herinnering: ${s.reminderDays} dag${s.reminderDays === 1 ? "" : "en"}). <button type="button" class="inline-edit-link" onclick="editWeightReminderDaysInline()">wijzigen</button></div>`
+            : `<div class="metric-note" id="weightReminderNote" style="background:none;padding:0;">Herinnering ingesteld op ${s.reminderDays} dag${s.reminderDays === 1 ? "" : "en"}. <button type="button" class="inline-edit-link" onclick="editWeightReminderDaysInline()">wijzigen</button></div>`
         }
       `;
     }
@@ -2284,6 +2376,43 @@
     } else {
       captionEl.style.display = "none";
     }
+  }
+
+  // Lets the reminder-days setting be changed right where it's shown,
+  // instead of forcing a trip to the Profiel-tab for a single number.
+  function editWeightReminderDaysInline() {
+    const note = document.getElementById("weightReminderNote");
+    const current = catProfile.weight_reminder_days || 30;
+    note.innerHTML = `
+      <span class="inline-edit-form">
+        Herinner na
+        <input type="number" id="inlineReminderDaysInput" min="1" step="1" value="${current}" />
+        dagen zonder meting
+        <button type="button" class="today-btn" style="padding:2px 12px;" onclick="saveWeightReminderDaysInline()">Opslaan</button>
+      </span>
+    `;
+    document.getElementById("inlineReminderDaysInput").focus();
+  }
+
+  async function saveWeightReminderDaysInline() {
+    const input = document.getElementById("inlineReminderDaysInput");
+    const val = parseInt(input.value, 10);
+    if (!val || val < 1) return;
+
+    const { error } = await supabaseClient.from("pets").update({ weight_reminder_days: val }).eq("id", currentPetId);
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    catProfile.weight_reminder_days = val;
+    const pet = currentPet();
+    if (pet) pet.weight_reminder_days = val;
+    const profileInput = document.getElementById("catWeightReminderDays");
+    if (profileInput) profileInput.value = val;
+
+    showSuccess("Herinnering aangepast ✓");
+    renderWeightSummary();
   }
 
   function renderWeightList(data) {
@@ -2962,7 +3091,21 @@
         scales: {
           x: {
             type: "time",
-            time: { tooltipFormat: "dd-MM-yyyy" },
+            time: {
+              tooltipFormat: "dd-MM-yyyy",
+              // Never drop to hour/minute/second ticks, even fully zoomed
+              // in — a health log doesn't need that precision, and it made
+              // zoomed-in charts look noisy. Coarser zoom levels get calm,
+              // short labels instead of the adapter's default verbose ones.
+              minUnit: "day",
+              displayFormats: {
+                day: "d MMM",
+                week: "d MMM",
+                month: "MMM yyyy",
+                quarter: "QQQ yyyy",
+                year: "yyyy",
+              },
+            },
             grid: { display: false },
             min: xMin,
             max: xMax,
@@ -3341,6 +3484,7 @@
 
     latestVaxData = data;
     renderVaxList(data);
+    renderVaxChart(data);
   }
 
   function renderVaxList(data) {
@@ -3369,6 +3513,106 @@
         { label: "Bewerk", className: "edit-action", onClick: () => editVax(row) },
       ]);
       vaxList.appendChild(li);
+    });
+  }
+
+  // A per-vaccine timeline: connecting the dots for a given vaccine makes
+  // the GAP between doses visually obvious — a long line segment reads
+  // immediately as "this interval was long", no number-crunching needed.
+  let vaxChart;
+  const VAX_TIMELINE_PALETTE = ["#D97757", "#8FA876", "#5FA8A0", "#9B8AC4", "#E0A458", "#C96A9C"];
+
+  // Chart.js's time scale needs an explicit min/max — left to auto-detect,
+  // it can pick an absurdly wide default range instead of framing the
+  // actual data, especially with a category y-axis in the mix.
+  function computeTimelineXRange(dates) {
+    const sorted = [...dates].sort();
+    const minDate = sorted[0];
+    const maxDate = sorted[sorted.length - 1];
+    if (minDate === maxDate) {
+      return { min: addDaysToDateStr(minDate, -3), max: addDaysToDateStr(minDate, 3) };
+    }
+    return { min: minDate, max: maxDate };
+  }
+
+  function renderVaxChart(data) {
+    const emptyEl = document.getElementById("vaxChartEmpty");
+    const wrapEl = document.getElementById("vaxChartWrap");
+
+    if (!data.length) {
+      emptyEl.style.display = "";
+      wrapEl.style.display = "none";
+      return;
+    }
+    emptyEl.style.display = "none";
+    wrapEl.style.display = "";
+
+    const names = [...new Set(data.map((r) => r.vaccine))];
+    wrapEl.style.height = Math.max(160, 60 + names.length * 46) + "px";
+    const xRange = computeTimelineXRange(data.map((r) => r.date));
+
+    const datasets = names.map((name, i) => {
+      const rows = data.filter((r) => r.vaccine === name).sort((a, b) => (a.date < b.date ? -1 : 1));
+      const color = VAX_TIMELINE_PALETTE[i % VAX_TIMELINE_PALETTE.length];
+      return {
+        label: name,
+        data: rows.map((r) => ({ x: r.date, y: name })),
+        borderColor: color,
+        backgroundColor: color,
+        showLine: true,
+        borderWidth: 2,
+        pointRadius: 6,
+        pointHoverRadius: 8,
+      };
+    });
+
+    if (vaxChart) {
+      vaxChart.data.labels = names;
+      vaxChart.data.datasets = datasets;
+      vaxChart.options.scales.x.min = xRange.min;
+      vaxChart.options.scales.x.max = xRange.max;
+      vaxChart.options.scales.y.labels = names;
+      vaxChart.update();
+      return;
+    }
+
+    vaxChart = new Chart(document.getElementById("vaxChart"), {
+      type: "scatter",
+      data: { labels: names, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 8, right: 8, left: 0, bottom: 0 } },
+        scales: {
+          x: {
+            type: "time",
+            min: xRange.min,
+            max: xRange.max,
+            time: {
+              tooltipFormat: "dd-MM-yyyy",
+              minUnit: "day",
+              displayFormats: { day: "d MMM", week: "d MMM", month: "MMM yyyy", quarter: "QQQ yyyy", year: "yyyy" },
+            },
+            grid: { display: false },
+          },
+          y: {
+            type: "category",
+            labels: names,
+            offset: true,
+            grid: { display: false },
+            ticks: { font: { size: 11 } },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => items[0].raw.y,
+              label: (item) => formatDate(item.raw.x),
+            },
+          },
+        },
+      },
     });
   }
 
@@ -3526,6 +3770,94 @@
     updateSymptomSuggestions();
     renderSymptomList(data);
     renderSymptomSummary(data);
+    renderSymptomChart(data);
+  }
+
+  // One row per distinct afwijking, dots colored by ernst — makes clusters
+  // ("Braken keeps coming back") jump out at a glance.
+  let symptomChart;
+  const SYMPTOM_SEVERITY_COLOR = { licht: "#34c759", matig: "#ff9500", ernstig: "#ff3b30" };
+
+  function renderSymptomChart(data) {
+    const emptyEl = document.getElementById("symptomChartEmpty");
+    const wrapEl = document.getElementById("symptomChartWrap");
+
+    if (!data.length) {
+      emptyEl.style.display = "";
+      wrapEl.style.display = "none";
+      return;
+    }
+    emptyEl.style.display = "none";
+    wrapEl.style.display = "";
+
+    const freq = {};
+    data.forEach((r) => (freq[r.symptom] = (freq[r.symptom] || 0) + 1));
+    const names = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
+    wrapEl.style.height = Math.max(160, 60 + names.length * 46) + "px";
+
+    const points = data.map((r) => ({ x: r.date, y: r.symptom, severity: r.severity }));
+    const colors = data.map((r) => SYMPTOM_SEVERITY_COLOR[r.severity] || "#8e8e93");
+    const xRange = computeTimelineXRange(data.map((r) => r.date));
+
+    if (symptomChart) {
+      symptomChart.data.labels = names;
+      symptomChart.data.datasets[0].data = points;
+      symptomChart.data.datasets[0].backgroundColor = colors;
+      symptomChart.options.scales.x.min = xRange.min;
+      symptomChart.options.scales.x.max = xRange.max;
+      symptomChart.options.scales.y.labels = names;
+      symptomChart.update();
+      return;
+    }
+
+    symptomChart = new Chart(document.getElementById("symptomChart"), {
+      type: "scatter",
+      data: {
+        labels: names,
+        datasets: [
+          {
+            data: points,
+            backgroundColor: colors,
+            pointRadius: 6,
+            pointHoverRadius: 8,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 8, right: 8, left: 0, bottom: 0 } },
+        scales: {
+          x: {
+            type: "time",
+            min: xRange.min,
+            max: xRange.max,
+            time: {
+              tooltipFormat: "dd-MM-yyyy",
+              minUnit: "day",
+              displayFormats: { day: "d MMM", week: "d MMM", month: "MMM yyyy", quarter: "QQQ yyyy", year: "yyyy" },
+            },
+            grid: { display: false },
+          },
+          y: {
+            type: "category",
+            labels: names,
+            offset: true,
+            grid: { display: false },
+            ticks: { font: { size: 11 } },
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              title: (items) => items[0].raw.y,
+              label: (item) => formatDate(item.raw.x) + (item.raw.severity ? " · " + item.raw.severity : ""),
+            },
+          },
+        },
+      },
+    });
   }
 
   function renderSymptomList(data) {
@@ -3835,13 +4167,19 @@
     return { total: latest.length, withDate: withDate.length, upToDate, next: sorted.length ? sorted[0] : null };
   }
 
+  // "Due soon" mirrors the vaccination reminder's own 0-30 day window (via
+  // dueStatusFromDate's orange threshold), so a medicine due in a few days —
+  // not just literally overdue or due exactly today — still surfaces.
   function computeMedicationSummary() {
     const latest = latestByField(latestMedicationData || [], "name");
-    const today = dateToISO(new Date());
-    const dueToday = latest.filter((m) => m.next_due_date === today);
-    const overdue = latest.filter((m) => m.next_due_date && dueStatusFromDate(m.next_due_date).daysLeft < 0);
-    const active = latest.filter((m) => !m.next_due_date || dueStatusFromDate(m.next_due_date).daysLeft >= 0);
-    return { latest, dueToday, overdue, active };
+    const withDate = latest.filter((m) => m.next_due_date);
+    const overdue = withDate.filter((m) => dueStatusFromDate(m.next_due_date).daysLeft < 0);
+    const dueSoon = withDate.filter((m) => {
+      const days = dueStatusFromDate(m.next_due_date).daysLeft;
+      return days >= 0 && days <= 30;
+    });
+    const active = latest.filter((m) => !m.next_due_date || dueStatusFromDate(m.next_due_date).daysLeft > 30);
+    return { latest, overdue, dueSoon, active };
   }
 
   function computeBloodSummary() {
@@ -3918,14 +4256,19 @@
         tabTarget: "medication",
       });
     });
-    s.dueToday.forEach((m) => {
+    s.dueSoon.forEach((m) => {
+      const status = dueStatusFromDate(m.next_due_date);
+      const message =
+        status.daysLeft === 0
+          ? `${m.name} staat vandaag nog open.`
+          : `${m.name} verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}.`;
       alerts.push({
-        message: `${m.name} staat vandaag nog open.`,
+        message,
         severity: 1,
         color: "#ff9500",
         type: "medicatie",
         source: m.name,
-        date: dateToISO(new Date()),
+        date: m.next_due_date,
         tabTarget: "medication",
       });
     });
@@ -3987,7 +4330,7 @@
     const bloodS = computeBloodSummary();
     const symS = computeSymptomSinceVetVisit();
     const medS = computeMedicationSummary();
-    const openMeds = [...medS.overdue, ...medS.dueToday];
+    const openMeds = [...medS.overdue, ...medS.dueSoon];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
 
     const cards = [
@@ -4017,7 +4360,12 @@
             ? openMeds
                 .map((m) => {
                   const status = dueStatusFromDate(m.next_due_date);
-                  const dueText = status.daysLeft < 0 ? `Was gepland op ${formatDate(m.next_due_date)}` : "Vandaag";
+                  const dueText =
+                    status.daysLeft < 0
+                      ? `Was gepland op ${formatDate(m.next_due_date)}`
+                      : status.daysLeft === 0
+                      ? "Vandaag"
+                      : `Over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"} (${formatDate(m.next_due_date)})`;
                   return `<div class="dashboard-card-value"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
                           <div class="dashboard-card-sub">${dueText}</div>`;
                 })
@@ -4068,12 +4416,16 @@
 
   function quickAdd(tab) {
     closeQuickAddMenu();
-    switchTab(tab);
+    // Vet visits live inside the Bloedwaarden tab (no tab of their own), so
+    // they need their own form opened rather than the blood-values one.
+    const realTab = tab === "vetvisit" ? "blood" : tab;
+    switchTab(realTab);
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (tab === "weight") openWeightForm();
     else if (tab === "vax") openVaxForm();
     else if (tab === "medication") openMedicationForm();
     else if (tab === "blood") openBloodForm();
+    else if (tab === "vetvisit") openVetVisitForm();
     else if (tab === "symptoms") openSymptomForm();
   }
 
