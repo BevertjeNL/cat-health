@@ -500,6 +500,31 @@
     gap: 8px;
   }
 
+  table.summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  table.summary-table th {
+    text-align: left;
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    padding: 0 8px 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table.summary-table td {
+    padding: 8px 8px 8px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  table.summary-table tr:last-child td {
+    border-bottom: none;
+  }
+
   .entry-item {
     position: relative;
     overflow: hidden;
@@ -902,6 +927,8 @@
   <button id="tabBtnWeight" class="active" onclick="switchTab('weight')">Gewicht</button>
   <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
   <button id="tabBtnVax" onclick="switchTab('vax')">Vaccinaties</button>
+  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')">Afwijkingen</button>
+  <button id="tabBtnMedication" onclick="switchTab('medication')">Medicatie</button>
   <button id="tabBtnProfile" class="tab-profile" onclick="switchTab('profile')">🐾 Profiel</button>
 </nav>
 
@@ -1064,6 +1091,113 @@
     </div>
   </section>
 
+  <section id="tabSymptoms" class="tab-panel">
+    <div class="card">
+      <div class="collapsible-header" id="symptomFormHeader" onclick="toggleSymptomForm()">
+        <h2 id="symptomFormTitle">+ Nieuwe afwijking</h2>
+        <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      </div>
+      <div class="collapsible-body" id="symptomFormBody" style="display:none;">
+        <form class="entry-form" id="symptomForm">
+          <div>
+            <label for="symptomName">Afwijking</label>
+            <input type="text" id="symptomName" list="symptomSuggestions" placeholder="bijv. Braken" required />
+            <datalist id="symptomSuggestions"></datalist>
+          </div>
+          <div>
+            <label for="symptomDate">Datum</label>
+            <div class="date-field">
+              <input type="date" id="symptomDate" required />
+              <button type="button" class="today-btn" data-target="symptomDate">Vandaag</button>
+            </div>
+          </div>
+          <div>
+            <label for="symptomSeverity">Ernst (optioneel)</label>
+            <select id="symptomSeverity">
+              <option value="">Niet gespecificeerd</option>
+              <option value="licht">Licht</option>
+              <option value="matig">Matig</option>
+              <option value="ernstig">Ernstig</option>
+            </select>
+          </div>
+          <div>
+            <label for="symptomNote">Notitie (optioneel)</label>
+            <input type="text" id="symptomNote" placeholder="bijv. na het eten, 2x vandaag" />
+          </div>
+          <button class="submit" type="submit">Opslaan</button>
+          <button type="button" class="today-btn" id="symptomCancelEditBtn" style="display:none;" onclick="cancelSymptomEdit()">Bewerken annuleren</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Vaakst voorkomend</h2>
+      <p class="hint-text" id="symptomSummaryEmpty" style="margin-bottom:10px;">Nog geen afwijkingen gelogd.</p>
+      <table class="summary-table" id="symptomSummaryTable" style="display:none;">
+        <thead>
+          <tr><th>Afwijking</th><th>Aantal</th><th>Laatst</th></tr>
+        </thead>
+        <tbody id="symptomSummaryBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h2>Logboek</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <ul class="entry-list" id="symptomList"></ul>
+    </div>
+  </section>
+
+  <section id="tabMedication" class="tab-panel">
+    <div class="card">
+      <div class="collapsible-header" id="medicationFormHeader" onclick="toggleMedicationForm()">
+        <h2 id="medicationFormTitle">+ Nieuwe medicatie</h2>
+        <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      </div>
+      <div class="collapsible-body" id="medicationFormBody" style="display:none;">
+        <form class="entry-form" id="medicationForm">
+          <div>
+            <label for="medicationName">Medicijn</label>
+            <input type="text" id="medicationName" list="medicationSuggestions" placeholder="bijv. Bravecto" required />
+            <datalist id="medicationSuggestions"></datalist>
+          </div>
+          <div>
+            <label for="medicationDate">Datum gegeven</label>
+            <div class="date-field">
+              <input type="date" id="medicationDate" required />
+              <button type="button" class="today-btn" data-target="medicationDate">Vandaag</button>
+            </div>
+          </div>
+          <div>
+            <label for="medicationDose">Dosering (optioneel)</label>
+            <input type="text" id="medicationDose" placeholder="bijv. 1 tablet, 10mg" />
+          </div>
+          <div>
+            <label for="medicationNextDue">Volgende dosis (optioneel)</label>
+            <div class="date-field">
+              <input type="date" id="medicationNextDue" />
+              <button type="button" class="today-btn" onclick="setMedicationNextDue(1, 'month')">+1 maand</button>
+              <button type="button" class="today-btn" onclick="setMedicationNextDue(3, 'month')">+3 maanden</button>
+            </div>
+            <p class="hint-text" style="margin-top:6px;">Bijv. elke 3 maanden voor Bravecto — je krijgt dan tijdig een herinnering.</p>
+          </div>
+          <div>
+            <label for="medicationNote">Notitie (optioneel)</label>
+            <input type="text" id="medicationNote" placeholder="bijv. bij het eten" />
+          </div>
+          <button class="submit" type="submit">Opslaan</button>
+          <button type="button" class="today-btn" id="medicationCancelEditBtn" style="display:none;" onclick="cancelMedicationEdit()">Bewerken annuleren</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Overzicht</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <ul class="entry-list" id="medicationList"></ul>
+    </div>
+  </section>
+
   <section id="tabProfile" class="tab-panel">
     <div class="card">
       <h2 id="profileHeading">🐾 Bewerk huisdier</h2>
@@ -1207,14 +1341,14 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="vaxReminderOverlay" onclick="if (event.target === this) closeVaxReminder();">
+<div class="detail-overlay" id="careReminderOverlay" onclick="if (event.target === this) closeCareReminder();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>💉 Vaccinatie-herinnering</h2>
-      <button type="button" class="today-btn" onclick="closeVaxReminder()">Sluiten</button>
+      <h2>💉 Zorg-herinnering</h2>
+      <button type="button" class="today-btn" onclick="closeCareReminder()">Sluiten</button>
     </div>
-    <div id="vaxReminderBody"></div>
-    <button type="button" class="submit" style="width:100%;margin-top:14px;" onclick="closeVaxReminder()">Begrepen</button>
+    <div id="careReminderBody"></div>
+    <button type="button" class="submit" style="width:100%;margin-top:14px;" onclick="closeCareReminder()">Begrepen</button>
   </div>
 </div>
 
@@ -1439,10 +1573,14 @@
     document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
     document.getElementById("tabVax").classList.toggle("active", tab === "vax");
+    document.getElementById("tabSymptoms").classList.toggle("active", tab === "symptoms");
+    document.getElementById("tabMedication").classList.toggle("active", tab === "medication");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
     document.getElementById("tabBtnVax").classList.toggle("active", tab === "vax");
+    document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
+    document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
     document.getElementById("tabBtnProfile").classList.toggle("active", tab === "profile");
   }
 
@@ -2710,16 +2848,34 @@
 
   // Discrete traffic-light status rather than the weight/blood continuous
   // gradient — expiry is inherently a threshold thing (fine / soon / overdue),
-  // not a value sitting somewhere on a smooth scale.
-  function vaccinationStatus(v) {
-    if (!v.valid_until) return { color: "var(--text-muted)", daysLeft: null };
+  // not a value sitting somewhere on a smooth scale. Shared by vaccinations
+  // and medications, which both have a "due date" concept.
+  function dueStatusFromDate(dateStr) {
+    if (!dateStr) return { color: "var(--text-muted)", daysLeft: null };
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const validUntil = new Date(v.valid_until);
-    const daysLeft = Math.round((validUntil - today) / 86400000);
+    const dueDate = new Date(dateStr);
+    const daysLeft = Math.round((dueDate - today) / 86400000);
     if (daysLeft < 0) return { color: "#ff3b30", daysLeft };
     if (daysLeft <= 30) return { color: "#ff9500", daysLeft };
     return { color: "#34c759", daysLeft };
+  }
+
+  function vaccinationStatus(v) {
+    return dueStatusFromDate(v.valid_until);
+  }
+
+  // Only the most recent entry per name matters for "what needs action now"
+  // — an old entry that's since been renewed/redosed shouldn't trigger a
+  // false "verlopen" alert just because it's still sitting in the history.
+  function latestByField(data, field) {
+    const latest = {};
+    data.forEach((row) => {
+      const key = row[field];
+      const existing = latest[key];
+      if (!existing || row.date > existing.date) latest[key] = row;
+    });
+    return Object.values(latest);
   }
 
   function editVax(row) {
@@ -2790,7 +2946,6 @@
 
     latestVaxData = data;
     renderVaxList(data);
-    maybeShowVaxReminder(data);
   }
 
   function renderVaxList(data) {
@@ -2831,45 +2986,37 @@
     await loadVaccinations();
   }
 
-  // --- Vaccination expiry reminder popup ------------------------------------
+  // --- Combined care reminder popup (vaccinations + medications) -----------
   // Shown once per calendar day (not on every tab switch/resume) so it's a
   // helpful nudge instead of a nag, per the "geen achtergrond-pushmeldingen,
   // wel een pop-up bij openen" decision.
-  function latestPerVaccine(data) {
-    const latest = {};
-    data.forEach((row) => {
-      const existing = latest[row.vaccine];
-      if (!existing || row.date > existing.date) latest[row.vaccine] = row;
-    });
-    return Object.values(latest);
-  }
+  function maybeShowCareReminders() {
+    const dueVax = latestByField(latestVaxData || [], "vaccine")
+      .map((row) => ({ kind: "vaccinatie", name: row.vaccine, dueDate: row.valid_until, status: dueStatusFromDate(row.valid_until) }))
+      .filter((x) => x.dueDate && x.status.daysLeft <= 30);
 
-  function maybeShowVaxReminder(data) {
-    // Only the most recent shot per vaccine matters for "what needs action
-    // now" — an old entry that's since been renewed shouldn't trigger a
-    // false "verlopen" alert just because it's still sitting in the history.
-    const due = latestPerVaccine(data)
-      .map((row) => ({ row, status: vaccinationStatus(row) }))
-      .filter((x) => x.row.valid_until && x.status.daysLeft <= 30)
-      .sort((a, b) => a.status.daysLeft - b.status.daysLeft);
+    const dueMeds = latestByField(latestMedicationData || [], "name")
+      .map((row) => ({ kind: "medicatie", name: row.name, dueDate: row.next_due_date, status: dueStatusFromDate(row.next_due_date) }))
+      .filter((x) => x.dueDate && x.status.daysLeft <= 30);
 
+    const due = [...dueVax, ...dueMeds].sort((a, b) => a.status.daysLeft - b.status.daysLeft);
     if (!due.length) return;
 
     const today = dateToISO(new Date());
-    if (localStorage.getItem("vaxReminderShownDate") === today) return;
+    if (localStorage.getItem("careReminderShownDate") === today) return;
 
     const body = due
-      .map(({ row, status }) => {
+      .map(({ kind, name, dueDate, status }) => {
         const text =
           status.daysLeft < 0
-            ? `Verlopen sinds ${formatDate(row.valid_until)}`
+            ? `Verlopen sinds ${formatDate(dueDate)}`
             : status.daysLeft === 0
             ? "Verloopt vandaag"
-            : `Verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"} (${formatDate(row.valid_until)})`;
+            : `Verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"} (${formatDate(dueDate)})`;
         return `
           <div class="detail-row">
             <div class="detail-row-label">
-              <span><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}</span>
+              <span><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(name)} <span class="detail-ref">(${kind})</span></span>
               <span class="detail-ref">${text}</span>
             </div>
           </div>
@@ -2877,13 +3024,321 @@
       })
       .join("");
 
-    document.getElementById("vaxReminderBody").innerHTML = body;
-    document.getElementById("vaxReminderOverlay").classList.add("show");
-    localStorage.setItem("vaxReminderShownDate", today);
+    document.getElementById("careReminderBody").innerHTML = body;
+    document.getElementById("careReminderOverlay").classList.add("show");
+    localStorage.setItem("careReminderShownDate", today);
   }
 
-  function closeVaxReminder() {
-    document.getElementById("vaxReminderOverlay").classList.remove("show");
+  function closeCareReminder() {
+    document.getElementById("careReminderOverlay").classList.remove("show");
+  }
+
+  // --- Symptomen / afwijkingen logboek --------------------------------------
+  const symptomForm = document.getElementById("symptomForm");
+  const symptomList = document.getElementById("symptomList");
+  let editingSymptomId = null;
+  let latestSymptomData = [];
+
+  document.getElementById("symptomDate").valueAsDate = new Date();
+
+  function toggleSymptomForm(forceOpen) {
+    const header = document.getElementById("symptomFormHeader");
+    const body = document.getElementById("symptomFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingSymptomId) {
+      document.getElementById("symptomFormTitle").textContent = open ? "Nieuwe afwijking" : "+ Nieuwe afwijking";
+    }
+  }
+
+  function openSymptomForm() {
+    toggleSymptomForm(true);
+  }
+
+  function updateSymptomSuggestions() {
+    const names = [...new Set(latestSymptomData.map((r) => r.symptom))];
+    document.getElementById("symptomSuggestions").innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join("");
+  }
+
+  function editSymptom(row) {
+    editingSymptomId = row.id;
+    document.getElementById("symptomName").value = row.symptom;
+    document.getElementById("symptomDate").value = row.date;
+    document.getElementById("symptomSeverity").value = row.severity || "";
+    document.getElementById("symptomNote").value = row.note || "";
+    document.getElementById("symptomFormTitle").textContent = "Afwijking bewerken";
+    symptomForm.querySelector("button.submit").textContent = "Bijwerken";
+    document.getElementById("symptomCancelEditBtn").style.display = "";
+    openSymptomForm();
+    switchTab("symptoms");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelSymptomEdit() {
+    editingSymptomId = null;
+    symptomForm.reset();
+    document.getElementById("symptomDate").valueAsDate = new Date();
+    document.getElementById("symptomFormTitle").textContent = "+ Nieuwe afwijking";
+    symptomForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("symptomCancelEditBtn").style.display = "none";
+    toggleSymptomForm(false);
+  }
+
+  symptomForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = symptomForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const symptom = document.getElementById("symptomName").value.trim();
+    const date = document.getElementById("symptomDate").value;
+    const severity = document.getElementById("symptomSeverity").value || null;
+    const note = document.getElementById("symptomNote").value.trim() || null;
+
+    const { error } = editingSymptomId
+      ? await supabaseClient.from("symptom_logs").update({ symptom, date, severity, note }).eq("id", editingSymptomId)
+      : await supabaseClient.from("symptom_logs").insert([{ symptom, date, severity, note, pet_id: currentPetId }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    cancelSymptomEdit();
+    showSuccess("Afwijking opgeslagen ✓");
+    await loadSymptoms();
+  });
+
+  async function loadSymptoms() {
+    if (!isConfigured || !currentPetId) return;
+
+    const { data, error } = await supabaseClient
+      .from("symptom_logs")
+      .select("*")
+      .eq("pet_id", currentPetId)
+      .order("date", { ascending: false });
+
+    if (error) {
+      showError("Laden mislukt: " + error.message);
+      return;
+    }
+
+    latestSymptomData = data;
+    updateSymptomSuggestions();
+    renderSymptomList(data);
+    renderSymptomSummary(data);
+  }
+
+  function renderSymptomList(data) {
+    symptomList.innerHTML = "";
+
+    if (data.length === 0) {
+      symptomList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen afwijkingen gelogd</li>';
+      return;
+    }
+
+    const severityColor = { licht: "#34c759", matig: "#ff9500", ernstig: "#ff3b30" };
+
+    data.forEach((row) => {
+      const color = severityColor[row.severity] || "var(--text-muted)";
+      const innerHtml = `
+        <div class="entry-main">
+          <span class="primary"><span class="status-dot" style="background:${color};"></span>${escapeHtml(row.symptom)}</span>
+          <span class="secondary">${formatDate(row.date)}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+        </div>
+      `;
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteSymptom(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editSymptom(row) },
+      ]);
+      symptomList.appendChild(li);
+    });
+  }
+
+  function renderSymptomSummary(data) {
+    const emptyEl = document.getElementById("symptomSummaryEmpty");
+    const tableEl = document.getElementById("symptomSummaryTable");
+
+    if (data.length === 0) {
+      emptyEl.style.display = "";
+      tableEl.style.display = "none";
+      return;
+    }
+
+    const counts = {};
+    data.forEach((row) => {
+      if (!counts[row.symptom]) counts[row.symptom] = { count: 0, last: row.date };
+      counts[row.symptom].count += 1;
+      if (row.date > counts[row.symptom].last) counts[row.symptom].last = row.date;
+    });
+
+    const rows = Object.entries(counts).sort((a, b) => b[1].count - a[1].count);
+
+    document.getElementById("symptomSummaryBody").innerHTML = rows
+      .map(([symptom, info]) => `<tr><td>${escapeHtml(symptom)}</td><td>${info.count}x</td><td>${formatDate(info.last)}</td></tr>`)
+      .join("");
+
+    emptyEl.style.display = "none";
+    tableEl.style.display = "";
+  }
+
+  async function deleteSymptom(id) {
+    const { error } = await supabaseClient.from("symptom_logs").delete().eq("id", id);
+    if (error) {
+      showError("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    await loadSymptoms();
+  }
+
+  // --- Medicatie logboek -----------------------------------------------------
+  const medicationForm = document.getElementById("medicationForm");
+  const medicationList = document.getElementById("medicationList");
+  let editingMedicationId = null;
+  let latestMedicationData = [];
+
+  document.getElementById("medicationDate").valueAsDate = new Date();
+
+  function toggleMedicationForm(forceOpen) {
+    const header = document.getElementById("medicationFormHeader");
+    const body = document.getElementById("medicationFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingMedicationId) {
+      document.getElementById("medicationFormTitle").textContent = open ? "Nieuwe medicatie" : "+ Nieuwe medicatie";
+    }
+  }
+
+  function openMedicationForm() {
+    toggleMedicationForm(true);
+  }
+
+  function updateMedicationSuggestions() {
+    const names = [...new Set(latestMedicationData.map((r) => r.name))];
+    document.getElementById("medicationSuggestions").innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join("");
+  }
+
+  function setMedicationNextDue(amount, unit) {
+    const dateInput = document.getElementById("medicationDate");
+    const base = dateInput.value ? new Date(dateInput.value) : new Date();
+    if (unit === "month") base.setMonth(base.getMonth() + amount);
+    document.getElementById("medicationNextDue").value = dateToISO(base);
+  }
+
+  function editMedication(row) {
+    editingMedicationId = row.id;
+    document.getElementById("medicationName").value = row.name;
+    document.getElementById("medicationDate").value = row.date;
+    document.getElementById("medicationDose").value = row.dose || "";
+    document.getElementById("medicationNextDue").value = row.next_due_date || "";
+    document.getElementById("medicationNote").value = row.note || "";
+    document.getElementById("medicationFormTitle").textContent = "Medicatie bewerken";
+    medicationForm.querySelector("button.submit").textContent = "Bijwerken";
+    document.getElementById("medicationCancelEditBtn").style.display = "";
+    openMedicationForm();
+    switchTab("medication");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelMedicationEdit() {
+    editingMedicationId = null;
+    medicationForm.reset();
+    document.getElementById("medicationDate").valueAsDate = new Date();
+    document.getElementById("medicationFormTitle").textContent = "+ Nieuwe medicatie";
+    medicationForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("medicationCancelEditBtn").style.display = "none";
+    toggleMedicationForm(false);
+  }
+
+  medicationForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = medicationForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const name = document.getElementById("medicationName").value.trim();
+    const date = document.getElementById("medicationDate").value;
+    const dose = document.getElementById("medicationDose").value.trim() || null;
+    const next_due_date = document.getElementById("medicationNextDue").value || null;
+    const note = document.getElementById("medicationNote").value.trim() || null;
+
+    const { error } = editingMedicationId
+      ? await supabaseClient.from("medications").update({ name, date, dose, next_due_date, note }).eq("id", editingMedicationId)
+      : await supabaseClient.from("medications").insert([{ name, date, dose, next_due_date, note, pet_id: currentPetId }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    cancelMedicationEdit();
+    showSuccess("Medicatie opgeslagen ✓");
+    await loadMedications();
+  });
+
+  async function loadMedications() {
+    if (!isConfigured || !currentPetId) return;
+
+    const { data, error } = await supabaseClient
+      .from("medications")
+      .select("*")
+      .eq("pet_id", currentPetId)
+      .order("date", { ascending: false });
+
+    if (error) {
+      showError("Laden mislukt: " + error.message);
+      return;
+    }
+
+    latestMedicationData = data;
+    updateMedicationSuggestions();
+    renderMedicationList(data);
+  }
+
+  function renderMedicationList(data) {
+    medicationList.innerHTML = "";
+
+    if (data.length === 0) {
+      medicationList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen medicatie gelogd</li>';
+      return;
+    }
+
+    data.forEach((row) => {
+      const status = dueStatusFromDate(row.next_due_date);
+      const dueText = row.next_due_date
+        ? status.daysLeft < 0
+          ? `Volgende dosis was ${formatDate(row.next_due_date)}`
+          : `Volgende dosis ${formatDate(row.next_due_date)}`
+        : "Geen vervolgdosis gepland";
+      const innerHtml = `
+        <div class="entry-main">
+          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.name)}</span>
+          <span class="secondary">${formatDate(row.date)}${row.dose ? " · " + escapeHtml(row.dose) : ""} · ${dueText}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+        </div>
+      `;
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteMedication(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editMedication(row) },
+      ]);
+      medicationList.appendChild(li);
+    });
+  }
+
+  async function deleteMedication(id) {
+    const { error } = await supabaseClient.from("medications").delete().eq("id", id);
+    if (error) {
+      showError("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    await loadMedications();
   }
 
   // --- Profile ---------------------------------------------------------
@@ -3050,7 +3505,15 @@
     const btn = document.getElementById("refreshBtn");
     if (manual && btn) btn.classList.add("spinning");
 
-    await Promise.all([loadWeights(), loadBloodValues(), loadVaccinations(), loadProfile()]);
+    await Promise.all([
+      loadWeights(),
+      loadBloodValues(),
+      loadVaccinations(),
+      loadSymptoms(),
+      loadMedications(),
+      loadProfile(),
+    ]);
+    maybeShowCareReminders();
 
     if (manual && btn) setTimeout(() => btn.classList.remove("spinning"), 600);
     refreshing = false;

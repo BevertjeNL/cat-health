@@ -145,3 +145,57 @@ revoke all on cat_profile from anon;
 -- ------------------------------------------------------------
 
 alter table pets add column if not exists photo_data_url text;
+
+
+-- ------------------------------------------------------------
+-- STAP 7: logboeken voor afwijkingen (symptomen) en medicatie.
+-- Veilig om nu te draaien, additief. Volgt exact hetzelfde
+-- eigenaarschap-patroon (pet_id -> auth.uid() via pets) als de
+-- rest van de app.
+-- ------------------------------------------------------------
+
+create table if not exists symptom_logs (
+  id bigint generated always as identity primary key,
+  pet_id bigint not null references pets (id) on delete cascade,
+  date date not null,
+  symptom text not null,
+  severity text check (severity in ('licht', 'matig', 'ernstig')),
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists medications (
+  id bigint generated always as identity primary key,
+  pet_id bigint not null references pets (id) on delete cascade,
+  date date not null,
+  name text not null,
+  dose text,
+  next_due_date date,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists symptom_logs_pet_id_idx on symptom_logs (pet_id);
+create index if not exists symptom_logs_date_idx on symptom_logs (date);
+create index if not exists medications_pet_id_idx on medications (pet_id);
+create index if not exists medications_date_idx on medications (date);
+create index if not exists medications_next_due_date_idx on medications (next_due_date);
+
+alter table symptom_logs enable row level security;
+alter table medications enable row level security;
+
+create policy "owner full access symptom_logs"
+  on symptom_logs for all
+  to authenticated
+  using (auth.uid() = (select user_id from pets where pets.id = symptom_logs.pet_id))
+  with check (auth.uid() = (select user_id from pets where pets.id = symptom_logs.pet_id));
+
+create policy "owner full access medications"
+  on medications for all
+  to authenticated
+  using (auth.uid() = (select user_id from pets where pets.id = medications.pet_id))
+  with check (auth.uid() = (select user_id from pets where pets.id = medications.pet_id));
+
+grant select, insert, update, delete on symptom_logs to authenticated;
+grant select, insert, update, delete on medications to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
