@@ -199,3 +199,55 @@ create policy "owner full access medications"
 grant select, insert, update, delete on symptom_logs to authenticated;
 grant select, insert, update, delete on medications to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
+
+
+-- ------------------------------------------------------------
+-- STAP 8: dashboard-ondersteuning — medicatie-catalogus (met doel,
+-- voor hergebruik/dropdown), dierenarts-bezoeken-logboek, en een
+-- instelbare gewicht-herinneringstermijn per huisdier.
+-- Veilig om nu te draaien, additief.
+-- ------------------------------------------------------------
+
+create table if not exists medication_catalog (
+  id bigint generated always as identity primary key,
+  pet_id bigint not null references pets (id) on delete cascade,
+  name text not null,
+  purpose text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists vet_visits (
+  id bigint generated always as identity primary key,
+  pet_id bigint not null references pets (id) on delete cascade,
+  date date not null,
+  reason text,
+  result text,
+  note text,
+  created_at timestamptz not null default now()
+);
+
+alter table medications add column if not exists purpose text;
+alter table pets add column if not exists weight_reminder_days integer;
+
+create index if not exists medication_catalog_pet_id_idx on medication_catalog (pet_id);
+create index if not exists vet_visits_pet_id_idx on vet_visits (pet_id);
+create index if not exists vet_visits_date_idx on vet_visits (date);
+
+alter table medication_catalog enable row level security;
+alter table vet_visits enable row level security;
+
+create policy "owner full access medication_catalog"
+  on medication_catalog for all
+  to authenticated
+  using (auth.uid() = (select user_id from pets where pets.id = medication_catalog.pet_id))
+  with check (auth.uid() = (select user_id from pets where pets.id = medication_catalog.pet_id));
+
+create policy "owner full access vet_visits"
+  on vet_visits for all
+  to authenticated
+  using (auth.uid() = (select user_id from pets where pets.id = vet_visits.pet_id))
+  with check (auth.uid() = (select user_id from pets where pets.id = vet_visits.pet_id));
+
+grant select, insert, update, delete on medication_catalog to authenticated;
+grant select, insert, update, delete on vet_visits to authenticated;
+grant usage, select on all sequences in schema public to authenticated;

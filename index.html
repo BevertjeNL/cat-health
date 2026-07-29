@@ -78,16 +78,18 @@
     background: linear-gradient(180deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.55));
   }
 
-  header h1 {
-    font-size: 1.4rem;
-    margin: 0;
-  }
-
-  .refresh-btn {
+  .header-icons {
     position: absolute;
-    right: 16px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
+    display: flex;
+    gap: 6px;
+    z-index: 1;
+  }
+
+  .refresh-btn,
+  .profile-icon-btn {
     background: rgba(0, 0, 0, 0.18);
     border: none;
     color: #fff;
@@ -95,7 +97,11 @@
     line-height: 1;
     padding: 7px;
     border-radius: 10px;
-    z-index: 1;
+  }
+
+  .refresh-btn:active,
+  .profile-icon-btn:active {
+    color: var(--accent-contrast);
   }
 
   .refresh-btn:active {
@@ -140,14 +146,9 @@
     border-color: var(--accent);
   }
 
-  nav.tabs button.tab-profile {
-    border-style: dashed;
-  }
-
-  nav.tabs button.tab-profile.active {
+  nav.tabs button.tab-dashboard.active {
     background: linear-gradient(135deg, #f59e0b, #fbbf24);
     border-color: #f59e0b;
-    border-style: solid;
     color: #1c1c1e;
   }
 
@@ -610,6 +611,92 @@
     line-height: 1.4;
   }
 
+  .metric-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .metric-summary .metric-value {
+    font-size: 1.8rem;
+    font-weight: 700;
+  }
+
+  .metric-summary .metric-delta {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .metric-summary .metric-sub {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+
+  .metric-summary .metric-note {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    padding: 8px 10px;
+    border-radius: 10px;
+    background: var(--bg);
+  }
+
+  /* --- Dashboard --- */
+  .dashboard-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .dashboard-card {
+    cursor: pointer;
+  }
+
+  .dashboard-card h3 {
+    font-size: 0.75rem;
+    margin: 0 0 8px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+  }
+
+  .dashboard-card-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+    line-height: 1.3;
+  }
+
+  .dashboard-card-sub {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.3;
+  }
+
+  .dashboard-card-empty {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+  }
+
+  .dashboard-alert-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 2px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    font-size: 0.9rem;
+  }
+
+  .dashboard-alert-row:last-child {
+    border-bottom: none;
+  }
+
+  .dashboard-add-btn {
+    width: 100%;
+    margin-top: 4px;
+  }
+
   .empty-state {
     color: var(--text-muted);
     font-size: 0.9rem;
@@ -918,22 +1005,36 @@
     </button>
     <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
   </div>
-  <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">⟳</button>
+  <div class="header-icons">
+    <button type="button" class="profile-icon-btn" aria-label="Profiel" onclick="switchTab('profile')">🐾</button>
+    <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">⟳</button>
+  </div>
 </header>
 
 <div id="statusBanner" class="status-banner"></div>
 
 <nav class="tabs">
-  <button id="tabBtnWeight" class="active" onclick="switchTab('weight')">Gewicht</button>
+  <button id="tabBtnDashboard" class="tab-dashboard active" onclick="switchTab('dashboard')">Dashboard</button>
+  <button id="tabBtnWeight" onclick="switchTab('weight')">Gewicht</button>
   <button id="tabBtnBlood" onclick="switchTab('blood')">Bloedwaarden</button>
   <button id="tabBtnVax" onclick="switchTab('vax')">Vaccinaties</button>
   <button id="tabBtnSymptoms" onclick="switchTab('symptoms')">Afwijkingen</button>
   <button id="tabBtnMedication" onclick="switchTab('medication')">Medicatie</button>
-  <button id="tabBtnProfile" class="tab-profile" onclick="switchTab('profile')">🐾 Profiel</button>
 </nav>
 
 <main>
-  <section id="tabWeight" class="tab-panel active">
+  <section id="tabDashboard" class="tab-panel active">
+    <div class="card" id="dashboardActueelCard">
+      <h2>Actueel</h2>
+      <div id="dashboardAlerts"></div>
+    </div>
+
+    <div class="dashboard-cards" id="dashboardCards"></div>
+
+    <button type="button" class="submit dashboard-add-btn" onclick="openQuickAddMenu()">+ Gegeven toevoegen</button>
+  </section>
+
+  <section id="tabWeight" class="tab-panel">
     <div class="card">
       <div class="collapsible-header" id="weightFormHeader" onclick="toggleWeightForm()">
         <h2 id="weightFormTitle">+ Nieuwe meting</h2>
@@ -963,10 +1064,15 @@
     </div>
 
     <div class="card">
+      <div id="weightSummary" class="metric-summary"></div>
+    </div>
+
+    <div class="card">
       <h2>Verloop</h2>
       <div class="chart-wrap">
         <canvas id="weightChart"></canvas>
       </div>
+      <p class="hint-text" id="weightZoneCaption" style="display:none;"></p>
       <p class="hint-text" style="margin-top:6px;">
         Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.
         <button type="button" class="today-btn" style="display:inline;padding:2px 10px;margin-left:6px;" onclick="weightChart && renderWeightChart(latestWeightData)">Toon alles</button>
@@ -1037,6 +1143,44 @@
       <h2>Resultaten</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
       <ul class="entry-list" id="bloodList"></ul>
+    </div>
+
+    <div class="card">
+      <div class="collapsible-header" id="vetVisitFormHeader" onclick="toggleVetVisitForm()">
+        <h2 id="vetVisitFormTitle">+ Nieuw dierenartsbezoek</h2>
+        <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      </div>
+      <div class="collapsible-body" id="vetVisitFormBody" style="display:none;">
+        <form class="entry-form" id="vetVisitForm">
+          <div>
+            <label for="vetVisitDate">Datum</label>
+            <div class="date-field">
+              <input type="date" id="vetVisitDate" required />
+              <button type="button" class="today-btn" data-target="vetVisitDate">Vandaag</button>
+            </div>
+          </div>
+          <div>
+            <label for="vetVisitReason">Reden (optioneel)</label>
+            <input type="text" id="vetVisitReason" placeholder="bijv. controle, kreupel been" />
+          </div>
+          <div>
+            <label for="vetVisitResult">Resultaat / bevindingen</label>
+            <input type="text" id="vetVisitResult" placeholder="bijv. geen bijzonderheden" />
+          </div>
+          <div>
+            <label for="vetVisitNote">Notitie (optioneel)</label>
+            <input type="text" id="vetVisitNote" placeholder="bijv. bij Caressa Delft" />
+          </div>
+          <button class="submit" type="submit">Opslaan</button>
+          <button type="button" class="today-btn" id="vetVisitCancelEditBtn" style="display:none;" onclick="cancelVetVisitEdit()">Bewerken annuleren</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Dierenartsbezoeken</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <ul class="entry-list" id="vetVisitList"></ul>
     </div>
   </section>
 
@@ -1157,9 +1301,15 @@
       <div class="collapsible-body" id="medicationFormBody" style="display:none;">
         <form class="entry-form" id="medicationForm">
           <div>
+            <label for="medicationPurpose">Doel (optioneel)</label>
+            <input type="text" id="medicationPurpose" list="medicationPurposeSuggestions" placeholder="bijv. Ontworming" />
+            <datalist id="medicationPurposeSuggestions"></datalist>
+          </div>
+          <div>
             <label for="medicationName">Medicijn</label>
             <input type="text" id="medicationName" list="medicationSuggestions" placeholder="bijv. Bravecto" required />
             <datalist id="medicationSuggestions"></datalist>
+            <p class="hint-text" style="margin-top:6px;">Eerder ingevoerde medicijnen (en hun doel) verschijnen hier automatisch weer als suggestie.</p>
           </div>
           <div>
             <label for="medicationDate">Datum gegeven</label>
@@ -1277,10 +1427,16 @@
           </div>
         </div>
         <p class="hint-text" id="targetWeightHint">
-          Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en energieniveau.
-          Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor
-          advies van je dierenarts.
+          Vul beide velden in om een streefzone bij de gewichtsgrafiek te tonen. Laat ze leeg als je
+          (nog) geen streefgewicht hebt afgesproken — dan toont de grafiek alleen het verloop, zonder kleuroordeel.
         </p>
+        <div>
+          <label for="catWeightReminderDays">Herinner bij geen meting na (dagen)</label>
+          <input type="number" id="catWeightReminderDays" inputmode="numeric" min="1" step="1" placeholder="30" />
+          <p class="hint-text" style="margin-top:6px;">
+            Standaard 30 dagen. Dit is alleen een zelf ingestelde herinnering, geen medisch advies.
+          </p>
+        </div>
         <button class="submit" type="submit">Profiel opslaan</button>
       </form>
     </div>
@@ -1327,6 +1483,20 @@
       </div>
       <button class="submit" type="submit">Aanmaken</button>
     </form>
+  </div>
+</div>
+
+<div class="detail-overlay" id="quickAddOverlay" onclick="if (event.target === this) closeQuickAddMenu();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2>Gegeven toevoegen</h2>
+      <button type="button" class="today-btn" onclick="closeQuickAddMenu()">Sluiten</button>
+    </div>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('weight')">⚖️ Gewicht</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('vax')">💉 Vaccinatie</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('medication')">💊 Medicatie</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('blood')">🩸 Bloedwaarden</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('symptoms')">🩹 Afwijking</button>
   </div>
 </div>
 
@@ -1570,18 +1740,20 @@
 
   // --- Tabs --------------------------------------------------------------
   function switchTab(tab) {
+    document.getElementById("tabDashboard").classList.toggle("active", tab === "dashboard");
     document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
     document.getElementById("tabVax").classList.toggle("active", tab === "vax");
     document.getElementById("tabSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabMedication").classList.toggle("active", tab === "medication");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
+    document.getElementById("tabBtnDashboard").classList.toggle("active", tab === "dashboard");
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
     document.getElementById("tabBtnVax").classList.toggle("active", tab === "vax");
     document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
-    document.getElementById("tabBtnProfile").classList.toggle("active", tab === "profile");
+    if (tab === "dashboard") renderDashboard();
   }
 
   function showError(message) {
@@ -1619,39 +1791,19 @@
   let catProfile = {};
   let latestWeightData = [];
 
-  function computeAdultBase(profile) {
-    // This age/sex/activity curve was built from feline growth data — it
-    // doesn't transfer to other species, so only apply it for cats until
-    // a dedicated breed-weight model exists for dogs/other pets.
-    if (profile.species && profile.species !== "kat") return null;
-    let base = 4.0;
-    if (profile.sex === "mannelijk") base += 0.7;
-    if (profile.sex === "vrouwelijk") base -= 0.3;
-    if (profile.activity_level === "laag") base -= 0.2;
-    if (profile.activity_level === "hoog") base += 0.2;
-    return base;
+  // Only color the chart against a target range when the user explicitly
+  // set one — an unset range means "no judgement", not an invisible guess.
+  // (A species/breed-based auto-estimate was tried earlier and removed:
+  // presenting a computed curve as if it were a health judgement risked
+  // looking like medical advice, which this app deliberately avoids.)
+  function hasManualWeightTarget(pet) {
+    return !!(pet && pet.target_min_kg != null && pet.target_max_kg != null);
   }
 
-  function computeTargetRange(profile, adultBase, fallbackKg) {
-    if (profile.target_min_kg != null && profile.target_max_kg != null) {
-      return { min: profile.target_min_kg, max: profile.target_max_kg };
-    }
-    if (adultBase != null) {
-      return { min: adultBase - 0.4, max: adultBase + 0.4 };
-    }
-    // No species model and no manual target weight set: fall back to a
-    // neutral range around the actual measurement so nothing is falsely
-    // judged against cat-only assumptions.
-    const v = fallbackKg != null ? fallbackKg : 5;
-    return { min: v * 0.85, max: v * 1.15 };
-  }
-
-  // Uses the exact same continuous color scale as the chart's background
-  // and line gradient, so a point's color always matches what's behind it.
   function weightStatusColor(row) {
-    const adultBase = computeAdultBase(catProfile);
+    if (!hasManualWeightTarget(catProfile)) return "#4f46e5";
     const kg = row.weight_grams / 1000;
-    const range = computeTargetRange(catProfile, adultBase, kg);
+    const range = { min: catProfile.target_min_kg, max: catProfile.target_max_kg };
     const [r, g, b] = targetZoneColorAt(kg, range);
     return `rgb(${r}, ${g}, ${b})`;
   }
@@ -1924,8 +2076,9 @@
   function renderWeightChart(data) {
     const ctx = document.getElementById("weightChart");
     const weights = data.map((row) => row.weight_grams / 1000);
-    const adultBase = computeAdultBase(catProfile);
-    const range = computeTargetRange(catProfile, adultBase, weights.length ? weights[weights.length - 1] : null);
+    const hasRange = hasManualWeightTarget(catProfile);
+    const range = hasRange ? { min: catProfile.target_min_kg, max: catProfile.target_max_kg } : null;
+    const flatColor = "#4f46e5";
 
     const pointColors = data.map(weightStatusColor);
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
@@ -1947,13 +2100,19 @@
     if (weightChart) {
       weightChart.data.datasets[0].data = points;
       weightChart.data.datasets[0].pointBackgroundColor = pointColors;
+      // The gradient plugin overwrites borderColor when a range is active;
+      // when there isn't one, reset it to a flat color ourselves so a
+      // previously-set gradient object doesn't linger after the target
+      // weight is cleared.
+      weightChart.data.datasets[0].borderColor = hasRange ? weightChart.data.datasets[0].borderColor : flatColor;
       weightChart.options.scales.x.min = xMin;
       weightChart.options.scales.x.max = xMax;
       weightChart.options.scales.y.min = yMin;
       weightChart.options.scales.y.max = yMax;
-      weightChart.options.plugins.zoneGradient = { range };
+      weightChart.options.plugins.zoneGradient = hasRange ? { range } : null;
       weightChart.options.plugins.zoom.limits = zoomLimits;
       weightChart.update();
+      renderWeightSummary();
       return;
     }
 
@@ -1965,7 +2124,7 @@
           {
             label: "Gewicht (kg)",
             data: points,
-            borderColor: "#34c759",
+            borderColor: hasRange ? "#34c759" : flatColor,
             backgroundColor: "transparent",
             borderWidth: 3,
             tension: 0.3,
@@ -2006,7 +2165,7 @@
               label: (item) => item.parsed.y.toFixed(1) + " kg",
             },
           },
-          zoneGradient: { range },
+          zoneGradient: hasRange ? { range } : null,
           zoom: {
             pan: { enabled: true, mode: "x" },
             zoom: {
@@ -2019,6 +2178,77 @@
         },
       },
     });
+    renderWeightSummary();
+  }
+
+  function daysSince(dateStr) {
+    if (!dateStr) return null;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const d = new Date(dateStr);
+    d.setHours(0, 0, 0, 0);
+    return Math.round((today - d) / 86400000);
+  }
+
+  function formatDaysAgo(days) {
+    if (days == null) return "onbekend";
+    if (days <= 0) return "vandaag";
+    if (days === 1) return "1 dag geleden";
+    if (days < 31) return `${days} dagen geleden`;
+    const months = Math.round(days / 30);
+    if (months < 12) return months === 1 ? "1 maand geleden" : `${months} maanden geleden`;
+    const years = Math.round(days / 365);
+    return years === 1 ? "1 jaar geleden" : `${years} jaar geleden`;
+  }
+
+  // Reusable so both the Gewicht-tab summary and the dashboard card can show
+  // identical, consistent numbers without duplicating the logic.
+  function computeWeightSummary() {
+    const data = latestWeightData || [];
+    if (!data.length) return null;
+    const last = data[data.length - 1];
+    const prev = data.length > 1 ? data[data.length - 2] : null;
+    const lastKg = last.weight_grams / 1000;
+    const prevKg = prev ? prev.weight_grams / 1000 : null;
+    const diffKg = prevKg != null ? lastKg - prevKg : null;
+    const diffPct = prevKg ? (diffKg / prevKg) * 100 : null;
+    const daysSinceLast = daysSince(last.date);
+    const reminderDays = catProfile.weight_reminder_days != null ? catProfile.weight_reminder_days : 30;
+    const reminderDue = daysSinceLast != null && daysSinceLast >= reminderDays;
+    return { lastKg, lastDate: last.date, diffKg, diffPct, daysSinceLast, reminderDays, reminderDue };
+  }
+
+  function renderWeightSummary() {
+    const el = document.getElementById("weightSummary");
+    if (!el) return;
+    const s = computeWeightSummary();
+
+    if (!s) {
+      el.innerHTML = '<p class="hint-text">Nog geen gewichtsmetingen geregistreerd.</p>';
+    } else {
+      const deltaText =
+        s.diffKg == null
+          ? "Nog geen vorige meting om mee te vergelijken"
+          : `${s.diffKg > 0 ? "+" : ""}${s.diffKg.toFixed(1)} kg (${s.diffPct > 0 ? "+" : ""}${s.diffPct.toFixed(1)}%) sinds de vorige meting`;
+      el.innerHTML = `
+        <span class="metric-value">${s.lastKg.toFixed(1)} kg</span>
+        <span class="metric-delta">${deltaText}</span>
+        <span class="metric-sub">Gemeten op ${formatDate(s.lastDate)} · ${formatDaysAgo(s.daysSinceLast)}</span>
+        ${
+          s.reminderDue
+            ? `<div class="metric-note">Er is ${formatDaysAgo(s.daysSinceLast)} niet meer gewogen (zelf ingestelde herinnering: ${s.reminderDays} dag${s.reminderDays === 1 ? "" : "en"}).</div>`
+            : ""
+        }
+      `;
+    }
+
+    const captionEl = document.getElementById("weightZoneCaption");
+    if (hasManualWeightTarget(catProfile)) {
+      captionEl.textContent = `Dit is de ingestelde streefzone voor ${catProfile.name || "je huisdier"}: ${catProfile.target_min_kg}–${catProfile.target_max_kg} kg.`;
+      captionEl.style.display = "";
+    } else {
+      captionEl.style.display = "none";
+    }
   }
 
   function renderWeightList(data) {
@@ -2816,6 +3046,131 @@
     }
   }
 
+  // --- Dierenartsbezoeken logboek --------------------------------------------
+  const vetVisitForm = document.getElementById("vetVisitForm");
+  const vetVisitList = document.getElementById("vetVisitList");
+  let editingVetVisitId = null;
+  let latestVetVisitData = [];
+
+  document.getElementById("vetVisitDate").valueAsDate = new Date();
+
+  function toggleVetVisitForm(forceOpen) {
+    const header = document.getElementById("vetVisitFormHeader");
+    const body = document.getElementById("vetVisitFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingVetVisitId) {
+      document.getElementById("vetVisitFormTitle").textContent = open ? "Nieuw dierenartsbezoek" : "+ Nieuw dierenartsbezoek";
+    }
+  }
+
+  function openVetVisitForm() {
+    toggleVetVisitForm(true);
+  }
+
+  function editVetVisit(row) {
+    editingVetVisitId = row.id;
+    document.getElementById("vetVisitDate").value = row.date;
+    document.getElementById("vetVisitReason").value = row.reason || "";
+    document.getElementById("vetVisitResult").value = row.result || "";
+    document.getElementById("vetVisitNote").value = row.note || "";
+    document.getElementById("vetVisitFormTitle").textContent = "Bezoek bewerken";
+    vetVisitForm.querySelector("button.submit").textContent = "Bijwerken";
+    document.getElementById("vetVisitCancelEditBtn").style.display = "";
+    openVetVisitForm();
+    switchTab("blood");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelVetVisitEdit() {
+    editingVetVisitId = null;
+    vetVisitForm.reset();
+    document.getElementById("vetVisitDate").valueAsDate = new Date();
+    document.getElementById("vetVisitFormTitle").textContent = "+ Nieuw dierenartsbezoek";
+    vetVisitForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("vetVisitCancelEditBtn").style.display = "none";
+    toggleVetVisitForm(false);
+  }
+
+  vetVisitForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = vetVisitForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const date = document.getElementById("vetVisitDate").value;
+    const reason = document.getElementById("vetVisitReason").value.trim() || null;
+    const result = document.getElementById("vetVisitResult").value.trim() || null;
+    const note = document.getElementById("vetVisitNote").value.trim() || null;
+
+    const { error } = editingVetVisitId
+      ? await supabaseClient.from("vet_visits").update({ date, reason, result, note }).eq("id", editingVetVisitId)
+      : await supabaseClient.from("vet_visits").insert([{ date, reason, result, note, pet_id: currentPetId }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    cancelVetVisitEdit();
+    showSuccess("Bezoek opgeslagen ✓");
+    await loadVetVisits();
+  });
+
+  async function loadVetVisits() {
+    if (!isConfigured || !currentPetId) return;
+
+    const { data, error } = await supabaseClient
+      .from("vet_visits")
+      .select("*")
+      .eq("pet_id", currentPetId)
+      .order("date", { ascending: false });
+
+    if (error) {
+      showError("Laden mislukt: " + error.message);
+      return;
+    }
+
+    latestVetVisitData = data;
+    renderVetVisitList(data);
+  }
+
+  function renderVetVisitList(data) {
+    vetVisitList.innerHTML = "";
+
+    if (data.length === 0) {
+      vetVisitList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen bezoeken gelogd</li>';
+      return;
+    }
+
+    data.forEach((row) => {
+      const innerHtml = `
+        <div class="entry-main">
+          <span class="primary">${escapeHtml(row.reason || "Dierenartsbezoek")}</span>
+          <span class="secondary">${formatDate(row.date)}${row.result ? " · " + escapeHtml(row.result) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+        </div>
+      `;
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteVetVisit(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editVetVisit(row) },
+      ]);
+      vetVisitList.appendChild(li);
+    });
+  }
+
+  async function deleteVetVisit(id) {
+    const { error } = await supabaseClient.from("vet_visits").delete().eq("id", id);
+    if (error) {
+      showError("Verwijderen mislukt: " + error.message);
+      return;
+    }
+    await loadVetVisits();
+  }
+
   // --- Vaccinations ----------------------------------------------------
   const vaxForm = document.getElementById("vaxForm");
   const vaxList = document.getElementById("vaxList");
@@ -3200,6 +3555,10 @@
   const medicationList = document.getElementById("medicationList");
   let editingMedicationId = null;
   let latestMedicationData = [];
+  // The "database" of previously-registered medicine+purpose combos the user
+  // asked for — built up automatically as a byproduct of logging (no separate
+  // manage-list UI to maintain), so picking gets easier the more you log.
+  let medicationCatalog = [];
 
   document.getElementById("medicationDate").valueAsDate = new Date();
 
@@ -3218,9 +3577,48 @@
     toggleMedicationForm(true);
   }
 
-  function updateMedicationSuggestions() {
-    const names = [...new Set(latestMedicationData.map((r) => r.name))];
+  const DEFAULT_MEDICATION_PURPOSES = ["Ontworming", "Vlooien/tekenbestrijding", "Overig"];
+
+  function updateMedicationPurposeSuggestions() {
+    const purposes = [...new Set([...DEFAULT_MEDICATION_PURPOSES, ...medicationCatalog.map((c) => c.purpose).filter(Boolean)])];
+    document.getElementById("medicationPurposeSuggestions").innerHTML = purposes.map((p) => `<option value="${escapeHtml(p)}"></option>`).join("");
+  }
+
+  // Narrows the medicine suggestions to ones registered under the chosen
+  // doel, falling back to everything once nothing matches yet.
+  function updateMedicationNameSuggestions(purposeFilter) {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    let names = purposeFilter
+      ? [...new Set(medicationCatalog.filter((c) => norm(c.purpose) === norm(purposeFilter)).map((c) => c.name))]
+      : [];
+    if (!names.length) {
+      names = [...new Set([...medicationCatalog.map((c) => c.name), ...latestMedicationData.map((r) => r.name)])];
+    }
     document.getElementById("medicationSuggestions").innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join("");
+  }
+
+  document.getElementById("medicationPurpose").addEventListener("input", (e) => {
+    updateMedicationNameSuggestions(e.target.value);
+  });
+
+  async function loadMedicationCatalog() {
+    if (!isConfigured || !currentPetId) return;
+    const { data, error } = await supabaseClient.from("medication_catalog").select("*").eq("pet_id", currentPetId);
+    if (error) return;
+    medicationCatalog = data;
+    updateMedicationPurposeSuggestions();
+    updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
+  }
+
+  // Registers a new name+doel combo the first time it's logged, so it comes
+  // back as a suggestion next time — the "databestand" the user wanted,
+  // without a separate list-management screen to keep in sync.
+  async function registerMedicationInCatalog(name, purpose) {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    const exists = medicationCatalog.some((c) => norm(c.name) === norm(name) && norm(c.purpose) === norm(purpose));
+    if (exists) return;
+    const { error } = await supabaseClient.from("medication_catalog").insert([{ name, purpose: purpose || null, pet_id: currentPetId }]);
+    if (!error) await loadMedicationCatalog();
   }
 
   function setMedicationNextDue(amount, unit) {
@@ -3232,6 +3630,7 @@
 
   function editMedication(row) {
     editingMedicationId = row.id;
+    document.getElementById("medicationPurpose").value = row.purpose || "";
     document.getElementById("medicationName").value = row.name;
     document.getElementById("medicationDate").value = row.date;
     document.getElementById("medicationDose").value = row.dose || "";
@@ -3262,6 +3661,7 @@
     const submitBtn = medicationForm.querySelector("button.submit");
     submitBtn.disabled = true;
 
+    const purpose = document.getElementById("medicationPurpose").value.trim() || null;
     const name = document.getElementById("medicationName").value.trim();
     const date = document.getElementById("medicationDate").value;
     const dose = document.getElementById("medicationDose").value.trim() || null;
@@ -3269,8 +3669,8 @@
     const note = document.getElementById("medicationNote").value.trim() || null;
 
     const { error } = editingMedicationId
-      ? await supabaseClient.from("medications").update({ name, date, dose, next_due_date, note }).eq("id", editingMedicationId)
-      : await supabaseClient.from("medications").insert([{ name, date, dose, next_due_date, note, pet_id: currentPetId }]);
+      ? await supabaseClient.from("medications").update({ name, purpose, date, dose, next_due_date, note }).eq("id", editingMedicationId)
+      : await supabaseClient.from("medications").insert([{ name, purpose, date, dose, next_due_date, note, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -3279,6 +3679,7 @@
       return;
     }
 
+    await registerMedicationInCatalog(name, purpose);
     cancelMedicationEdit();
     showSuccess("Medicatie opgeslagen ✓");
     await loadMedications();
@@ -3299,7 +3700,7 @@
     }
 
     latestMedicationData = data;
-    updateMedicationSuggestions();
+    updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
     renderMedicationList(data);
   }
 
@@ -3320,7 +3721,7 @@
         : "Geen vervolgdosis gepland";
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.name)}</span>
+          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.name)}${row.purpose ? ` <span class="detail-ref">(${escapeHtml(row.purpose)})</span>` : ""}</span>
           <span class="secondary">${formatDate(row.date)}${row.dose ? " · " + escapeHtml(row.dose) : ""} · ${dueText}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
@@ -3341,6 +3742,243 @@
     await loadMedications();
   }
 
+  // --- Dashboard -------------------------------------------------------------
+  // Every summary/alert below reads only data already stored elsewhere in the
+  // app (weight/vaccinations/medications/blood/symptoms) — no new medical
+  // judgement is introduced here, just factual restatement + prioritization.
+
+  function computeVaccinationSummary() {
+    const latest = latestByField(latestVaxData || [], "vaccine");
+    if (!latest.length) return null;
+    const withDate = latest.map((v) => ({ v, status: dueStatusFromDate(v.valid_until) })).filter((x) => x.v.valid_until);
+    const upToDate = withDate.filter((x) => x.status.daysLeft > 30).length;
+    const sorted = withDate.slice().sort((a, b) => a.status.daysLeft - b.status.daysLeft);
+    return { total: latest.length, withDate: withDate.length, upToDate, next: sorted.length ? sorted[0] : null };
+  }
+
+  function computeMedicationSummary() {
+    const latest = latestByField(latestMedicationData || [], "name");
+    const today = dateToISO(new Date());
+    const dueToday = latest.filter((m) => m.next_due_date === today);
+    const overdue = latest.filter((m) => m.next_due_date && dueStatusFromDate(m.next_due_date).daysLeft < 0);
+    const active = latest.filter((m) => !m.next_due_date || dueStatusFromDate(m.next_due_date).daysLeft >= 0);
+    return { latest, dueToday, overdue, active };
+  }
+
+  function computeBloodSummary() {
+    const data = latestBloodData || [];
+    if (!data.length) return null;
+    const latestDate = data[0].date; // loadBloodValues orders by date descending
+    const rows = data.filter((r) => r.date === latestDate);
+    let within = 0;
+    let outside = 0;
+    rows.forEach((r) => {
+      const m = findMarker(r.marker);
+      if (m && m.min != null && m.max != null) {
+        if (r.value < m.min || r.value > m.max) outside++;
+        else within++;
+      }
+    });
+    return { date: latestDate, within, outside, knownTotal: within + outside };
+  }
+
+  // "Most recent afwijking since the last vet visit" — uses the vet visit
+  // log purely as a date cutoff, no interpretation of the visit's content.
+  function computeSymptomSinceVetVisit() {
+    const lastVisit = (latestVetVisitData || [])[0];
+    const symptoms = latestSymptomData || [];
+    if (!symptoms.length) return { hasData: false };
+    const relevant = lastVisit ? symptoms.filter((s) => s.date >= lastVisit.date) : symptoms;
+    if (!relevant.length) return { hasData: true, none: true, sinceDate: lastVisit ? lastVisit.date : null };
+    const mostRecent = relevant.slice().sort((a, b) => (a.date > b.date ? -1 : 1))[0];
+    return { hasData: true, none: false, mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
+  }
+
+  function alertVaccination() {
+    const s = computeVaccinationSummary();
+    if (!s || !s.next) return null;
+    const { v, status } = s.next;
+    if (status.daysLeft < 0) {
+      return { message: `${v.vaccine} is verlopen sinds ${formatDate(v.valid_until)}.`, severity: 0, color: "#ff3b30", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
+    }
+    if (status.daysLeft <= 30) {
+      return { message: `${v.vaccine} verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}.`, severity: 1, color: "#ff9500", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
+    }
+    return { message: "Vaccinaties zijn actueel.", severity: 2, color: "#34c759", type: "vaccinatie", source: null, date: null, tabTarget: "vax" };
+  }
+
+  function alertWeight() {
+    const s = computeWeightSummary();
+    if (!s || !s.reminderDue) return null;
+    return {
+      message: `Gewicht is ${formatDaysAgo(s.daysSinceLast)} voor het laatst gemeten.`,
+      severity: 1,
+      color: "#ff9500",
+      type: "gewicht",
+      source: s.lastKg.toFixed(1) + " kg",
+      date: s.lastDate,
+      tabTarget: "weight",
+    };
+  }
+
+  function alertMedication() {
+    const s = computeMedicationSummary();
+    if (!s.latest.length) return null;
+    if (s.dueToday.length) {
+      return {
+        message: `Vandaag staat nog ${s.dueToday.length === 1 ? "één medicatiemoment" : s.dueToday.length + " medicatiemomenten"} open.`,
+        severity: 1,
+        color: "#ff9500",
+        type: "medicatie",
+        source: s.dueToday.map((m) => m.name).join(", "),
+        date: dateToISO(new Date()),
+        tabTarget: "medication",
+      };
+    }
+    if (s.overdue.length) {
+      return {
+        message: `${s.overdue[0].name} had een vervolgdosis gepland op ${formatDate(s.overdue[0].next_due_date)}.`,
+        severity: 0,
+        color: "#ff3b30",
+        type: "medicatie",
+        source: s.overdue[0].name,
+        date: s.overdue[0].next_due_date,
+        tabTarget: "medication",
+      };
+    }
+    return null;
+  }
+
+  function alertBlood() {
+    const s = computeBloodSummary();
+    if (!s || !s.knownTotal || !s.outside) return null;
+    return {
+      message: `Bij het laatste bloedonderzoek (${formatDate(s.date)}) lagen ${s.outside} van de ${s.knownTotal} bekende waarden buiten het referentiegebied.`,
+      severity: 1,
+      color: "#ff9500",
+      type: "bloedwaarden",
+      source: `${s.outside}/${s.knownTotal}`,
+      date: s.date,
+      tabTarget: "blood",
+    };
+  }
+
+  // Selects and prioritizes up to 3 dashboard notifications: red (achterstallig)
+  // before orange (binnenkort) before green (actueel). Falls back to a single
+  // calm status line when there's nothing to flag, or an explicit
+  // "onvoldoende gegevens" line when literally nothing has been logged yet.
+  function computeDashboardAlerts() {
+    const candidates = [alertVaccination(), alertWeight(), alertMedication(), alertBlood()].filter(Boolean);
+    if (!candidates.length) {
+      const noDataAtAll =
+        !(latestVaxData || []).length && !(latestWeightData || []).length && !(latestMedicationData || []).length && !(latestBloodData || []).length;
+      if (noDataAtAll) {
+        return [{ message: "Nog onvoldoende gegevens.", severity: 3, color: "var(--text-muted)", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
+      }
+      return [{ message: "Er zijn geen actuele aandachtspunten.", severity: 2, color: "#34c759", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
+    }
+    return candidates.sort((a, b) => a.severity - b.severity).slice(0, 3);
+  }
+
+  function renderDashboardAlerts() {
+    const alerts = computeDashboardAlerts();
+    document.getElementById("dashboardAlerts").innerHTML = alerts
+      .map(
+        (a) => `
+        <div class="dashboard-alert-row" onclick="switchTab('${a.tabTarget}')">
+          <span class="status-dot" style="background:${a.color};"></span>
+          <span>${escapeHtml(a.message)}</span>
+        </div>
+      `
+      )
+      .join("");
+  }
+
+  function renderDashboardCards() {
+    const weightS = computeWeightSummary();
+    const vaxS = computeVaccinationSummary();
+    const bloodS = computeBloodSummary();
+    const symS = computeSymptomSinceVetVisit();
+    const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
+
+    const cards = [
+      `<div class="card dashboard-card" onclick="switchTab('weight')">
+        <h3>⚖️ Gewicht</h3>
+        ${
+          weightS
+            ? `<div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg</div>
+               <div class="dashboard-card-sub">${weightS.diffKg == null ? "Nog geen vergelijking mogelijk" : `${weightS.diffKg > 0 ? "+" : ""}${weightS.diffKg.toFixed(1)} kg sinds vorige meting`}</div>
+               <div class="dashboard-card-sub">${formatDaysAgo(weightS.daysSinceLast)} gemeten</div>`
+            : `<div class="dashboard-card-empty">Nog geen metingen</div>`
+        }
+      </div>`,
+      `<div class="card dashboard-card" onclick="switchTab('vax')">
+        <h3>💉 Vaccinaties</h3>
+        ${
+          vaxS
+            ? `<div class="dashboard-card-value">${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
+               <div class="dashboard-card-sub">${vaxS.next ? `Eerstvolgende: ${escapeHtml(vaxS.next.v.vaccine)} — ${formatDate(vaxS.next.v.valid_until)}` : "Geen vervaldatum gepland"}</div>`
+            : `<div class="dashboard-card-empty">Nog geen vaccinaties</div>`
+        }
+      </div>`,
+      `<div class="card dashboard-card" onclick="switchTab('medication')">
+        <h3>💊 Medicatie</h3>
+        ${
+          lastMed
+            ? `<div class="dashboard-card-value">${escapeHtml(lastMed.name)}</div>
+               <div class="dashboard-card-sub">${formatDate(lastMed.date)}${lastMed.purpose ? " · " + escapeHtml(lastMed.purpose) : ""}</div>`
+            : `<div class="dashboard-card-empty">Nog geen medicatie gelogd</div>`
+        }
+      </div>`,
+      `<div class="card dashboard-card" onclick="switchTab('blood')">
+        <h3>🩸 Bloedwaarden</h3>
+        ${
+          bloodS
+            ? `<div class="dashboard-card-value">${formatDate(bloodS.date)}</div>
+               <div class="dashboard-card-sub">${bloodS.knownTotal ? `${bloodS.within} binnen, ${bloodS.outside} buiten referentiegebied` : "Geen referentiewaarden bekend voor deze markers"}</div>`
+            : `<div class="dashboard-card-empty">Nog geen bloedonderzoek</div>`
+        }
+      </div>`,
+      `<div class="card dashboard-card" onclick="switchTab('symptoms')">
+        <h3>🩹 Afwijkingen</h3>
+        ${
+          !symS.hasData
+            ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
+            : symS.none
+            ? `<div class="dashboard-card-value">Geen afwijkingen${symS.sinceDate ? " sinds " + formatDate(symS.sinceDate) : ""}</div>`
+            : `<div class="dashboard-card-value">${escapeHtml(symS.mostRecent.symptom)}</div>
+               <div class="dashboard-card-sub">${formatDate(symS.mostRecent.date)}</div>`
+        }
+      </div>`,
+    ];
+
+    document.getElementById("dashboardCards").innerHTML = cards.join("");
+  }
+
+  function renderDashboard() {
+    renderDashboardAlerts();
+    renderDashboardCards();
+  }
+
+  function openQuickAddMenu() {
+    document.getElementById("quickAddOverlay").classList.add("show");
+  }
+
+  function closeQuickAddMenu() {
+    document.getElementById("quickAddOverlay").classList.remove("show");
+  }
+
+  function quickAdd(tab) {
+    closeQuickAddMenu();
+    switchTab(tab);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (tab === "weight") openWeightForm();
+    else if (tab === "vax") openVaxForm();
+    else if (tab === "medication") openMedicationForm();
+    else if (tab === "blood") openBloodForm();
+    else if (tab === "symptoms") openSymptomForm();
+  }
+
   // --- Profile ---------------------------------------------------------
   const profileForm = document.getElementById("profileForm");
   let pendingPhotoDataUrl = undefined; // undefined = unchanged, null = removed, string = new photo
@@ -3352,10 +3990,6 @@
       species === "hond" ? "Ras (optioneel)" : "Wat voor dier? (optioneel)";
     document.getElementById("catBreed").placeholder =
       species === "hond" ? "bijv. Labrador Retriever" : "bijv. konijn, vogel, cavia";
-    document.getElementById("targetWeightHint").textContent =
-      species === "kat"
-        ? "Laat streefgewicht leeg voor een automatische schatting op basis van geslacht en energieniveau. Dit is een indicatie op basis van algemene groeicurves voor huiskatten — geen vervanging voor advies van je dierenarts."
-        : "Vul zelf een streefgewicht in — voor deze diersoort is er nog geen automatische schatting.";
   }
 
   // Downscales + compresses the photo client-side so it stores comfortably
@@ -3430,6 +4064,9 @@
       activity_level: document.getElementById("catActivity").value || null,
       target_min_kg: toNullableFloat(document.getElementById("catTargetMin").value),
       target_max_kg: toNullableFloat(document.getElementById("catTargetMax").value),
+      weight_reminder_days: document.getElementById("catWeightReminderDays").value
+        ? parseInt(document.getElementById("catWeightReminderDays").value, 10)
+        : null,
       updated_at: new Date().toISOString(),
     };
     if (pendingPhotoDataUrl !== undefined) {
@@ -3481,11 +4118,13 @@
     document.getElementById("catActivity").value = catProfile.activity_level || "";
     document.getElementById("catTargetMin").value = catProfile.target_min_kg ?? "";
     document.getElementById("catTargetMax").value = catProfile.target_max_kg ?? "";
+    document.getElementById("catWeightReminderDays").value = catProfile.weight_reminder_days ?? "";
     onProfileSpeciesChange();
     setPhotoPreview(catProfile.photo_data_url || null);
 
     applyCurrentPetToHeader();
     renderWeightChart(latestWeightData);
+    renderWeightSummary();
   }
 
   // --- Utils ---------------------------------------------------------------
@@ -3511,9 +4150,12 @@
       loadVaccinations(),
       loadSymptoms(),
       loadMedications(),
+      loadMedicationCatalog(),
+      loadVetVisits(),
       loadProfile(),
     ]);
     maybeShowCareReminders();
+    if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
 
     if (manual && btn) setTimeout(() => btn.classList.remove("spinning"), 600);
     refreshing = false;
