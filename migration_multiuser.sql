@@ -251,3 +251,29 @@ create policy "owner full access vet_visits"
 grant select, insert, update, delete on medication_catalog to authenticated;
 grant select, insert, update, delete on vet_visits to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
+
+
+-- ------------------------------------------------------------
+-- STAP 9: huisdierprofiel archiveren (soft-delete i.p.v. definitief
+-- verwijderen). Veilig om nu te draaien, additief. Een gearchiveerd
+-- profiel wordt door de app uit het dashboard/huisdier-menu gefilterd,
+-- maar blijft in de database staan en is terug te zetten.
+-- ------------------------------------------------------------
+
+alter table pets add column if not exists archived_at timestamptz;
+
+
+-- ------------------------------------------------------------
+-- STAP 10: medicijn-datalijst uitbreiden met merk, werkzame stof en
+-- dosering (herbruikbare eigenschappen van het medicijn zelf) en batch
+-- op de toegediend-log (verschilt per verpakking, dus geen catalogus-
+-- eigenschap). Veilig om nu te draaien, additief.
+-- ------------------------------------------------------------
+
+alter table medication_catalog add column if not exists brand text;
+alter table medication_catalog add column if not exists active_ingredient text;
+alter table medication_catalog add column if not exists dose text;
+
+alter table medications add column if not exists brand text;
+alter table medications add column if not exists active_ingredient text;
+alter table medications add column if not exists batch text;

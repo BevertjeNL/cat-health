@@ -1210,6 +1210,9 @@
       <ul class="entry-list" id="bloodList"></ul>
     </div>
 
+  </section>
+
+  <section id="tabVet" class="tab-panel">
     <div class="card">
       <div class="collapsible-header" id="vetVisitFormHeader" onclick="toggleVetVisitForm()">
         <h2 id="vetVisitFormTitle">+ Nieuw dierenartsbezoek</h2>
@@ -1392,6 +1395,18 @@
             <datalist id="medicationSuggestions"></datalist>
             <p class="hint-text" style="margin-top:6px;">Eerder ingevoerde medicijnen (en hun doel) verschijnen hier automatisch weer als suggestie.</p>
           </div>
+          <div class="row">
+            <div>
+              <label for="medicationBrand">Merk (optioneel)</label>
+              <input type="text" id="medicationBrand" list="medicationBrandSuggestions" placeholder="bijv. MSD" />
+              <datalist id="medicationBrandSuggestions"></datalist>
+            </div>
+            <div>
+              <label for="medicationActiveIngredient">Werkzame stof (optioneel)</label>
+              <input type="text" id="medicationActiveIngredient" list="medicationActiveIngredientSuggestions" placeholder="bijv. milbemycine" />
+              <datalist id="medicationActiveIngredientSuggestions"></datalist>
+            </div>
+          </div>
           <div>
             <label for="medicationDate">Datum gegeven</label>
             <div class="date-field">
@@ -1399,9 +1414,17 @@
               <button type="button" class="today-btn" data-target="medicationDate">Vandaag</button>
             </div>
           </div>
-          <div>
-            <label for="medicationDose">Dosering (optioneel)</label>
-            <input type="text" id="medicationDose" placeholder="bijv. 1 tablet, 10mg" />
+          <div class="row">
+            <div>
+              <label for="medicationDose">Dosering (optioneel)</label>
+              <input type="text" id="medicationDose" list="medicationDoseSuggestions" placeholder="bijv. 1 tablet, 10mg" />
+              <datalist id="medicationDoseSuggestions"></datalist>
+            </div>
+            <div>
+              <label for="medicationBatch">Batch (optioneel)</label>
+              <input type="text" id="medicationBatch" list="medicationBatchSuggestions" placeholder="bijv. L12345" />
+              <datalist id="medicationBatchSuggestions"></datalist>
+            </div>
           </div>
           <div>
             <label for="medicationNextDue">Volgende dosis (optioneel)</label>
@@ -1527,6 +1550,15 @@
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
       <button type="button" class="today-btn" style="width:100%;" onclick="logout()">Uitloggen</button>
     </div>
+
+    <div class="card">
+      <h2>Huisdier archiveren</h2>
+      <p class="hint-text" style="margin-bottom:12px;">
+        Archiveren verbergt dit huisdier uit het dashboard. Alle gegevens blijven bewaard en je kunt
+        het huisdier later terugzetten via "Gearchiveerde huisdieren" in het huisdier-menu.
+      </p>
+      <button type="button" class="today-btn" style="width:100%;" onclick="openArchivePetConfirm()">Archiveer dit huisdier</button>
+    </div>
   </section>
 </main>
 
@@ -1535,6 +1567,7 @@
   <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon">⚖️</span><span>Gewicht</span></button>
   <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon">🩸</span><span>Bloed</span></button>
   <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon">💉</span><span>Vaccins</span></button>
+  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon">🩺</span><span>Arts</span></button>
   <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon">🩹</span><span>Afwijking</span></button>
   <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon">💊</span><span>Medicatie</span></button>
 </nav>
@@ -1549,6 +1582,37 @@
     </div>
     <div id="petMenuList"></div>
     <button type="button" class="pet-menu-item" style="justify-content:center;color:var(--accent);font-weight:700;" onclick="openAddPetForm()">+ Nieuw huisdier toevoegen</button>
+    <button type="button" class="pet-menu-item" style="justify-content:center;color:var(--text-muted);" onclick="openArchivedPetsMenu()">🗄️ Gearchiveerde huisdieren</button>
+  </div>
+</div>
+
+<div class="detail-overlay" id="archivedPetsOverlay" onclick="if (event.target === this) closeArchivedPetsMenu();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2>Gearchiveerde huisdieren</h2>
+      <button type="button" class="today-btn" onclick="closeArchivedPetsMenu()">Sluiten</button>
+    </div>
+    <div id="archivedPetsList"></div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="archivePetOverlay" onclick="if (event.target === this) closeArchivePetConfirm();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2>Huisdier archiveren</h2>
+      <button type="button" class="today-btn" onclick="closeArchivePetConfirm()">Annuleren</button>
+    </div>
+    <div id="archivePetStep1">
+      <p class="hint-text" id="archivePetWarning" style="margin-bottom:14px;"></p>
+      <button type="button" class="submit" style="width:100%;" onclick="showArchivePetStep2()">Ja, ik wil dit huisdier archiveren</button>
+    </div>
+    <div id="archivePetStep2" style="display:none;">
+      <p class="hint-text" style="margin-bottom:12px;">
+        Weet je het zeker? Typ de naam <strong id="archivePetNameHint"></strong> hieronder ter bevestiging.
+      </p>
+      <input type="text" id="archivePetConfirmInput" oninput="onArchivePetConfirmInput()" />
+      <button type="button" class="submit" id="archivePetConfirmBtn" style="width:100%;margin-top:14px;" disabled onclick="confirmArchivePet()">Archiveer definitief</button>
+    </div>
   </div>
 </div>
 
@@ -1721,6 +1785,7 @@
     const { data, error } = await supabaseClient
       .from("pets")
       .select("*")
+      .is("archived_at", null)
       .order("created_at", { ascending: true });
 
     if (error) {
@@ -1829,12 +1894,119 @@
     await refreshAll(false);
   });
 
+  // --- Huisdier archiveren (soft-delete met dubbele bevestiging) ------------
+  async function openArchivedPetsMenu() {
+    closePetMenu();
+    const { data, error } = await supabaseClient
+      .from("pets")
+      .select("*")
+      .not("archived_at", "is", null)
+      .order("archived_at", { ascending: false });
+
+    if (error) {
+      showError("Gearchiveerde huisdieren laden mislukt: " + error.message);
+      return;
+    }
+
+    const list = document.getElementById("archivedPetsList");
+    list.innerHTML = !data.length
+      ? '<p class="hint-text">Geen gearchiveerde huisdieren.</p>'
+      : data
+          .map(
+            (p) => `
+        <div class="pet-menu-item" style="justify-content:space-between;">
+          <span>${speciesEmoji(p.species)} ${escapeHtml(p.name)}</span>
+          <button type="button" class="today-btn" onclick="restorePet(${p.id})">Herstel</button>
+        </div>
+      `
+          )
+          .join("");
+
+    document.getElementById("archivedPetsOverlay").classList.add("show");
+  }
+
+  function closeArchivedPetsMenu() {
+    document.getElementById("archivedPetsOverlay").classList.remove("show");
+  }
+
+  async function restorePet(id) {
+    const { error } = await supabaseClient.from("pets").update({ archived_at: null }).eq("id", id);
+    if (error) {
+      showError("Herstellen mislukt: " + error.message);
+      return;
+    }
+    closeArchivedPetsMenu();
+    await loadPets();
+    showSuccess("Huisdier hersteld ✓");
+  }
+
+  function openArchivePetConfirm() {
+    const pet = currentPet();
+    if (!pet) return;
+    document.getElementById("archivePetWarning").textContent =
+      `${pet.name} verdwijnt uit het dashboard en het huisdier-menu. Alle gegevens (gewicht, bloedwaarden, vaccinaties, medicatie, afwijkingen, dierenartsbezoeken) blijven bewaard — je kunt ${pet.name} later terugzetten via "Gearchiveerde huisdieren".`;
+    document.getElementById("archivePetNameHint").textContent = pet.name;
+    document.getElementById("archivePetConfirmInput").value = "";
+    document.getElementById("archivePetConfirmBtn").disabled = true;
+    document.getElementById("archivePetStep1").style.display = "";
+    document.getElementById("archivePetStep2").style.display = "none";
+    document.getElementById("archivePetOverlay").classList.add("show");
+  }
+
+  function closeArchivePetConfirm() {
+    document.getElementById("archivePetOverlay").classList.remove("show");
+  }
+
+  function showArchivePetStep2() {
+    document.getElementById("archivePetStep1").style.display = "none";
+    document.getElementById("archivePetStep2").style.display = "";
+    document.getElementById("archivePetConfirmInput").focus();
+  }
+
+  function onArchivePetConfirmInput() {
+    const pet = currentPet();
+    const val = document.getElementById("archivePetConfirmInput").value.trim();
+    document.getElementById("archivePetConfirmBtn").disabled = !pet || val !== pet.name;
+  }
+
+  async function confirmArchivePet() {
+    const pet = currentPet();
+    if (!pet) return;
+    const btn = document.getElementById("archivePetConfirmBtn");
+    btn.disabled = true;
+
+    const { error } = await supabaseClient.from("pets").update({ archived_at: new Date().toISOString() }).eq("id", pet.id);
+
+    if (error) {
+      showError("Archiveren mislukt: " + error.message);
+      btn.disabled = false;
+      return;
+    }
+
+    closeArchivePetConfirm();
+    pets = pets.filter((p) => p.id !== pet.id);
+
+    if (pets.length) {
+      currentPetId = pets[0].id;
+      localStorage.setItem(activePetIdStorageKey(), String(currentPetId));
+      applyCurrentPetToHeader();
+      await refreshAll(false);
+      switchTab("dashboard");
+      showSuccess(`${pet.name} is gearchiveerd ✓`);
+    } else {
+      currentPetId = null;
+      showSuccess(`${pet.name} is gearchiveerd ✓`);
+      openAddPetForm();
+    }
+  }
+
   // --- Tabs --------------------------------------------------------------
   function switchTab(tab) {
     document.getElementById("tabDashboard").classList.toggle("active", tab === "dashboard");
     document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
     document.getElementById("tabVax").classList.toggle("active", tab === "vax");
+    document.getElementById("tabVet").classList.toggle("active", tab === "vet");
     document.getElementById("tabSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabMedication").classList.toggle("active", tab === "medication");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
@@ -1842,6 +2014,7 @@
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
     document.getElementById("tabBtnVax").classList.toggle("active", tab === "vax");
+    document.getElementById("tabBtnVet").classList.toggle("active", tab === "vet");
     document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
     if (tab === "dashboard") renderDashboard();
@@ -2197,10 +2370,12 @@
     const pointColors = data.map(weightStatusColor);
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
 
-    // X-axis: only span the actual measurements. Y-axis: 10% padding
-    // above/below the lowest and highest recorded weight.
-    const xMin = data.length ? data[0].date : undefined;
-    const xMax = data.length ? data[data.length - 1].date : undefined;
+    // X-axis: spans the actual measurements, extended to today so the gap
+    // since the last measurement is visible. Y-axis: 10% padding above/below
+    // the lowest and highest recorded weight.
+    const xRange = data.length ? computeTimelineXRange(data.map((row) => row.date)) : null;
+    const xMin = xRange ? xRange.min : undefined;
+    const xMax = xRange ? xRange.max : undefined;
     const yMin = weights.length ? Math.min(...weights) * 0.9 : undefined;
     const yMax = weights.length ? Math.max(...weights) * 1.1 : undefined;
     const zoomLimits = {
@@ -2251,7 +2426,7 @@
         responsive: true,
         maintainAspectRatio: false,
         layout: {
-          padding: { top: 8, right: 8, left: 0, bottom: 0 },
+          padding: { top: 8, right: 8, left: 6, bottom: 6 },
         },
         scales: {
           x: {
@@ -3048,11 +3223,11 @@
     const yMin = dataMin - pad;
     const yMax = dataMax + pad;
 
-    // A single data point collapses the time axis to one instant, which
-    // makes Chart.js fall back to a sub-second tick format. Pad the x-range
-    // artificially in that case so it renders as a sensible day scale.
-    const xMin = rows.length === 1 ? addDaysToDateStr(rows[0].date, -3) : rows[0].date;
-    const xMax = rows.length === 1 ? addDaysToDateStr(rows[0].date, 3) : rows[rows.length - 1].date;
+    // Extends to today (and pads a single-point date range) via the shared
+    // timeline-range helper, so the gap since the last result is visible.
+    const xRangeBlood = computeTimelineXRange(rows.map((r) => r.date));
+    const xMin = xRangeBlood.min;
+    const xMax = xRangeBlood.max;
 
     const pointColors = rows.map((r) => {
       if (!hasRange) return "#8b5cf6";
@@ -3087,7 +3262,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 8, right: 8, left: 0, bottom: 0 } },
+        layout: { padding: { top: 8, right: 8, left: 8, bottom: 8 } },
         scales: {
           x: {
             type: "time",
@@ -3257,7 +3432,7 @@
     vetVisitForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("vetVisitCancelEditBtn").style.display = "";
     openVetVisitForm();
-    switchTab("blood");
+    switchTab("vet");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -3525,10 +3700,15 @@
   // Chart.js's time scale needs an explicit min/max — left to auto-detect,
   // it can pick an absurdly wide default range instead of framing the
   // actual data, especially with a category y-axis in the mix.
+  // Always extends the right edge to today (without ever labeling it as
+  // "today") so a glance at the chart shows how long ago the last entry
+  // was, instead of the line/dots stopping flush against the plot edge.
   function computeTimelineXRange(dates) {
     const sorted = [...dates].sort();
     const minDate = sorted[0];
-    const maxDate = sorted[sorted.length - 1];
+    const maxDataDate = sorted[sorted.length - 1];
+    const todayStr = dateToISO(new Date());
+    const maxDate = maxDataDate > todayStr ? maxDataDate : todayStr;
     if (minDate === maxDate) {
       return { min: addDaysToDateStr(minDate, -3), max: addDaysToDateStr(minDate, 3) };
     }
@@ -3582,7 +3762,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 8, right: 8, left: 0, bottom: 0 } },
+        layout: { padding: { top: 8, right: 8, left: 8, bottom: 8 } },
         scales: {
           x: {
             type: "time",
@@ -3826,7 +4006,7 @@
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 8, right: 8, left: 0, bottom: 0 } },
+        layout: { padding: { top: 8, right: 8, left: 8, bottom: 8 } },
         scales: {
           x: {
             type: "time",
@@ -3973,6 +4153,27 @@
     updateMedicationNameSuggestions(e.target.value);
   });
 
+  document.getElementById("medicationName").addEventListener("input", (e) => {
+    updateMedicationDetailSuggestions(e.target.value);
+  });
+
+  // Narrows merk/werkzame stof/dosering/batch suggestions to what's been
+  // used before for this specific medicine name — merk/werkzame stof/dosering
+  // come from the reusable catalog, batch comes from the actual log entries
+  // (a batch number is per-package, not a fixed property of the medicine).
+  function updateMedicationDetailSuggestions(name) {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    const matches = medicationCatalog.filter((c) => norm(c.name) === norm(name));
+    const brands = [...new Set(matches.map((c) => c.brand).filter(Boolean))];
+    const ingredients = [...new Set(matches.map((c) => c.active_ingredient).filter(Boolean))];
+    const doses = [...new Set(matches.map((c) => c.dose).filter(Boolean))];
+    const batches = [...new Set((latestMedicationData || []).filter((r) => norm(r.name) === norm(name)).map((r) => r.batch).filter(Boolean))];
+    document.getElementById("medicationBrandSuggestions").innerHTML = brands.map((b) => `<option value="${escapeHtml(b)}"></option>`).join("");
+    document.getElementById("medicationActiveIngredientSuggestions").innerHTML = ingredients.map((b) => `<option value="${escapeHtml(b)}"></option>`).join("");
+    document.getElementById("medicationDoseSuggestions").innerHTML = doses.map((b) => `<option value="${escapeHtml(b)}"></option>`).join("");
+    document.getElementById("medicationBatchSuggestions").innerHTML = batches.map((b) => `<option value="${escapeHtml(b)}"></option>`).join("");
+  }
+
   async function loadMedicationCatalog() {
     if (!isConfigured || !currentPetId) return;
     const { data, error } = await supabaseClient.from("medication_catalog").select("*").eq("pet_id", currentPetId);
@@ -3980,16 +4181,28 @@
     medicationCatalog = data;
     updateMedicationPurposeSuggestions();
     updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
+    updateMedicationDetailSuggestions(document.getElementById("medicationName").value);
   }
 
-  // Registers a new name+doel combo the first time it's logged, so it comes
-  // back as a suggestion next time — the "databestand" the user wanted,
-  // without a separate list-management screen to keep in sync.
-  async function registerMedicationInCatalog(name, purpose) {
+  // Registers a new name+doel+merk+werkzame stof+dosering combo the first
+  // time it's logged, so it comes back as a suggestion next time — the
+  // "databestand" the user wanted, without a separate list-management screen
+  // to keep in sync. Batch is deliberately excluded: it's per-package, not a
+  // reusable property of the medicine.
+  async function registerMedicationInCatalog(name, purpose, brand, activeIngredient, dose) {
     const norm = (s) => (s || "").trim().toLowerCase();
-    const exists = medicationCatalog.some((c) => norm(c.name) === norm(name) && norm(c.purpose) === norm(purpose));
+    const exists = medicationCatalog.some(
+      (c) =>
+        norm(c.name) === norm(name) &&
+        norm(c.purpose) === norm(purpose) &&
+        norm(c.brand) === norm(brand) &&
+        norm(c.active_ingredient) === norm(activeIngredient) &&
+        norm(c.dose) === norm(dose)
+    );
     if (exists) return;
-    const { error } = await supabaseClient.from("medication_catalog").insert([{ name, purpose: purpose || null, pet_id: currentPetId }]);
+    const { error } = await supabaseClient
+      .from("medication_catalog")
+      .insert([{ name, purpose: purpose || null, brand: brand || null, active_ingredient: activeIngredient || null, dose: dose || null, pet_id: currentPetId }]);
     if (!error) await loadMedicationCatalog();
   }
 
@@ -4004,10 +4217,14 @@
     editingMedicationId = row.id;
     document.getElementById("medicationPurpose").value = row.purpose || "";
     document.getElementById("medicationName").value = row.name;
+    document.getElementById("medicationBrand").value = row.brand || "";
+    document.getElementById("medicationActiveIngredient").value = row.active_ingredient || "";
     document.getElementById("medicationDate").value = row.date;
     document.getElementById("medicationDose").value = row.dose || "";
+    document.getElementById("medicationBatch").value = row.batch || "";
     document.getElementById("medicationNextDue").value = row.next_due_date || "";
     document.getElementById("medicationNote").value = row.note || "";
+    updateMedicationDetailSuggestions(row.name);
     document.getElementById("medicationFormTitle").textContent = "Medicatie bewerken";
     medicationForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("medicationCancelEditBtn").style.display = "";
@@ -4023,8 +4240,11 @@
     editingMedicationId = null;
     document.getElementById("medicationPurpose").value = row.purpose || "";
     document.getElementById("medicationName").value = row.name;
+    document.getElementById("medicationBrand").value = row.brand || "";
+    document.getElementById("medicationActiveIngredient").value = row.active_ingredient || "";
     document.getElementById("medicationDate").valueAsDate = new Date();
     document.getElementById("medicationDose").value = row.dose || "";
+    document.getElementById("medicationBatch").value = "";
     document.getElementById("medicationNextDue").value = "";
     document.getElementById("medicationNote").value = row.note || "";
     medicationForm.querySelector("button.submit").textContent = "Opslaan";
@@ -4058,14 +4278,17 @@
 
     const purpose = document.getElementById("medicationPurpose").value.trim() || null;
     const name = document.getElementById("medicationName").value.trim();
+    const brand = document.getElementById("medicationBrand").value.trim() || null;
+    const active_ingredient = document.getElementById("medicationActiveIngredient").value.trim() || null;
     const date = document.getElementById("medicationDate").value;
     const dose = document.getElementById("medicationDose").value.trim() || null;
+    const batch = document.getElementById("medicationBatch").value.trim() || null;
     const next_due_date = document.getElementById("medicationNextDue").value || null;
     const note = document.getElementById("medicationNote").value.trim() || null;
 
     const { error } = editingMedicationId
-      ? await supabaseClient.from("medications").update({ name, purpose, date, dose, next_due_date, note }).eq("id", editingMedicationId)
-      : await supabaseClient.from("medications").insert([{ name, purpose, date, dose, next_due_date, note, pet_id: currentPetId }]);
+      ? await supabaseClient.from("medications").update({ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note }).eq("id", editingMedicationId)
+      : await supabaseClient.from("medications").insert([{ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -4074,7 +4297,7 @@
       return;
     }
 
-    await registerMedicationInCatalog(name, purpose);
+    await registerMedicationInCatalog(name, purpose, brand, active_ingredient, dose);
     cancelMedicationEdit();
     showSuccess("Medicatie opgeslagen ✓");
     await loadMedications();
@@ -4132,7 +4355,7 @@
       const innerHtml = `
         <div class="entry-main">
           <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}</span>
-          <span class="secondary">${formatDate(row.date)}${row.dose ? " · " + escapeHtml(row.dose) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${row.brand ? " · " + escapeHtml(row.brand) : ""}${row.dose ? " · " + escapeHtml(row.dose) : ""}${row.batch ? " · batch " + escapeHtml(row.batch) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -4332,6 +4555,7 @@
     const medS = computeMedicationSummary();
     const openMeds = [...medS.overdue, ...medS.dueSoon];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
+    const lastVetVisit = (latestVetVisitData || [])[0]; // loadVetVisits orders by date descending
 
     const cards = [
       `<div class="card dashboard-card" onclick="switchTab('weight')">
@@ -4396,6 +4620,15 @@
                <div class="dashboard-card-sub">${formatDate(symS.mostRecent.date)}</div>`
         }
       </div>`,
+      `<div class="card dashboard-card" onclick="switchTab('vet')">
+        <h3>🩺 Dierenarts</h3>
+        ${
+          lastVetVisit
+            ? `<div class="dashboard-card-value">${escapeHtml(lastVetVisit.reason || "Bezoek")}</div>
+               <div class="dashboard-card-sub">${formatDate(lastVetVisit.date)}</div>`
+            : `<div class="dashboard-card-empty">Nog geen bezoeken gelogd</div>`
+        }
+      </div>`,
     ];
 
     document.getElementById("dashboardCards").innerHTML = cards.join("");
@@ -4416,9 +4649,7 @@
 
   function quickAdd(tab) {
     closeQuickAddMenu();
-    // Vet visits live inside the Bloedwaarden tab (no tab of their own), so
-    // they need their own form opened rather than the blood-values one.
-    const realTab = tab === "vetvisit" ? "blood" : tab;
+    const realTab = tab === "vetvisit" ? "vet" : tab;
     switchTab(realTab);
     window.scrollTo({ top: 0, behavior: "smooth" });
     if (tab === "weight") openWeightForm();
@@ -4539,6 +4770,7 @@
     applyCurrentPetToHeader();
     renderWeightChart(latestWeightData);
     showSuccess("Profiel opgeslagen ✓");
+    switchTab("dashboard");
   });
 
   async function loadProfile() {
