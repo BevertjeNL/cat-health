@@ -678,6 +678,19 @@
     color: var(--text-muted);
   }
 
+  .purpose-tag {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 9px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
   .dashboard-alert-row {
     display: flex;
     align-items: center;
@@ -1791,19 +1804,43 @@
   let catProfile = {};
   let latestWeightData = [];
 
-  // Only color the chart against a target range when the user explicitly
-  // set one — an unset range means "no judgement", not an invisible guess.
-  // (A species/breed-based auto-estimate was tried earlier and removed:
-  // presenting a computed curve as if it were a health judgement risked
-  // looking like medical advice, which this app deliberately avoids.)
   function hasManualWeightTarget(pet) {
     return !!(pet && pet.target_min_kg != null && pet.target_max_kg != null);
   }
 
+  // This age/sex/activity curve was built from feline growth data — it
+  // doesn't transfer to other species, so only apply it for cats until a
+  // dedicated breed-weight model exists for dogs/other pets.
+  function computeAdultBase(profile) {
+    if (profile.species && profile.species !== "kat") return null;
+    let base = 4.0;
+    if (profile.sex === "mannelijk") base += 0.7;
+    if (profile.sex === "vrouwelijk") base -= 0.3;
+    if (profile.activity_level === "laag") base -= 0.2;
+    if (profile.activity_level === "hoog") base += 0.2;
+    return base;
+  }
+
+  function computeWeightTargetRange(profile, adultBase, fallbackKg) {
+    if (hasManualWeightTarget(profile)) {
+      return { min: profile.target_min_kg, max: profile.target_max_kg };
+    }
+    if (adultBase != null) {
+      return { min: adultBase - 0.4, max: adultBase + 0.4 };
+    }
+    // No species model and no manual target weight set: fall back to a
+    // neutral range around the actual measurement so nothing is falsely
+    // judged against cat-only assumptions.
+    const v = fallbackKg != null ? fallbackKg : 5;
+    return { min: v * 0.85, max: v * 1.15 };
+  }
+
+  // Uses the exact same continuous color scale as the chart's background
+  // and line gradient, so a point's color always matches what's behind it.
   function weightStatusColor(row) {
-    if (!hasManualWeightTarget(catProfile)) return "#4f46e5";
+    const adultBase = computeAdultBase(catProfile);
     const kg = row.weight_grams / 1000;
-    const range = { min: catProfile.target_min_kg, max: catProfile.target_max_kg };
+    const range = computeWeightTargetRange(catProfile, adultBase, kg);
     const [r, g, b] = targetZoneColorAt(kg, range);
     return `rgb(${r}, ${g}, ${b})`;
   }
@@ -2076,9 +2113,8 @@
   function renderWeightChart(data) {
     const ctx = document.getElementById("weightChart");
     const weights = data.map((row) => row.weight_grams / 1000);
-    const hasRange = hasManualWeightTarget(catProfile);
-    const range = hasRange ? { min: catProfile.target_min_kg, max: catProfile.target_max_kg } : null;
-    const flatColor = "#4f46e5";
+    const adultBase = computeAdultBase(catProfile);
+    const range = computeWeightTargetRange(catProfile, adultBase, weights.length ? weights[weights.length - 1] : null);
 
     const pointColors = data.map(weightStatusColor);
     const points = data.map((row) => ({ x: row.date, y: row.weight_grams / 1000 }));
@@ -2100,16 +2136,11 @@
     if (weightChart) {
       weightChart.data.datasets[0].data = points;
       weightChart.data.datasets[0].pointBackgroundColor = pointColors;
-      // The gradient plugin overwrites borderColor when a range is active;
-      // when there isn't one, reset it to a flat color ourselves so a
-      // previously-set gradient object doesn't linger after the target
-      // weight is cleared.
-      weightChart.data.datasets[0].borderColor = hasRange ? weightChart.data.datasets[0].borderColor : flatColor;
       weightChart.options.scales.x.min = xMin;
       weightChart.options.scales.x.max = xMax;
       weightChart.options.scales.y.min = yMin;
       weightChart.options.scales.y.max = yMax;
-      weightChart.options.plugins.zoneGradient = hasRange ? { range } : null;
+      weightChart.options.plugins.zoneGradient = { range };
       weightChart.options.plugins.zoom.limits = zoomLimits;
       weightChart.update();
       renderWeightSummary();
@@ -2124,7 +2155,7 @@
           {
             label: "Gewicht (kg)",
             data: points,
-            borderColor: hasRange ? "#34c759" : flatColor,
+            borderColor: "#34c759",
             backgroundColor: "transparent",
             borderWidth: 3,
             tension: 0.3,
@@ -2165,7 +2196,7 @@
               label: (item) => item.parsed.y.toFixed(1) + " kg",
             },
           },
-          zoneGradient: hasRange ? { range } : null,
+          zoneGradient: { range },
           zoom: {
             pan: { enabled: true, mode: "x" },
             zoom: {
@@ -2245,6 +2276,10 @@
     const captionEl = document.getElementById("weightZoneCaption");
     if (hasManualWeightTarget(catProfile)) {
       captionEl.textContent = `Dit is de ingestelde streefzone voor ${catProfile.name || "je huisdier"}: ${catProfile.target_min_kg}–${catProfile.target_max_kg} kg.`;
+      captionEl.style.display = "";
+    } else if (computeAdultBase(catProfile) != null) {
+      captionEl.textContent =
+        "Dit is een automatische inschatting van de streefzone op basis van het profiel (geslacht en energieniveau) — geen medisch advies. Vul een eigen streefgewicht in voor een nauwkeurigere zone.";
       captionEl.style.display = "";
     } else {
       captionEl.style.display = "none";
@@ -3764,7 +3799,7 @@
 
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${row.purpose ? ` <span class="detail-ref">(${escapeHtml(row.purpose)})</span>` : ""}</span>
+          <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}</span>
           <span class="secondary">${formatDate(row.date)}${row.dose ? " · " + escapeHtml(row.dose) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
@@ -3942,11 +3977,17 @@
       .join("");
   }
 
+  function purposeTagHtml(purpose) {
+    return purpose ? `<span class="purpose-tag">${escapeHtml(purpose)}</span>` : "";
+  }
+
   function renderDashboardCards() {
     const weightS = computeWeightSummary();
     const vaxS = computeVaccinationSummary();
     const bloodS = computeBloodSummary();
     const symS = computeSymptomSinceVetVisit();
+    const medS = computeMedicationSummary();
+    const openMeds = [...medS.overdue, ...medS.dueToday];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
 
     const cards = [
@@ -3972,9 +4013,18 @@
       `<div class="card dashboard-card" onclick="switchTab('medication')">
         <h3>💊 Medicatie</h3>
         ${
-          lastMed
-            ? `<div class="dashboard-card-value">${escapeHtml(lastMed.name)}</div>
-               <div class="dashboard-card-sub">${formatDate(lastMed.date)}${lastMed.purpose ? " · " + escapeHtml(lastMed.purpose) : ""}</div>`
+          openMeds.length
+            ? openMeds
+                .map((m) => {
+                  const status = dueStatusFromDate(m.next_due_date);
+                  const dueText = status.daysLeft < 0 ? `Was gepland op ${formatDate(m.next_due_date)}` : "Vandaag";
+                  return `<div class="dashboard-card-value"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
+                          <div class="dashboard-card-sub">${dueText}</div>`;
+                })
+                .join("")
+            : lastMed
+            ? `<div class="dashboard-card-value">${escapeHtml(lastMed.name)}${purposeTagHtml(lastMed.purpose)}</div>
+               <div class="dashboard-card-sub">${formatDate(lastMed.date)}</div>`
             : `<div class="dashboard-card-empty">Nog geen medicatie gelogd</div>`
         }
       </div>`,
