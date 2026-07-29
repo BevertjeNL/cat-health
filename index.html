@@ -3228,7 +3228,12 @@
     data.forEach((row) => {
       const key = row[field];
       const existing = latest[key];
-      if (!existing || row.date > existing.date) latest[key] = row;
+      // Same-day entries are broken by id (higher id = created later), so
+      // which row counts as "the latest" is always deterministic, not
+      // dependent on the database's arbitrary same-date ordering.
+      if (!existing || row.date > existing.date || (row.date === existing.date && row.id > existing.id)) {
+        latest[key] = row;
+      }
     });
     return Object.values(latest);
   }
@@ -3644,6 +3649,29 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  // Pre-fills a fresh (non-edit) entry from an existing row — same medicine,
+  // doel and dose, but today's date and no leftover next-due, since that
+  // referred to the old dose, not this new one.
+  function duplicateMedication(row) {
+    editingMedicationId = null;
+    document.getElementById("medicationPurpose").value = row.purpose || "";
+    document.getElementById("medicationName").value = row.name;
+    document.getElementById("medicationDate").valueAsDate = new Date();
+    document.getElementById("medicationDose").value = row.dose || "";
+    document.getElementById("medicationNextDue").value = "";
+    document.getElementById("medicationNote").value = row.note || "";
+    medicationForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("medicationCancelEditBtn").style.display = "none";
+    updateMedicationNameSuggestions(row.purpose || "");
+    openMedicationForm();
+    // Must run after openMedicationForm(): toggleMedicationForm() resets the
+    // title to the generic "Nieuwe medicatie" whenever editingMedicationId
+    // is falsy, which would otherwise clobber this custom one.
+    document.getElementById("medicationFormTitle").textContent = "Nieuwe medicatie (op basis van vorige)";
+    switchTab("medication");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   function cancelMedicationEdit() {
     editingMedicationId = null;
     medicationForm.reset();
@@ -3712,21 +3740,37 @@
       return;
     }
 
+    // Only the most recent entry per medicine name gets a "due" marker —
+    // older entries of the same medicine are superseded and just show their
+    // own history, not a stale/conflicting due-status.
+    const latestIds = new Set(latestByField(data, "name").map((r) => r.id));
+
     data.forEach((row) => {
-      const status = dueStatusFromDate(row.next_due_date);
-      const dueText = row.next_due_date
-        ? status.daysLeft < 0
-          ? `Volgende dosis was ${formatDate(row.next_due_date)}`
-          : `Volgende dosis ${formatDate(row.next_due_date)}`
-        : "Geen vervolgdosis gepland";
+      const isLatest = latestIds.has(row.id);
+      let dotColor = "var(--text-muted)";
+      let dueText = null;
+
+      if (isLatest) {
+        const status = dueStatusFromDate(row.next_due_date);
+        dotColor = status.color;
+        dueText = row.next_due_date
+          ? status.daysLeft < 0
+            ? `Volgende dosis was ${formatDate(row.next_due_date)}`
+            : `Volgende dosis ${formatDate(row.next_due_date)}`
+          : "Geen vervolgdosis gepland";
+      } else if (row.next_due_date) {
+        dueText = `Toen gepland: ${formatDate(row.next_due_date)}`;
+      }
+
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.name)}${row.purpose ? ` <span class="detail-ref">(${escapeHtml(row.purpose)})</span>` : ""}</span>
-          <span class="secondary">${formatDate(row.date)}${row.dose ? " · " + escapeHtml(row.dose) : ""} · ${dueText}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${row.purpose ? ` <span class="detail-ref">(${escapeHtml(row.purpose)})</span>` : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${row.dose ? " · " + escapeHtml(row.dose) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
         { label: "Verwijder", onClick: () => deleteMedication(row.id) },
+        { label: "Dupliceer", className: "edit-action", onClick: () => duplicateMedication(row) },
         { label: "Bewerk", className: "edit-action", onClick: () => editMedication(row) },
       ]);
       medicationList.appendChild(li);
@@ -3821,32 +3865,36 @@
     };
   }
 
-  function alertMedication() {
+  // Unlike the other alert*() functions, this returns an ARRAY — with
+  // multiple pets' worth of medicine (e.g. Milbemax for worms AND Bravecto
+  // for fleas), more than one can genuinely need attention at once, and
+  // collapsing that into a single line would hide one of them.
+  function alertMedications() {
     const s = computeMedicationSummary();
-    if (!s.latest.length) return null;
-    if (s.dueToday.length) {
-      return {
-        message: `Vandaag staat nog ${s.dueToday.length === 1 ? "één medicatiemoment" : s.dueToday.length + " medicatiemomenten"} open.`,
-        severity: 1,
-        color: "#ff9500",
-        type: "medicatie",
-        source: s.dueToday.map((m) => m.name).join(", "),
-        date: dateToISO(new Date()),
-        tabTarget: "medication",
-      };
-    }
-    if (s.overdue.length) {
-      return {
-        message: `${s.overdue[0].name} had een vervolgdosis gepland op ${formatDate(s.overdue[0].next_due_date)}.`,
+    const alerts = [];
+    s.overdue.forEach((m) => {
+      alerts.push({
+        message: `${m.name} had een vervolgdosis gepland op ${formatDate(m.next_due_date)}.`,
         severity: 0,
         color: "#ff3b30",
         type: "medicatie",
-        source: s.overdue[0].name,
-        date: s.overdue[0].next_due_date,
+        source: m.name,
+        date: m.next_due_date,
         tabTarget: "medication",
-      };
-    }
-    return null;
+      });
+    });
+    s.dueToday.forEach((m) => {
+      alerts.push({
+        message: `${m.name} staat vandaag nog open.`,
+        severity: 1,
+        color: "#ff9500",
+        type: "medicatie",
+        source: m.name,
+        date: dateToISO(new Date()),
+        tabTarget: "medication",
+      });
+    });
+    return alerts;
   }
 
   function alertBlood() {
@@ -3868,7 +3916,7 @@
   // calm status line when there's nothing to flag, or an explicit
   // "onvoldoende gegevens" line when literally nothing has been logged yet.
   function computeDashboardAlerts() {
-    const candidates = [alertVaccination(), alertWeight(), alertMedication(), alertBlood()].filter(Boolean);
+    const candidates = [alertVaccination(), alertWeight(), alertBlood(), ...alertMedications()].filter(Boolean);
     if (!candidates.length) {
       const noDataAtAll =
         !(latestVaxData || []).length && !(latestWeightData || []).length && !(latestMedicationData || []).length && !(latestBloodData || []).length;
