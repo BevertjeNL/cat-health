@@ -5627,14 +5627,6 @@
 
   // Green only when every vaccine with a known valid_until is up to date —
   // otherwise red (something overdue) beats orange (something due soon).
-  // Dashboard tile detail lines: only the vaccines that actually need a
-  // repeat (a known valid_until that's overdue or due within 30 days) —
-  // vaccines that are still comfortably valid, or have no valid_until at
-  // all, don't need to clutter the tile with a line of their own.
-  function vaxNeedsRepeatItems(vaxS) {
-    return vaxS.items.filter(({ v, status }) => v.valid_until && status.daysLeft <= 30);
-  }
-
   function overallVaxColor(vaxS) {
     if (!vaxS.withDate) return "var(--text-muted)";
     if (vaxS.items.some((x) => x.v.valid_until && x.status.daysLeft < 0)) return "#ff3b30";
@@ -5887,8 +5879,13 @@
         ${
           vaxS
             ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} ${t("vaxOfCount")} ${vaxS.withDate} ${t("vaxCurrent")}</div>
-               ${vaxNeedsRepeatItems(vaxS)
-                 .map(({ v, status }) => `<div class="dashboard-card-sub">${escapeHtml(v.vaccine)} — ${status.daysLeft < 0 ? t("vaxOverdueShort") : formatFullMonthYear(v.valid_until)}</div>`)
+               ${vaxS.items
+                 .map(
+                   ({ v, status }) =>
+                     `<div class="dashboard-card-sub"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(v.vaccine)} — ${t("medNextLabel")} ${
+                       v.valid_until ? formatFullMonthYear(v.valid_until) : t("vaxNoExpiry")
+                     }</div>`
+                 )
                  .join("")}`
             : `<div class="dashboard-card-empty">${t("emptyVax")}</div>`
         }
