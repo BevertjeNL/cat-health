@@ -277,3 +277,14 @@ alter table medication_catalog add column if not exists dose text;
 alter table medications add column if not exists brand text;
 alter table medications add column if not exists active_ingredient text;
 alter table medications add column if not exists batch text;
+
+
+-- ------------------------------------------------------------
+-- STAP 11: kosten bijhouden per dierenartsbezoek/medicatie/vaccinatie,
+-- voor het kosten-overzicht op het dashboard. Veilig om nu te draaien,
+-- additief.
+-- ------------------------------------------------------------
+
+alter table vet_visits add column if not exists cost numeric;
+alter table medications add column if not exists cost numeric;
+alter table vaccinations add column if not exists cost numeric;

@@ -711,6 +711,43 @@
     cursor: pointer;
   }
 
+  .dashboard-card-static {
+    cursor: default;
+  }
+
+  .cost-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+
+  .cost-toggle-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 3px 10px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .cost-toggle-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  #costYearSelect {
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 3px 8px;
+    font-size: 0.72rem;
+  }
+
   .dashboard-card h3 {
     font-size: 0.75rem;
     margin: 0 0 8px;
@@ -1277,6 +1314,10 @@
             <label for="vetVisitNote">Notitie (optioneel)</label>
             <input type="text" id="vetVisitNote" placeholder="bijv. bij Caressa Delft" />
           </div>
+          <div>
+            <label for="vetVisitCost">Kosten (optioneel)</label>
+            <input type="number" id="vetVisitCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 45.00" />
+          </div>
           <button class="submit" type="submit">Opslaan</button>
           <button type="button" class="today-btn" id="vetVisitCancelEditBtn" style="display:none;" onclick="cancelVetVisitEdit()">Bewerken annuleren</button>
         </form>
@@ -1327,6 +1368,10 @@
           <div>
             <label for="vaxNote">Notitie (optioneel)</label>
             <input type="text" id="vaxNote" placeholder="bijv. bij Caressa Delft" />
+          </div>
+          <div>
+            <label for="vaxCost">Kosten (optioneel)</label>
+            <input type="number" id="vaxCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 35.00" />
           </div>
           <button class="submit" type="submit">Opslaan</button>
           <button type="button" class="today-btn" id="vaxCancelEditBtn" style="display:none;" onclick="cancelVaxEdit()">Bewerken annuleren</button>
@@ -1480,6 +1525,10 @@
           <div>
             <label for="medicationNote">Notitie (optioneel)</label>
             <input type="text" id="medicationNote" placeholder="bijv. bij het eten" />
+          </div>
+          <div>
+            <label for="medicationCost">Kosten (optioneel)</label>
+            <input type="number" id="medicationCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 15.00" />
           </div>
           <button class="submit" type="submit">Opslaan</button>
           <button type="button" class="today-btn" id="medicationCancelEditBtn" style="display:none;" onclick="cancelMedicationEdit()">Bewerken annuleren</button>
@@ -2087,10 +2136,20 @@
   }
 
   const DUTCH_MONTH_ABBR = ["jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec."];
+  const DUTCH_MONTH_FULL = ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"];
 
   function formatMonthYear(dateStr) {
     const [y, m] = dateStr.split("-");
     return `${DUTCH_MONTH_ABBR[parseInt(m, 10) - 1]} ${y}`;
+  }
+
+  function formatFullMonthYear(dateStr) {
+    const [y, m] = dateStr.split("-");
+    return `${DUTCH_MONTH_FULL[parseInt(m, 10) - 1]} ${y}`;
+  }
+
+  function formatEuro(amount) {
+    return "€ " + amount.toFixed(2).replace(".", ",");
   }
 
   document.querySelectorAll(".today-btn").forEach((btn) => {
@@ -3477,6 +3536,7 @@
     document.getElementById("vetVisitReason").value = row.reason || "";
     document.getElementById("vetVisitResult").value = row.result || "";
     document.getElementById("vetVisitNote").value = row.note || "";
+    document.getElementById("vetVisitCost").value = row.cost ?? "";
     document.getElementById("vetVisitFormTitle").textContent = "Bezoek bewerken";
     vetVisitForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("vetVisitCancelEditBtn").style.display = "";
@@ -3506,10 +3566,12 @@
     const reason = document.getElementById("vetVisitReason").value.trim() || null;
     const result = document.getElementById("vetVisitResult").value.trim() || null;
     const note = document.getElementById("vetVisitNote").value.trim() || null;
+    const costVal = document.getElementById("vetVisitCost").value;
+    const cost = costVal ? parseFloat(costVal) : null;
 
     const { error } = editingVetVisitId
-      ? await supabaseClient.from("vet_visits").update({ date, reason, result, note }).eq("id", editingVetVisitId)
-      : await supabaseClient.from("vet_visits").insert([{ date, reason, result, note, pet_id: currentPetId }]);
+      ? await supabaseClient.from("vet_visits").update({ date, reason, result, note, cost }).eq("id", editingVetVisitId)
+      : await supabaseClient.from("vet_visits").insert([{ date, reason, result, note, cost, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -3553,7 +3615,7 @@
       const innerHtml = `
         <div class="entry-main">
           <span class="primary">${escapeHtml(row.reason || "Dierenartsbezoek")}</span>
-          <span class="secondary">${formatDate(row.date)}${row.result ? " · " + escapeHtml(row.result) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${row.result ? " · " + escapeHtml(row.result) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -3640,12 +3702,38 @@
     return Object.values(latest);
   }
 
+  // A vaccine's current protection status is governed by whichever entry
+  // gives the LATEST valid_until — not simply whichever dose was logged most
+  // recently (latestByField's rule). Without this, adding a valid_until to
+  // an older entry while a newer, dateless entry for the same vaccine also
+  // exists made the dashboard/reminders keep showing "no vervaldatum",
+  // because the newer-but-dateless row still won on date alone — the
+  // real bug behind "PUREVAX RCP blijft staan, wordt niet geupdate".
+  function bestVaxStatusByVaccine(data) {
+    const best = {};
+    data.forEach((row) => {
+      const key = row.vaccine;
+      const existing = best[key];
+      if (!existing) {
+        best[key] = row;
+        return;
+      }
+      const rowUntil = row.valid_until || "";
+      const existingUntil = existing.valid_until || "";
+      if (rowUntil > existingUntil || (rowUntil === existingUntil && row.date > existing.date)) {
+        best[key] = row;
+      }
+    });
+    return Object.values(best);
+  }
+
   function editVax(row) {
     editingVaxId = row.id;
     document.getElementById("vaxName").value = row.vaccine;
     document.getElementById("vaxDate").value = row.date;
     document.getElementById("vaxValidUntil").value = row.valid_until || "";
     document.getElementById("vaxNote").value = row.note || "";
+    document.getElementById("vaxCost").value = row.cost ?? "";
     document.getElementById("vaxFormTitle").textContent = "Vaccinatie bewerken";
     vaxForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("vaxCancelEditBtn").style.display = "";
@@ -3675,10 +3763,12 @@
     const date = document.getElementById("vaxDate").value;
     const valid_until = document.getElementById("vaxValidUntil").value || null;
     const note = document.getElementById("vaxNote").value.trim() || null;
+    const costVal = document.getElementById("vaxCost").value;
+    const cost = costVal ? parseFloat(costVal) : null;
 
     const { error } = editingVaxId
-      ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, note }).eq("id", editingVaxId)
-      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, note, pet_id: currentPetId }]);
+      ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, note, cost }).eq("id", editingVaxId)
+      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, note, cost, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -3729,7 +3819,7 @@
       const innerHtml = `
         <div class="entry-main">
           <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}</span>
-          <span class="secondary">${formatDate(row.date)} · ${validText}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="secondary">${formatDate(row.date)} · ${validText}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -3872,7 +3962,7 @@
   // helpful nudge instead of a nag, per the "geen achtergrond-pushmeldingen,
   // wel een pop-up bij openen" decision.
   function maybeShowCareReminders() {
-    const dueVax = latestByField(latestVaxData || [], "vaccine")
+    const dueVax = bestVaxStatusByVaccine(latestVaxData || [])
       .map((row) => ({ kind: "vaccinatie", name: row.vaccine, dueDate: row.valid_until, status: dueStatusFromDate(row.valid_until) }))
       .filter((x) => x.dueDate && x.status.daysLeft <= 30);
 
@@ -4338,6 +4428,7 @@
     document.getElementById("medicationBatch").value = row.batch || "";
     document.getElementById("medicationNextDue").value = row.next_due_date || "";
     document.getElementById("medicationNote").value = row.note || "";
+    document.getElementById("medicationCost").value = row.cost ?? "";
     updateMedicationDetailSuggestions(row.name);
     document.getElementById("medicationFormTitle").textContent = "Medicatie bewerken";
     medicationForm.querySelector("button.submit").textContent = "Bijwerken";
@@ -4361,6 +4452,7 @@
     document.getElementById("medicationBatch").value = "";
     document.getElementById("medicationNextDue").value = "";
     document.getElementById("medicationNote").value = row.note || "";
+    document.getElementById("medicationCost").value = "";
     medicationForm.querySelector("button.submit").textContent = "Opslaan";
     document.getElementById("medicationCancelEditBtn").style.display = "none";
     updateMedicationNameSuggestions(row.purpose || "");
@@ -4399,10 +4491,12 @@
     const batch = document.getElementById("medicationBatch").value.trim() || null;
     const next_due_date = document.getElementById("medicationNextDue").value || null;
     const note = document.getElementById("medicationNote").value.trim() || null;
+    const costVal = document.getElementById("medicationCost").value;
+    const cost = costVal ? parseFloat(costVal) : null;
 
     const { error } = editingMedicationId
-      ? await supabaseClient.from("medications").update({ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note }).eq("id", editingMedicationId)
-      : await supabaseClient.from("medications").insert([{ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, pet_id: currentPetId }]);
+      ? await supabaseClient.from("medications").update({ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost }).eq("id", editingMedicationId)
+      : await supabaseClient.from("medications").insert([{ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -4469,7 +4563,7 @@
       const innerHtml = `
         <div class="entry-main">
           <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}</span>
-          <span class="secondary">${formatDate(row.date)}${row.brand ? " · " + escapeHtml(row.brand) : ""}${row.dose ? " · " + escapeHtml(row.dose) : ""}${row.batch ? " · batch " + escapeHtml(row.batch) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${row.brand ? " · " + escapeHtml(row.brand) : ""}${row.dose ? " · " + escapeHtml(row.dose) : ""}${row.batch ? " · batch " + escapeHtml(row.batch) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -4496,7 +4590,7 @@
   // judgement is introduced here, just factual restatement + prioritization.
 
   function computeVaccinationSummary() {
-    const latest = latestByField(latestVaxData || [], "vaccine");
+    const latest = bestVaxStatusByVaccine(latestVaxData || []);
     if (!latest.length) return null;
     const items = latest.map((v) => ({ v, status: dueStatusFromDate(v.valid_until) }));
     const withDate = items.filter((x) => x.v.valid_until);
@@ -4698,6 +4792,34 @@
     return rgbStr.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
   }
 
+  function colorToRgba(color, alpha) {
+    if (color.startsWith("rgb(")) return rgbToRgba(color, alpha);
+    const hex = color.replace("#", "");
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  }
+
+  // Picks whichever color has the most elements behind it (ties broken
+  // toward the more severe color), so a tile's glow reflects the majority
+  // of its elements rather than being derailed by a single worst-case one.
+  function majorityColor(counts) {
+    const entries = [
+      ["#ff3b30", counts.red || 0],
+      ["#ff9500", counts.orange || 0],
+      ["#34c759", counts.green || 0],
+    ];
+    entries.sort((a, b) => b[1] - a[1]);
+    if (entries[0][1] === 0) return null;
+    return entries[0][0];
+  }
+
+  function tileGlowStyle(color) {
+    if (!color) return "";
+    return ` style="border-color:${color}; box-shadow:0 0 0 1px ${colorToRgba(color, 0.5)}, 0 0 16px ${colorToRgba(color, 0.35)};"`;
+  }
+
   // Continuous red -> orange -> yellow -> green scale driven purely by
   // days-left, mirroring the weight chart's continuous target-zone gradient
   // instead of the 3-bucket dueStatusFromDate() color.
@@ -4741,6 +4863,100 @@
     return badges || "0 afwijkingen";
   }
 
+  // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
+  let costViewMode = "rolling"; // "rolling" | "calendar"
+  let costViewYear = new Date().getFullYear();
+
+  function collectCostRows() {
+    const rows = [];
+    (latestVetVisitData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
+    (latestMedicationData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
+    (latestVaxData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
+    return rows;
+  }
+
+  function sumCostInRange(rows, start, end) {
+    return rows.filter((r) => r.date >= start && r.date <= end).reduce((sum, r) => sum + (r.cost || 0), 0);
+  }
+
+  function computeCostSummary(mode, year) {
+    const rows = collectCostRows();
+    const hasAnyCostData = rows.some((r) => r.cost != null);
+    let start, end, prevStart, prevEnd, periodLabel;
+    if (mode === "calendar") {
+      start = `${year}-01-01`;
+      end = `${year}-12-31`;
+      prevStart = `${year - 1}-01-01`;
+      prevEnd = `${year - 1}-12-31`;
+      periodLabel = String(year);
+    } else {
+      const today = dateToISO(new Date());
+      start = addDaysToDateStr(today, -365);
+      end = today;
+      prevStart = addDaysToDateStr(start, -365);
+      prevEnd = addDaysToDateStr(start, -1);
+      periodLabel = "afgelopen 12 maanden";
+    }
+    return {
+      hasAnyCostData,
+      total: sumCostInRange(rows, start, end),
+      prevTotal: sumCostInRange(rows, prevStart, prevEnd),
+      periodLabel,
+    };
+  }
+
+  // Same red-up/green-down/neutral convention as weightTrendHtml(), applied
+  // to a cost total vs. the same period a year earlier.
+  function costTrendHtml(total, prevTotal) {
+    if (!prevTotal) return "";
+    const diff = total - prevTotal;
+    if (diff === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">gelijk</span></span>`;
+    const up = diff > 0;
+    const color = up ? "#ff3b30" : "#34c759";
+    const pct = Math.abs((diff / prevTotal) * 100).toFixed(0) + "%";
+    return ` <span class="weight-trend" style="color:${color};">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span></span>`;
+  }
+
+  function costYearOptionsHtml() {
+    const rows = collectCostRows();
+    const years = new Set([new Date().getFullYear()]);
+    rows.forEach((r) => years.add(parseInt(r.date.slice(0, 4), 10)));
+    return [...years]
+      .sort((a, b) => b - a)
+      .map((y) => `<option value="${y}" ${y === costViewYear ? "selected" : ""}>${y}</option>`)
+      .join("");
+  }
+
+  function costCardBodyHtml() {
+    const s = computeCostSummary(costViewMode, costViewYear);
+    if (!s.hasAnyCostData) {
+      return `<div class="dashboard-card-empty">Nog geen kosten geregistreerd</div>`;
+    }
+    return `<div class="dashboard-card-value">${formatEuro(s.total)}${costTrendHtml(s.total, s.prevTotal)}</div>
+            <div class="dashboard-card-sub">${s.periodLabel} · vs. dezelfde periode vorig jaar</div>`;
+  }
+
+  function setCostViewMode(mode) {
+    costViewMode = mode;
+    renderCostCard();
+  }
+
+  function setCostViewYear(year) {
+    costViewYear = parseInt(year, 10);
+    renderCostCard();
+  }
+
+  function renderCostCard() {
+    const card = document.getElementById("costCard");
+    if (!card) return;
+    card.querySelectorAll(".cost-toggle-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.mode === costViewMode);
+    });
+    const yearSelect = document.getElementById("costYearSelect");
+    if (yearSelect) yearSelect.style.display = costViewMode === "calendar" ? "" : "none";
+    document.getElementById("costCardBody").innerHTML = costCardBodyHtml();
+  }
+
   function renderDashboardCards() {
     const weightS = computeWeightSummary();
     const vaxS = computeVaccinationSummary();
@@ -4751,16 +4967,41 @@
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
     const lastVetVisit = (latestVetVisitData || [])[0]; // loadVetVisits orders by date descending
 
-    // Glows the Gewicht tile's border/shadow in the exact same color the
-    // latest measurement gets in the weight chart, so the tile previews the
-    // chart's judgement instead of sitting behind a neutral gray border.
+    // Every tile's border/shadow glows in whichever color the MAJORITY of
+    // its elements earn (majorityColor()) — not a single worst-case item —
+    // so the glow is a quick "mostly fine" vs "mostly needs attention" read.
+    // Gewicht is the exception: with just one current value, its own
+    // continuous chart-scale color IS the glow, no majority vote needed.
     const weightGlowColor = weightS && latestWeightData.length ? weightStatusColor(latestWeightData[latestWeightData.length - 1]) : null;
-    const weightCardStyle = weightGlowColor
-      ? ` style="border-color:${weightGlowColor}; box-shadow:0 0 0 1px ${rgbToRgba(weightGlowColor, 0.5)}, 0 0 16px ${rgbToRgba(weightGlowColor, 0.35)};"`
-      : "";
+
+    const vaxColorCounts = { red: 0, orange: 0, green: 0 };
+    if (vaxS) {
+      vaxS.items.forEach(({ status }) => {
+        if (status.daysLeft == null) return;
+        if (status.daysLeft < 0) vaxColorCounts.red++;
+        else if (status.daysLeft <= 30) vaxColorCounts.orange++;
+        else vaxColorCounts.green++;
+      });
+    }
+    const vaxGlowColor = vaxS ? majorityColor(vaxColorCounts) : null;
+
+    const medColorCounts = { red: 0, orange: 0, green: 0 };
+    if (openMeds.length) {
+      openMeds.forEach((m) => {
+        if (dueStatusFromDate(m.next_due_date).daysLeft < 0) medColorCounts.red++;
+        else medColorCounts.orange++;
+      });
+    } else if ((latestMedicationData || []).length) {
+      medColorCounts.green = 1; // logged, and nothing currently open/overdue
+    }
+    const medGlowColor = (latestMedicationData || []).length ? majorityColor(medColorCounts) : null;
+
+    const bloodGlowColor = bloodS && bloodS.knownTotal ? majorityColor({ red: bloodS.outside, orange: 0, green: bloodS.within }) : null;
+
+    const symGlowColor = !symS.hasData ? null : symS.count === 0 ? "#34c759" : majorityColor({ red: symS.bySeverity.ernstig.length, orange: symS.bySeverity.matig.length, green: symS.bySeverity.licht.length });
 
     const cards = [
-      `<div class="card dashboard-card" onclick="switchTab('weight')"${weightCardStyle}>
+      `<div class="card dashboard-card" onclick="switchTab('weight')"${tileGlowStyle(weightGlowColor)}>
         <h3>⚖️ Actueel gewicht</h3>
         ${
           weightS
@@ -4769,16 +5010,16 @@
             : `<div class="dashboard-card-empty">Nog geen metingen</div>`
         }
       </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('vax')">
+      `<div class="card dashboard-card" onclick="switchTab('vax')"${tileGlowStyle(vaxGlowColor)}>
         <h3>💉 Vaccinaties</h3>
         ${
           vaxS
             ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
-               ${vaxS.items.map(({ v, status }) => `<div class="dashboard-card-sub">${escapeHtml(v.vaccine)} — ${v.valid_until ? formatDate(v.valid_until) : "geen vervaldatum"}</div>`).join("")}`
+               ${vaxS.items.map(({ v }) => `<div class="dashboard-card-sub">${escapeHtml(v.vaccine)} — ${v.valid_until ? "tot " + formatFullMonthYear(v.valid_until) : "geen vervaldatum"}</div>`).join("")}`
             : `<div class="dashboard-card-empty">Nog geen vaccinaties</div>`
         }
       </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('medication')">
+      `<div class="card dashboard-card" onclick="switchTab('medication')"${tileGlowStyle(medGlowColor)}>
         <h3>💊 Medicatie</h3>
         ${
           openMeds.length
@@ -4801,7 +5042,7 @@
             : `<div class="dashboard-card-empty">Nog geen medicatie gelogd</div>`
         }
       </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('blood')">
+      `<div class="card dashboard-card" onclick="switchTab('blood')"${tileGlowStyle(bloodGlowColor)}>
         <h3>🩸 Bloedwaarden</h3>
         ${
           bloodS
@@ -4810,7 +5051,7 @@
             : `<div class="dashboard-card-empty">Nog geen bloedonderzoek</div>`
         }
       </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('symptoms')">
+      `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
         <h3>🩹 Afwijkingen</h3>
         ${
           !symS.hasData
@@ -4828,6 +5069,15 @@
                <div class="dashboard-card-sub">${formatDate(lastVetVisit.date)}</div>`
             : `<div class="dashboard-card-empty">Nog geen bezoeken gelogd</div>`
         }
+      </div>`,
+      `<div class="card dashboard-card dashboard-card-static" id="costCard">
+        <h3>💰 Kosten</h3>
+        <div class="cost-toggle">
+          <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">Rollend jaar</button>
+          <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">Kalenderjaar</button>
+          <select id="costYearSelect" style="display:${costViewMode === "calendar" ? "" : "none"};" onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
+        </div>
+        <div id="costCardBody">${costCardBodyHtml()}</div>
       </div>`,
     ];
 
