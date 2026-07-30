@@ -737,6 +737,26 @@
     color: var(--text-muted);
   }
 
+  .dashboard-card-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 1px;
+  }
+
+  .weight-trend {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 3px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-left: 4px;
+  }
+
+  .dashboard-card-pct {
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+
   .purpose-tag {
     display: inline-block;
     margin-left: 6px;
@@ -1330,6 +1350,10 @@
               <input type="date" id="symptomDate" required />
               <button type="button" class="today-btn" data-target="symptomDate">Vandaag</button>
             </div>
+          </div>
+          <div id="symptomEndDateRow">
+            <label for="symptomEndDate">T/m (optioneel, voor een afwijking over meerdere dagen)</label>
+            <input type="date" id="symptomEndDate" />
           </div>
           <div>
             <label for="symptomSeverity">Ernst (optioneel)</label>
@@ -2042,6 +2066,13 @@
   function formatDate(dateStr) {
     const [y, m, d] = dateStr.split("-");
     return `${d}-${m}-${y}`;
+  }
+
+  const DUTCH_MONTH_ABBR = ["jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec."];
+
+  function formatMonthYear(dateStr) {
+    const [y, m] = dateStr.split("-");
+    return `${DUTCH_MONTH_ABBR[parseInt(m, 10) - 1]} ${y}`;
   }
 
   document.querySelectorAll(".today-btn").forEach((btn) => {
@@ -3705,14 +3736,20 @@
   // was, instead of the line/dots stopping flush against the plot edge.
   function computeTimelineXRange(dates) {
     const sorted = [...dates].sort();
-    const minDate = sorted[0];
+    const minDataDate = sorted[0];
     const maxDataDate = sorted[sorted.length - 1];
     const todayStr = dateToISO(new Date());
     const maxDate = maxDataDate > todayStr ? maxDataDate : todayStr;
-    if (minDate === maxDate) {
-      return { min: addDaysToDateStr(minDate, -3), max: addDaysToDateStr(minDate, 3) };
+    if (minDataDate === maxDate) {
+      return { min: addDaysToDateStr(minDataDate, -3), max: addDaysToDateStr(minDataDate, 3) };
     }
-    return { min: minDate, max: maxDate };
+    // Pad the left edge a little so the earliest point never renders flush
+    // against the y-axis line itself — without this, the axis border was
+    // drawn right through the point, making it look like its left half was
+    // cut off by the chart edge.
+    const totalDays = Math.max(1, Math.round((new Date(maxDate) - new Date(minDataDate)) / 86400000));
+    const leftPadDays = Math.max(1, Math.round(totalDays * 0.04));
+    return { min: addDaysToDateStr(minDataDate, -leftPadDays), max: maxDate };
   }
 
   function renderVaxChart(data) {
@@ -3734,15 +3771,22 @@
     const datasets = names.map((name, i) => {
       const rows = data.filter((r) => r.vaccine === name).sort((a, b) => (a.date < b.date ? -1 : 1));
       const color = VAX_TIMELINE_PALETTE[i % VAX_TIMELINE_PALETTE.length];
+      // Same-day repeats for one vaccine would otherwise stack invisibly —
+      // group by date and scale the dot instead, same fix as the afwijkingen
+      // timeline.
+      const counts = {};
+      rows.forEach((r) => (counts[r.date] = (counts[r.date] || 0) + 1));
+      const points = [...new Set(rows.map((r) => r.date))].sort().map((d) => ({ x: d, y: name, count: counts[d] }));
+      const radii = points.map((p) => 5 + Math.min(9, (p.count - 1) * 3));
       return {
         label: name,
-        data: rows.map((r) => ({ x: r.date, y: name })),
+        data: points,
         borderColor: color,
         backgroundColor: color,
         showLine: true,
         borderWidth: 2,
-        pointRadius: 6,
-        pointHoverRadius: 8,
+        pointRadius: radii,
+        pointHoverRadius: radii.map((r) => r + 2),
       };
     });
 
@@ -3788,7 +3832,7 @@
           tooltip: {
             callbacks: {
               title: (items) => items[0].raw.y,
-              label: (item) => formatDate(item.raw.x),
+              label: (item) => formatDate(item.raw.x) + (item.raw.count > 1 ? ` · ${item.raw.count}x` : ""),
             },
           },
         },
@@ -3884,12 +3928,34 @@
     editingSymptomId = row.id;
     document.getElementById("symptomName").value = row.symptom;
     document.getElementById("symptomDate").value = row.date;
+    document.getElementById("symptomEndDate").value = "";
     document.getElementById("symptomSeverity").value = row.severity || "";
     document.getElementById("symptomNote").value = row.note || "";
     document.getElementById("symptomFormTitle").textContent = "Afwijking bewerken";
     symptomForm.querySelector("button.submit").textContent = "Bijwerken";
     document.getElementById("symptomCancelEditBtn").style.display = "";
+    // A single existing entry maps to one row — the multi-dag range option
+    // only makes sense when creating fresh entries, not editing one.
+    document.getElementById("symptomEndDateRow").style.display = "none";
     openSymptomForm();
+    switchTab("symptoms");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Pre-fills a fresh (non-edit) entry from an existing row — same afwijking,
+  // ernst and notitie, but today's date, mirroring duplicateMedication().
+  function duplicateSymptom(row) {
+    editingSymptomId = null;
+    document.getElementById("symptomName").value = row.symptom;
+    document.getElementById("symptomDate").valueAsDate = new Date();
+    document.getElementById("symptomEndDate").value = "";
+    document.getElementById("symptomSeverity").value = row.severity || "";
+    document.getElementById("symptomNote").value = row.note || "";
+    symptomForm.querySelector("button.submit").textContent = "Opslaan";
+    document.getElementById("symptomCancelEditBtn").style.display = "none";
+    document.getElementById("symptomEndDateRow").style.display = "";
+    openSymptomForm();
+    document.getElementById("symptomFormTitle").textContent = "Nieuwe afwijking (op basis van vorige)";
     switchTab("symptoms");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -3901,6 +3967,7 @@
     document.getElementById("symptomFormTitle").textContent = "+ Nieuwe afwijking";
     symptomForm.querySelector("button.submit").textContent = "Opslaan";
     document.getElementById("symptomCancelEditBtn").style.display = "none";
+    document.getElementById("symptomEndDateRow").style.display = "";
     toggleSymptomForm(false);
   }
 
@@ -3913,12 +3980,24 @@
 
     const symptom = document.getElementById("symptomName").value.trim();
     const date = document.getElementById("symptomDate").value;
+    const endDate = document.getElementById("symptomEndDate").value || null;
     const severity = document.getElementById("symptomSeverity").value || null;
     const note = document.getElementById("symptomNote").value.trim() || null;
 
-    const { error } = editingSymptomId
-      ? await supabaseClient.from("symptom_logs").update({ symptom, date, severity, note }).eq("id", editingSymptomId)
-      : await supabaseClient.from("symptom_logs").insert([{ symptom, date, severity, note, pet_id: currentPetId }]);
+    let error;
+    if (editingSymptomId) {
+      ({ error } = await supabaseClient.from("symptom_logs").update({ symptom, date, severity, note }).eq("id", editingSymptomId));
+    } else if (endDate && endDate > date) {
+      // One row per day in the range, so the timeline/frequency table need
+      // no special-casing for a "spans multiple days" entry.
+      const rows = [];
+      for (let d = date; d <= endDate; d = addDaysToDateStr(d, 1)) {
+        rows.push({ symptom, date: d, severity, note, pet_id: currentPetId });
+      }
+      ({ error } = await supabaseClient.from("symptom_logs").insert(rows));
+    } else {
+      ({ error } = await supabaseClient.from("symptom_logs").insert([{ symptom, date, severity, note, pet_id: currentPetId }]));
+    }
 
     submitBtn.disabled = false;
 
@@ -3975,14 +4054,30 @@
     const names = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
     wrapEl.style.height = Math.max(160, 60 + names.length * 46) + "px";
 
-    const points = data.map((r) => ({ x: r.date, y: r.symptom, severity: r.severity }));
-    const colors = data.map((r) => SYMPTOM_SEVERITY_COLOR[r.severity] || "#8e8e93");
+    // Multiple entries for the same afwijking on the same day used to stack
+    // exactly on top of each other — invisible instead of "many entries".
+    // Grouping by (date, symptom) and scaling the dot's radius by how many
+    // entries it represents turns that invisible overlap into a visibly
+    // bigger bubble, which is what stays readable once the log gets dense.
+    const severityRank = { ernstig: 3, matig: 2, licht: 1 };
+    const grouped = {};
+    data.forEach((r) => {
+      const key = r.date + "|" + r.symptom;
+      if (!grouped[key]) grouped[key] = { x: r.date, y: r.symptom, count: 0, severity: r.severity || null };
+      grouped[key].count += 1;
+      if ((severityRank[r.severity] || 0) > (severityRank[grouped[key].severity] || 0)) grouped[key].severity = r.severity;
+    });
+    const points = Object.values(grouped);
+    const colors = points.map((p) => SYMPTOM_SEVERITY_COLOR[p.severity] || "#8e8e93");
+    const radii = points.map((p) => 5 + Math.min(9, (p.count - 1) * 3));
     const xRange = computeTimelineXRange(data.map((r) => r.date));
 
     if (symptomChart) {
       symptomChart.data.labels = names;
       symptomChart.data.datasets[0].data = points;
       symptomChart.data.datasets[0].backgroundColor = colors;
+      symptomChart.data.datasets[0].pointRadius = radii;
+      symptomChart.data.datasets[0].pointHoverRadius = radii.map((r) => r + 2);
       symptomChart.options.scales.x.min = xRange.min;
       symptomChart.options.scales.x.max = xRange.max;
       symptomChart.options.scales.y.labels = names;
@@ -3998,8 +4093,8 @@
           {
             data: points,
             backgroundColor: colors,
-            pointRadius: 6,
-            pointHoverRadius: 8,
+            pointRadius: radii,
+            pointHoverRadius: radii.map((r) => r + 2),
           },
         ],
       },
@@ -4032,7 +4127,7 @@
           tooltip: {
             callbacks: {
               title: (items) => items[0].raw.y,
-              label: (item) => formatDate(item.raw.x) + (item.raw.severity ? " · " + item.raw.severity : ""),
+              label: (item) => formatDate(item.raw.x) + (item.raw.count > 1 ? ` · ${item.raw.count}x` : "") + (item.raw.severity ? " · " + item.raw.severity : ""),
             },
           },
         },
@@ -4060,6 +4155,7 @@
       `;
       const li = createSwipeableListItem(innerHtml, [
         { label: "Verwijder", onClick: () => deleteSymptom(row.id) },
+        { label: "Dupliceer", className: "edit-action", onClick: () => duplicateSymptom(row) },
         { label: "Bewerk", className: "edit-action", onClick: () => editSymptom(row) },
       ]);
       symptomList.appendChild(li);
@@ -4384,10 +4480,11 @@
   function computeVaccinationSummary() {
     const latest = latestByField(latestVaxData || [], "vaccine");
     if (!latest.length) return null;
-    const withDate = latest.map((v) => ({ v, status: dueStatusFromDate(v.valid_until) })).filter((x) => x.v.valid_until);
+    const items = latest.map((v) => ({ v, status: dueStatusFromDate(v.valid_until) }));
+    const withDate = items.filter((x) => x.v.valid_until);
     const upToDate = withDate.filter((x) => x.status.daysLeft > 30).length;
     const sorted = withDate.slice().sort((a, b) => a.status.daysLeft - b.status.daysLeft);
-    return { total: latest.length, withDate: withDate.length, upToDate, next: sorted.length ? sorted[0] : null };
+    return { total: latest.length, withDate: withDate.length, upToDate, items, next: sorted.length ? sorted[0] : null };
   }
 
   // "Due soon" mirrors the vaccination reminder's own 0-30 day window (via
@@ -4429,9 +4526,9 @@
     const symptoms = latestSymptomData || [];
     if (!symptoms.length) return { hasData: false };
     const relevant = lastVisit ? symptoms.filter((s) => s.date >= lastVisit.date) : symptoms;
-    if (!relevant.length) return { hasData: true, none: true, sinceDate: lastVisit ? lastVisit.date : null };
+    if (!relevant.length) return { hasData: true, none: true, count: 0, sinceDate: lastVisit ? lastVisit.date : null };
     const mostRecent = relevant.slice().sort((a, b) => (a.date > b.date ? -1 : 1))[0];
-    return { hasData: true, none: false, mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
+    return { hasData: true, none: false, count: relevant.length, mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
   }
 
   function alertVaccination() {
@@ -4547,6 +4644,25 @@
     return purpose ? `<span class="purpose-tag">${escapeHtml(purpose)}</span>` : "";
   }
 
+  // Red up-arrow = heavier than last time, green down-arrow = lighter —
+  // color encodes direction only, independent of any target zone judgement.
+  function weightTrendHtml(s) {
+    if (s.diffKg == null || s.diffKg === 0) return "";
+    const up = s.diffKg > 0;
+    const color = up ? "#ff3b30" : "#34c759";
+    const pct = s.diffPct != null ? Math.abs(s.diffPct).toFixed(1) + "%" : "";
+    return ` <span class="weight-trend" style="color:${color};">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span></span>`;
+  }
+
+  // Green only when every vaccine with a known valid_until is up to date —
+  // otherwise red (something overdue) beats orange (something due soon).
+  function overallVaxColor(vaxS) {
+    if (!vaxS.withDate) return "var(--text-muted)";
+    if (vaxS.items.some((x) => x.v.valid_until && x.status.daysLeft < 0)) return "#ff3b30";
+    if (vaxS.items.some((x) => x.v.valid_until && x.status.daysLeft <= 30)) return "#ff9500";
+    return "#34c759";
+  }
+
   function renderDashboardCards() {
     const weightS = computeWeightSummary();
     const vaxS = computeVaccinationSummary();
@@ -4562,9 +4678,9 @@
         <h3>⚖️ Gewicht</h3>
         ${
           weightS
-            ? `<div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg</div>
-               <div class="dashboard-card-sub">${weightS.diffKg == null ? "Nog geen vergelijking mogelijk" : `${weightS.diffKg > 0 ? "+" : ""}${weightS.diffKg.toFixed(1)} kg sinds vorige meting`}</div>
-               <div class="dashboard-card-sub">${formatDaysAgo(weightS.daysSinceLast)} gemeten</div>`
+            ? `<div class="dashboard-card-label">Actueel gewicht</div>
+               <div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg${weightTrendHtml(weightS)}</div>
+               <div class="dashboard-card-sub">Laatste meting: ${formatDaysAgo(weightS.daysSinceLast)}</div>`
             : `<div class="dashboard-card-empty">Nog geen metingen</div>`
         }
       </div>`,
@@ -4572,8 +4688,8 @@
         <h3>💉 Vaccinaties</h3>
         ${
           vaxS
-            ? `<div class="dashboard-card-value">${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
-               <div class="dashboard-card-sub">${vaxS.next ? `Eerstvolgende: ${escapeHtml(vaxS.next.v.vaccine)} — ${formatDate(vaxS.next.v.valid_until)}` : "Geen vervaldatum gepland"}</div>`
+            ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
+               ${vaxS.items.map(({ v, status }) => `<div class="dashboard-card-sub">${escapeHtml(v.vaccine)} — ${v.valid_until ? formatDate(v.valid_until) : "geen vervaldatum"}</div>`).join("")}`
             : `<div class="dashboard-card-empty">Nog geen vaccinaties</div>`
         }
       </div>`,
@@ -4604,7 +4720,7 @@
         <h3>🩸 Bloedwaarden</h3>
         ${
           bloodS
-            ? `<div class="dashboard-card-value">${formatDate(bloodS.date)}</div>
+            ? `<div class="dashboard-card-value">Laatste meting: ${formatMonthYear(bloodS.date)}</div>
                <div class="dashboard-card-sub">${bloodS.knownTotal ? `${bloodS.within} binnen, ${bloodS.outside} buiten referentiegebied` : "Geen referentiewaarden bekend voor deze markers"}</div>`
             : `<div class="dashboard-card-empty">Nog geen bloedonderzoek</div>`
         }
@@ -4614,10 +4730,8 @@
         ${
           !symS.hasData
             ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
-            : symS.none
-            ? `<div class="dashboard-card-value">Geen afwijkingen${symS.sinceDate ? " sinds " + formatDate(symS.sinceDate) : ""}</div>`
-            : `<div class="dashboard-card-value">${escapeHtml(symS.mostRecent.symptom)}</div>
-               <div class="dashboard-card-sub">${formatDate(symS.mostRecent.date)}</div>`
+            : `<div class="dashboard-card-value">${symS.count} afwijking${symS.count === 1 ? "" : "en"}</div>
+               <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
@@ -4836,6 +4950,15 @@
       loadVetVisits(),
       loadProfile(),
     ]);
+    // loadWeights() renders the weight chart as soon as its own fetch
+    // resolves, which can happen before loadProfile() above has populated
+    // catProfile (both run in parallel) — that race is what caused the
+    // "neutral color until I hit refresh" bug: the first render used an
+    // empty profile, and only a later refresh (with catProfile already
+    // warm from the first load) showed the real color scale. Re-rendering
+    // once more here, after every load has settled, makes the very first
+    // paint correct too.
+    renderWeightChart(latestWeightData);
     maybeShowCareReminders();
     if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
 
