@@ -757,6 +757,24 @@
     font-weight: 600;
   }
 
+  .due-pill {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    border: 1.5px solid currentColor;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+
+  .severity-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-right: 10px;
+  }
+
   .purpose-tag {
     display: inline-block;
     margin-left: 6px;
@@ -4521,14 +4539,25 @@
 
   // "Most recent afwijking since the last vet visit" — uses the vet visit
   // log purely as a date cutoff, no interpretation of the visit's content.
+  // Per-severity breakdown (licht/matig/ernstig) among the given entries —
+  // shared by the dashboard's Afwijkingen tile so a serious (ernstig) entry
+  // can be called out separately instead of hiding inside a plain count.
+  function computeSeverityBreakdown(rows) {
+    const bySeverity = { licht: [], matig: [], ernstig: [] };
+    rows.forEach((r) => {
+      if (bySeverity[r.severity]) bySeverity[r.severity].push(r);
+    });
+    return bySeverity;
+  }
+
   function computeSymptomSinceVetVisit() {
     const lastVisit = (latestVetVisitData || [])[0];
     const symptoms = latestSymptomData || [];
     if (!symptoms.length) return { hasData: false };
     const relevant = lastVisit ? symptoms.filter((s) => s.date >= lastVisit.date) : symptoms;
-    if (!relevant.length) return { hasData: true, none: true, count: 0, sinceDate: lastVisit ? lastVisit.date : null };
+    if (!relevant.length) return { hasData: true, none: true, count: 0, bySeverity: computeSeverityBreakdown([]), sinceDate: lastVisit ? lastVisit.date : null };
     const mostRecent = relevant.slice().sort((a, b) => (a.date > b.date ? -1 : 1))[0];
-    return { hasData: true, none: false, count: relevant.length, mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
+    return { hasData: true, none: false, count: relevant.length, bySeverity: computeSeverityBreakdown(relevant), mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
   }
 
   function alertVaccination() {
@@ -4644,10 +4673,12 @@
     return purpose ? `<span class="purpose-tag">${escapeHtml(purpose)}</span>` : "";
   }
 
-  // Red up-arrow = heavier than last time, green down-arrow = lighter —
-  // color encodes direction only, independent of any target zone judgement.
+  // Red up-arrow = heavier than last time, green down-arrow = lighter,
+  // gray "stable" arrow when unchanged — color encodes direction only,
+  // independent of any target zone judgement.
   function weightTrendHtml(s) {
-    if (s.diffKg == null || s.diffKg === 0) return "";
+    if (s.diffKg == null) return "";
+    if (s.diffKg === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">gelijk</span></span>`;
     const up = s.diffKg > 0;
     const color = up ? "#ff3b30" : "#34c759";
     const pct = s.diffPct != null ? Math.abs(s.diffPct).toFixed(1) + "%" : "";
@@ -4663,6 +4694,53 @@
     return "#34c759";
   }
 
+  function rgbToRgba(rgbStr, alpha) {
+    return rgbStr.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
+  }
+
+  // Continuous red -> orange -> yellow -> green scale driven purely by
+  // days-left, mirroring the weight chart's continuous target-zone gradient
+  // instead of the 3-bucket dueStatusFromDate() color.
+  function dueGradientColor(daysLeft) {
+    if (daysLeft == null) return "rgb(160, 158, 148)";
+    const RED = [255, 59, 48];
+    const ORANGE = [255, 149, 0];
+    const YELLOW = [255, 204, 0];
+    const GREEN = [52, 199, 89];
+    const stops = [
+      { d: -14, c: RED },
+      { d: 0, c: ORANGE },
+      { d: 15, c: YELLOW },
+      { d: 30, c: GREEN },
+    ];
+    if (daysLeft <= stops[0].d) return `rgb(${stops[0].c.join(", ")})`;
+    if (daysLeft >= stops[stops.length - 1].d) return `rgb(${stops[stops.length - 1].c.join(", ")})`;
+    for (let i = 0; i < stops.length - 1; i++) {
+      if (daysLeft >= stops[i].d && daysLeft <= stops[i + 1].d) {
+        const t = (daysLeft - stops[i].d) / (stops[i + 1].d - stops[i].d);
+        const [r, g, b] = lerpColor(stops[i].c, stops[i + 1].c, t);
+        return `rgb(${r}, ${g}, ${b})`;
+      }
+    }
+  }
+
+  function duePillHtml(daysLeft, text) {
+    const color = dueGradientColor(daysLeft);
+    return `<span class="due-pill" style="border-color:${color}; color:${color};">${text}</span>`;
+  }
+
+  // One count badge per severity present (licht=green/matig=orange/ernstig=red),
+  // so the Afwijkingen tile shows the color mix at a glance instead of a
+  // single flat number.
+  function symptomSeverityBadgesHtml(bySeverity) {
+    const order = ["ernstig", "matig", "licht"];
+    const badges = order
+      .filter((sev) => bySeverity[sev].length)
+      .map((sev) => `<span class="severity-badge" style="color:${SYMPTOM_SEVERITY_COLOR[sev]};"><span class="status-dot" style="background:${SYMPTOM_SEVERITY_COLOR[sev]};"></span>${bySeverity[sev].length}</span>`)
+      .join(" ");
+    return badges || "0 afwijkingen";
+  }
+
   function renderDashboardCards() {
     const weightS = computeWeightSummary();
     const vaxS = computeVaccinationSummary();
@@ -4673,13 +4751,20 @@
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
     const lastVetVisit = (latestVetVisitData || [])[0]; // loadVetVisits orders by date descending
 
+    // Glows the Gewicht tile's border/shadow in the exact same color the
+    // latest measurement gets in the weight chart, so the tile previews the
+    // chart's judgement instead of sitting behind a neutral gray border.
+    const weightGlowColor = weightS && latestWeightData.length ? weightStatusColor(latestWeightData[latestWeightData.length - 1]) : null;
+    const weightCardStyle = weightGlowColor
+      ? ` style="border-color:${weightGlowColor}; box-shadow:0 0 0 1px ${rgbToRgba(weightGlowColor, 0.5)}, 0 0 16px ${rgbToRgba(weightGlowColor, 0.35)};"`
+      : "";
+
     const cards = [
-      `<div class="card dashboard-card" onclick="switchTab('weight')">
-        <h3>⚖️ Gewicht</h3>
+      `<div class="card dashboard-card" onclick="switchTab('weight')"${weightCardStyle}>
+        <h3>⚖️ Actueel gewicht</h3>
         ${
           weightS
-            ? `<div class="dashboard-card-label">Actueel gewicht</div>
-               <div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg${weightTrendHtml(weightS)}</div>
+            ? `<div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg${weightTrendHtml(weightS)}</div>
                <div class="dashboard-card-sub">Laatste meting: ${formatDaysAgo(weightS.daysSinceLast)}</div>`
             : `<div class="dashboard-card-empty">Nog geen metingen</div>`
         }
@@ -4702,12 +4787,12 @@
                   const status = dueStatusFromDate(m.next_due_date);
                   const dueText =
                     status.daysLeft < 0
-                      ? `Was gepland op ${formatDate(m.next_due_date)}`
+                      ? `${Math.abs(status.daysLeft)} dag${Math.abs(status.daysLeft) === 1 ? "" : "en"} te laat`
                       : status.daysLeft === 0
                       ? "Vandaag"
-                      : `Over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"} (${formatDate(m.next_due_date)})`;
-                  return `<div class="dashboard-card-value"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
-                          <div class="dashboard-card-sub">${dueText}</div>`;
+                      : `Over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}`;
+                  return `<div class="dashboard-card-value">${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
+                          <div class="dashboard-card-sub">${duePillHtml(status.daysLeft, dueText)}</div>`;
                 })
                 .join("")
             : lastMed
@@ -4730,7 +4815,8 @@
         ${
           !symS.hasData
             ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
-            : `<div class="dashboard-card-value">${symS.count} afwijking${symS.count === 1 ? "" : "en"}</div>
+            : `<div class="dashboard-card-value">${symptomSeverityBadgesHtml(symS.bySeverity)}</div>
+               ${symS.bySeverity.ernstig.length ? `<div class="dashboard-card-sub" style="color:#ff3b30;">⚠️ ${symS.bySeverity.ernstig.map((r) => escapeHtml(r.symptom)).join(", ")}</div>` : ""}
                <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>`
         }
       </div>`,
