@@ -816,6 +816,10 @@
     font-size: 0.72rem;
   }
 
+  /* Dashboard type scale, deliberately just two sizes (a small uppercase
+     label tier and one body tier) plus a single larger tier reserved for
+     each card's one hero value — kept small on purpose so the dashboard
+     reads calm instead of a different size for every line. */
   .dashboard-card h3 {
     font-size: 0.72rem;
     margin: 0 0 10px;
@@ -827,20 +831,20 @@
 
   .dashboard-card-value {
     font-size: 1.05rem;
-    font-weight: 650;
+    font-weight: 700;
     letter-spacing: -0.01em;
     margin-bottom: 4px;
     line-height: 1.35;
   }
 
   .dashboard-card-sub {
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
     line-height: 1.45;
   }
 
   .dashboard-card-empty {
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
   }
 
@@ -868,7 +872,7 @@
      the "not too many competing shapes" direction better than a badge. */
   .due-pill {
     display: inline;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     font-weight: 600;
   }
 
@@ -886,7 +890,7 @@
     border-radius: 999px;
     background: var(--bg);
     color: var(--text-muted);
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 600;
     vertical-align: middle;
     white-space: nowrap;
@@ -899,7 +903,7 @@
     padding: 9px 2px;
     border-bottom: 1px solid var(--border);
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
   }
 
   .dashboard-alert-row:last-child {
@@ -2186,6 +2190,12 @@
     costToggleCalendar: "Kalenderjaar",
     dashboardVetLastVisit: "Laatste bezoek",
     vetVisitFallback: "Bezoek",
+    sinceLastVetVisit: "Sinds laatste dierenartsbezoek",
+    sinceLogStart: "Sinds start logboek",
+    bloodOutOfRangeLine: "Buiten referentie:",
+    bloodWatchedLine: "Gevolgd:",
+    bloodAllWithinRange: "Alle waarden binnen referentie",
+    bloodNoReferenceKnown: "Geen referentiewaarden bekend voor deze markers",
     errSaveFailed: "Opslaan mislukt",
     errLoadFailed: "Laden mislukt",
     errDeleteFailed: "Verwijderen mislukt",
@@ -2284,6 +2294,12 @@
     costToggleCalendar: "Calendar year",
     dashboardVetLastVisit: "Last visit",
     vetVisitFallback: "Visit",
+    sinceLastVetVisit: "Since last vet visit",
+    sinceLogStart: "Since log start",
+    bloodOutOfRangeLine: "Outside range:",
+    bloodWatchedLine: "Watched:",
+    bloodAllWithinRange: "All values within range",
+    bloodNoReferenceKnown: "No reference values known for these markers",
     errSaveFailed: "Save failed",
     errLoadFailed: "Loading failed",
     errDeleteFailed: "Delete failed",
@@ -2382,6 +2398,12 @@
     costToggleCalendar: "Kalenderjahr",
     dashboardVetLastVisit: "Letzter Besuch",
     vetVisitFallback: "Besuch",
+    sinceLastVetVisit: "Seit letztem Tierarztbesuch",
+    sinceLogStart: "Seit Beginn des Logbuchs",
+    bloodOutOfRangeLine: "Außerhalb des Referenzbereichs:",
+    bloodWatchedLine: "Verfolgt:",
+    bloodAllWithinRange: "Alle Werte innerhalb des Referenzbereichs",
+    bloodNoReferenceKnown: "Keine Referenzwerte für diese Marker bekannt",
     errSaveFailed: "Speichern fehlgeschlagen",
     errLoadFailed: "Laden fehlgeschlagen",
     errDeleteFailed: "Löschen fehlgeschlagen",
@@ -5407,6 +5429,14 @@
     return { latest, overdue, dueSoon, active };
   }
 
+  // Named, not just counted: the tile used to only say "X within, Y outside",
+  // which left the actual marker unidentifiable without opening the full
+  // Bloedwaarden tab — naming it here lets it be checked directly against
+  // the underlying lab report. `parseFloat` guards against Supabase/PostgREST
+  // returning a `numeric` column as a JSON string rather than a number.
+  // Watched ("extra bewaken") markers are surfaced separately and
+  // unconditionally, regardless of whether they're in or out of range,
+  // since the point of starring one is to keep an eye on it either way.
   function computeBloodSummary() {
     const data = latestBloodData || [];
     if (!data.length) return null;
@@ -5414,14 +5444,26 @@
     const rows = data.filter((r) => r.date === latestDate);
     let within = 0;
     let outside = 0;
+    const outsideMarkers = [];
+    const watchedMarkers = [];
     rows.forEach((r) => {
       const m = findMarker(r.marker);
-      if (m && m.min != null && m.max != null) {
-        if (r.value < m.min || r.value > m.max) outside++;
-        else within++;
+      if (!m) return;
+      const value = parseFloat(r.value);
+      const hasRange = m.min != null && m.max != null;
+      let isOutside = null;
+      if (hasRange) {
+        isOutside = value < m.min || value > m.max;
+        if (isOutside) {
+          outside++;
+          outsideMarkers.push({ code: m.code, value, unit: m.unit });
+        } else {
+          within++;
+        }
       }
+      if (isWatchedMarker(m.code)) watchedMarkers.push({ code: m.code, value, unit: m.unit, isOutside });
     });
-    return { date: latestDate, within, outside, knownTotal: within + outside };
+    return { date: latestDate, within, outside, knownTotal: within + outside, outsideMarkers, watchedMarkers };
   }
 
   // "Most recent afwijking since the last vet visit" — uses the vet visit
@@ -5918,7 +5960,20 @@
         ${
           bloodS
             ? `<div class="dashboard-card-value">${t("dashboardWeightLastMeasured")}: ${formatMonthYear(bloodS.date)}</div>
-               <div class="dashboard-card-sub">${bloodS.knownTotal ? `${bloodS.within} binnen, ${bloodS.outside} buiten referentiegebied` : "Geen referentiewaarden bekend voor deze markers"}</div>`
+               <div class="dashboard-card-sub">${
+                 bloodS.knownTotal
+                   ? bloodS.outside
+                     ? `${t("bloodOutOfRangeLine")} ${bloodS.outsideMarkers.map((m) => `${escapeHtml(m.code)} (${m.value} ${escapeHtml(m.unit)})`).join(", ")}`
+                     : t("bloodAllWithinRange")
+                   : t("bloodNoReferenceKnown")
+               }</div>
+               ${
+                 bloodS.watchedMarkers.length
+                   ? `<div class="dashboard-card-sub">${t("bloodWatchedLine")} ${bloodS.watchedMarkers
+                       .map((m) => `${escapeHtml(m.code)} ${m.value} ${escapeHtml(m.unit)}`)
+                       .join(", ")}</div>`
+                   : ""
+               }`
             : `<div class="dashboard-card-empty">${t("emptyBloodExam")}</div>`
         }
       </div>`,
@@ -5928,7 +5983,7 @@
           !symS.hasData
             ? `<div class="dashboard-card-empty">${t("emptySymptomsLogged")}</div>`
             : `${symptomSeverityBadgesHtml(symS.bySeverity)}
-               <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>
+               <div class="dashboard-card-sub">${symS.sinceDate ? t("sinceLastVetVisit") : t("sinceLogStart")}</div>
                ${symptomTrendHtml(symptomTrend)}`
         }
       </div>`,
