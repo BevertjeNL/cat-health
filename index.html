@@ -653,6 +653,34 @@
     line-height: 1.4;
   }
 
+  .info-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1.5px solid var(--text-muted);
+    color: var(--text-muted);
+    background: none;
+    font-size: 0.68rem;
+    font-style: italic;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+    vertical-align: middle;
+    margin-left: 4px;
+    cursor: pointer;
+  }
+
+  .info-tip {
+    margin-top: 6px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
   .metric-summary {
     display: flex;
     flex-direction: column;
@@ -767,6 +795,23 @@
   }
 
   .icon-style-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .lang-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .lang-btn.active {
     background: var(--accent);
     border-color: var(--accent);
     color: #fff;
@@ -1155,21 +1200,21 @@
 
 <div id="authScreen" style="display:none;">
   <div class="card">
-    <h1>🐾 Huisdiergezondheid</h1>
-    <p class="hint-text" id="authSubtitle">Log in om verder te gaan.</p>
+    <h1 data-i18n="authTitle">🐾 Huisdiergezondheid</h1>
+    <p class="hint-text" id="authSubtitle" data-i18n="authSubtitle">Log in om verder te gaan.</p>
     <form class="entry-form" id="loginForm">
       <div>
-        <label for="authEmail">E-mailadres</label>
+        <label for="authEmail" data-i18n="authEmailLabel">E-mailadres</label>
         <input type="email" id="authEmail" autocomplete="email" required />
       </div>
       <div>
-        <label for="authPassword">Wachtwoord</label>
+        <label for="authPassword" data-i18n="authPasswordLabel">Wachtwoord</label>
         <input type="password" id="authPassword" autocomplete="current-password" required />
       </div>
       <p class="auth-error" id="authError" style="display:none;"></p>
-      <button class="submit" type="submit" id="authSubmitBtn">Inloggen</button>
+      <button class="submit" type="submit" id="authSubmitBtn" data-i18n="authSubmitLogin">Inloggen</button>
     </form>
-    <button type="button" class="auth-switch-link" id="authSwitchBtn" onclick="toggleAuthMode()">Nog geen account? Registreren</button>
+    <button type="button" class="auth-switch-link" id="authSwitchBtn" onclick="toggleAuthMode()" data-i18n="authSwitchToRegister">Nog geen account? Registreren</button>
   </div>
 </div>
 
@@ -1185,9 +1230,9 @@
     </div>
   </div>
   <div class="header-icons">
-    <button type="button" class="profile-icon-btn" aria-label="Profiel" onclick="switchTab('profile')">🐾</button>
-    <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
-    <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">
+    <button type="button" class="profile-icon-btn" aria-label="Profiel" data-i18n-aria="ariaProfile" onclick="switchTab('profile')">🐾</button>
+    <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" data-i18n-aria="ariaAddPet" onclick="openAddPetForm()">+</button>
+    <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" data-i18n-aria="ariaRefresh" onclick="refreshAll(true)">
       <svg class="refresh-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
         <polyline points="21 3 21 9 15 9"></polyline>
@@ -1201,13 +1246,13 @@
 <main>
   <section id="tabDashboard" class="tab-panel active">
     <div class="card" id="dashboardActueelCard">
-      <h2>Actueel</h2>
+      <h2 data-i18n-js="dashboardActueel">Actueel</h2>
       <div id="dashboardAlerts"></div>
     </div>
 
     <div class="dashboard-cards" id="dashboardCards"></div>
 
-    <button type="button" class="submit dashboard-add-btn" onclick="openQuickAddMenu()">+ Gegeven toevoegen</button>
+    <button type="button" class="submit dashboard-add-btn" onclick="openQuickAddMenu()" data-i18n-js="dashboardAddData">+ Gegeven toevoegen</button>
   </section>
 
   <section id="tabWeight" class="tab-panel">
@@ -1219,10 +1264,10 @@
       <div class="collapsible-body" id="weightFormBody" style="display:none;">
         <form class="entry-form" id="weightForm">
           <div>
-            <label for="weightDate">Datum</label>
+            <label for="weightDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="weightDate" required />
-              <button type="button" class="today-btn" data-target="weightDate">Vandaag</button>
+              <button type="button" class="today-btn" data-target="weightDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
@@ -1230,11 +1275,11 @@
             <input type="number" id="weightKg" inputmode="decimal" min="0" step="0.1" placeholder="4.2" required />
           </div>
           <div>
-            <label for="weightNote">Notitie (optioneel)</label>
+            <label for="weightNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="weightNote" placeholder="bijv. na het eten" />
           </div>
-          <button class="submit" type="submit">Opslaan</button>
-          <button type="button" class="today-btn" id="weightCancelEditBtn" style="display:none;" onclick="cancelWeightEdit()">Bewerken annuleren</button>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="weightCancelEditBtn" style="display:none;" onclick="cancelWeightEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1271,10 +1316,10 @@
       <div class="collapsible-body" id="bloodFormBody" style="display:none;">
         <form class="entry-form" id="bloodForm">
           <div>
-            <label for="bloodDate">Datum</label>
+            <label for="bloodDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="bloodDate" required />
-              <button type="button" class="today-btn" data-target="bloodDate">Vandaag</button>
+              <button type="button" class="today-btn" data-target="bloodDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
 
@@ -1297,11 +1342,11 @@
           </div>
 
           <div>
-            <label for="bloodNote">Notitie (optioneel)</label>
+            <label for="bloodNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="bloodNote" placeholder="bijv. nuchter geprikt" />
           </div>
-          <button class="submit" type="submit">Opslaan</button>
-          <button type="button" class="today-btn" id="bloodCancelEditBtn" style="display:none;" onclick="cancelBloodEdit()">Bewerken annuleren</button>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="bloodCancelEditBtn" style="display:none;" onclick="cancelBloodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1332,30 +1377,30 @@
       <div class="collapsible-body" id="vetVisitFormBody" style="display:none;">
         <form class="entry-form" id="vetVisitForm">
           <div>
-            <label for="vetVisitDate">Datum</label>
+            <label for="vetVisitDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="vetVisitDate" required />
-              <button type="button" class="today-btn" data-target="vetVisitDate">Vandaag</button>
+              <button type="button" class="today-btn" data-target="vetVisitDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
-            <label for="vetVisitReason">Reden (optioneel)</label>
+            <label for="vetVisitReason" data-i18n="fieldReasonOptional">Reden (optioneel)</label>
             <input type="text" id="vetVisitReason" placeholder="bijv. controle, kreupel been" />
           </div>
           <div>
-            <label for="vetVisitResult">Resultaat / bevindingen</label>
+            <label for="vetVisitResult" data-i18n="fieldResult">Resultaat / bevindingen</label>
             <input type="text" id="vetVisitResult" placeholder="bijv. geen bijzonderheden" />
           </div>
           <div>
-            <label for="vetVisitNote">Notitie (optioneel)</label>
+            <label for="vetVisitNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="vetVisitNote" placeholder="bijv. bij Caressa Delft" />
           </div>
           <div>
-            <label for="vetVisitCost">Kosten (optioneel)</label>
+            <label for="vetVisitCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
             <input type="number" id="vetVisitCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 45.00" />
           </div>
-          <button class="submit" type="submit">Opslaan</button>
-          <button type="button" class="today-btn" id="vetVisitCancelEditBtn" style="display:none;" onclick="cancelVetVisitEdit()">Bewerken annuleren</button>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="vetVisitCancelEditBtn" style="display:none;" onclick="cancelVetVisitEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1386,10 +1431,10 @@
             </datalist>
           </div>
           <div>
-            <label for="vaxDate">Datum gegeven</label>
+            <label for="vaxDate" data-i18n="fieldDateGiven">Datum gegeven</label>
             <div class="date-field">
               <input type="date" id="vaxDate" required />
-              <button type="button" class="today-btn" data-target="vaxDate">Vandaag</button>
+              <button type="button" class="today-btn" data-target="vaxDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
@@ -1402,15 +1447,15 @@
             <p class="hint-text" style="margin-top:6px;">Vul zelf in, of gebruik een snelknop om automatisch te berekenen vanaf de datum hierboven.</p>
           </div>
           <div>
-            <label for="vaxNote">Notitie (optioneel)</label>
+            <label for="vaxNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="vaxNote" placeholder="bijv. bij Caressa Delft" />
           </div>
           <div>
-            <label for="vaxCost">Kosten (optioneel)</label>
+            <label for="vaxCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
             <input type="number" id="vaxCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 35.00" />
           </div>
-          <button class="submit" type="submit">Opslaan</button>
-          <button type="button" class="today-btn" id="vaxCancelEditBtn" style="display:none;" onclick="cancelVaxEdit()">Bewerken annuleren</button>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="vaxCancelEditBtn" style="display:none;" onclick="cancelVaxEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1439,15 +1484,15 @@
       <div class="collapsible-body" id="symptomFormBody" style="display:none;">
         <form class="entry-form" id="symptomForm">
           <div>
-            <label for="symptomName">Afwijking</label>
+            <label for="symptomName" data-i18n="fieldSymptomName">Afwijking</label>
             <input type="text" id="symptomName" list="symptomSuggestions" placeholder="bijv. Braken" required />
             <datalist id="symptomSuggestions"></datalist>
           </div>
           <div>
-            <label for="symptomDate">Datum</label>
+            <label for="symptomDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="symptomDate" required />
-              <button type="button" class="today-btn" data-target="symptomDate">Vandaag</button>
+              <button type="button" class="today-btn" data-target="symptomDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div id="symptomEndDateRow">
@@ -1455,7 +1500,7 @@
             <input type="date" id="symptomEndDate" />
           </div>
           <div>
-            <label for="symptomSeverity">Ernst (optioneel)</label>
+            <label for="symptomSeverity" data-i18n="fieldSeverityOptional">Ernst (optioneel)</label>
             <select id="symptomSeverity">
               <option value="">Niet gespecificeerd</option>
               <option value="licht">Licht</option>
@@ -1464,11 +1509,11 @@
             </select>
           </div>
           <div>
-            <label for="symptomNote">Notitie (optioneel)</label>
+            <label for="symptomNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="symptomNote" placeholder="bijv. na het eten, 2x vandaag" />
           </div>
-          <button class="submit" type="submit">Opslaan</button>
-          <button type="button" class="today-btn" id="symptomCancelEditBtn" style="display:none;" onclick="cancelSymptomEdit()">Bewerken annuleren</button>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="symptomCancelEditBtn" style="display:none;" onclick="cancelSymptomEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1508,49 +1553,49 @@
       <div class="collapsible-body" id="medicationFormBody" style="display:none;">
         <form class="entry-form" id="medicationForm">
           <div>
-            <label for="medicationPurpose">Doel (optioneel)</label>
+            <label for="medicationPurpose" data-i18n="fieldPurposeOptional">Doel (optioneel)</label>
             <input type="text" id="medicationPurpose" list="medicationPurposeSuggestions" placeholder="bijv. Ontworming" />
             <datalist id="medicationPurposeSuggestions"></datalist>
           </div>
           <div>
-            <label for="medicationName">Medicijn</label>
+            <label for="medicationName" data-i18n="fieldMedicineName">Medicijn</label>
             <input type="text" id="medicationName" list="medicationSuggestions" placeholder="bijv. Bravecto" required />
             <datalist id="medicationSuggestions"></datalist>
             <p class="hint-text" style="margin-top:6px;">Eerder ingevoerde medicijnen (en hun doel) verschijnen hier automatisch weer als suggestie.</p>
           </div>
           <div class="row">
             <div>
-              <label for="medicationBrand">Merk (optioneel)</label>
+              <label for="medicationBrand" data-i18n="fieldBrandOptional">Merk (optioneel)</label>
               <input type="text" id="medicationBrand" list="medicationBrandSuggestions" placeholder="bijv. MSD" />
               <datalist id="medicationBrandSuggestions"></datalist>
             </div>
             <div>
-              <label for="medicationActiveIngredient">Werkzame stof (optioneel)</label>
+              <label for="medicationActiveIngredient" data-i18n="fieldActiveIngredientOptional">Werkzame stof (optioneel)</label>
               <input type="text" id="medicationActiveIngredient" list="medicationActiveIngredientSuggestions" placeholder="bijv. milbemycine" />
               <datalist id="medicationActiveIngredientSuggestions"></datalist>
             </div>
           </div>
           <div>
-            <label for="medicationDate">Datum gegeven</label>
+            <label for="medicationDate" data-i18n="fieldDateGiven">Datum gegeven</label>
             <div class="date-field">
               <input type="date" id="medicationDate" required />
-              <button type="button" class="today-btn" data-target="medicationDate">Vandaag</button>
+              <button type="button" class="today-btn" data-target="medicationDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div class="row">
             <div>
-              <label for="medicationDose">Dosering (optioneel)</label>
+              <label for="medicationDose" data-i18n="fieldDoseOptional">Dosering (optioneel)</label>
               <input type="text" id="medicationDose" list="medicationDoseSuggestions" placeholder="bijv. 1 tablet, 10mg" />
               <datalist id="medicationDoseSuggestions"></datalist>
             </div>
             <div>
-              <label for="medicationBatch">Batch (optioneel)</label>
+              <label for="medicationBatch" data-i18n="fieldBatchOptional">Batch (optioneel)</label>
               <input type="text" id="medicationBatch" list="medicationBatchSuggestions" placeholder="bijv. L12345" />
               <datalist id="medicationBatchSuggestions"></datalist>
             </div>
           </div>
           <div>
-            <label for="medicationNextDue">Volgende dosis (optioneel)</label>
+            <label for="medicationNextDue" data-i18n="fieldNextDoseOptional">Volgende dosis (optioneel)</label>
             <div class="date-field">
               <input type="date" id="medicationNextDue" />
               <button type="button" class="today-btn" onclick="setMedicationNextDue(1, 'month')">+1 maand</button>
@@ -1559,15 +1604,15 @@
             <p class="hint-text" style="margin-top:6px;">Bijv. elke 3 maanden voor Bravecto — je krijgt dan tijdig een herinnering.</p>
           </div>
           <div>
-            <label for="medicationNote">Notitie (optioneel)</label>
+            <label for="medicationNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="medicationNote" placeholder="bijv. bij het eten" />
           </div>
           <div>
-            <label for="medicationCost">Kosten (optioneel)</label>
+            <label for="medicationCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
             <input type="number" id="medicationCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 15.00" />
           </div>
-          <button class="submit" type="submit">Opslaan</button>
-          <button type="button" class="today-btn" id="medicationCancelEditBtn" style="display:none;" onclick="cancelMedicationEdit()">Bewerken annuleren</button>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="medicationCancelEditBtn" style="display:none;" onclick="cancelMedicationEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1581,8 +1626,8 @@
 
   <section id="tabProfile" class="tab-panel">
     <div class="card">
-      <h2 id="profileHeading">🐾 Bewerk huisdier</h2>
-      <p class="hint-text" style="margin-bottom:12px;">
+      <h2><span id="profileHeading">🐾 Bewerk huisdier</span> <button type="button" class="info-btn" onclick="toggleInfoTip('profileIntroTip')" aria-label="Meer info">i</button></h2>
+      <p class="hint-text info-tip" id="profileIntroTip" style="display:none;">
         Hoe meer we van je huisgenoot weten, hoe beter we het ideale gewicht kunnen inschatten.
         Dit bewerkt het huisdier dat nu bovenin geselecteerd is — voor een extra huisdier gebruik je
         de "+"-knop naast de naam bovenaan.
@@ -1598,11 +1643,11 @@
       <form class="entry-form" id="profileForm">
         <div class="row">
           <div>
-            <label for="catName">Naam</label>
+            <label for="catName" data-i18n="fieldName">Naam</label>
             <input type="text" id="catName" placeholder="bijv. Bailey" required />
           </div>
           <div>
-            <label for="catSpecies">Diersoort</label>
+            <label for="catSpecies" data-i18n="fieldSpecies">Diersoort</label>
             <select id="catSpecies" onchange="onProfileSpeciesChange()">
               <option value="kat">🐱 Kat</option>
               <option value="hond">🐶 Hond</option>
@@ -1611,7 +1656,7 @@
           </div>
         </div>
         <div id="catBreedRow" style="display:none;">
-          <label for="catBreed" id="catBreedLabel">Ras (optioneel)</label>
+          <label for="catBreed" id="catBreedLabel" data-i18n="fieldBreedOptional">Ras (optioneel)</label>
           <input type="text" id="catBreed" placeholder="bijv. Labrador Retriever" />
         </div>
         <div class="row">
@@ -1620,7 +1665,7 @@
             <input type="date" id="catBirthDate" />
           </div>
           <div>
-            <label for="catSex">Geslacht</label>
+            <label for="catSex" data-i18n="fieldSex">Geslacht</label>
             <select id="catSex">
               <option value="">Onbekend</option>
               <option value="mannelijk">Mannelijk</option>
@@ -1657,14 +1702,15 @@
             <input type="number" id="catTargetMax" inputmode="decimal" step="0.1" placeholder="auto" />
           </div>
         </div>
-        <p class="hint-text" id="targetWeightHint">
+        <p class="hint-text info-tip" id="targetWeightHint" style="display:none;">
           Vul beide velden in om een streefzone bij de gewichtsgrafiek te tonen. Laat ze leeg als je
           (nog) geen streefgewicht hebt afgesproken — dan toont de grafiek alleen het verloop, zonder kleuroordeel.
         </p>
+        <button type="button" class="info-btn" style="margin:-8px 0 10px;" onclick="toggleInfoTip('targetWeightHint')" aria-label="Meer info over streefgewicht">i</button>
         <div>
-          <label for="catWeightReminderDays">Herinner bij geen meting na (dagen)</label>
+          <label for="catWeightReminderDays">Herinner bij geen meting na (dagen) <button type="button" class="info-btn" onclick="toggleInfoTip('weightReminderDaysHint')" aria-label="Meer info">i</button></label>
           <input type="number" id="catWeightReminderDays" inputmode="numeric" min="1" step="1" placeholder="30" />
-          <p class="hint-text" style="margin-top:6px;">
+          <p class="hint-text info-tip" id="weightReminderDaysHint" style="display:none;">
             Standaard 30 dagen. Dit is alleen een zelf ingestelde herinnering, geen medisch advies.
           </p>
         </div>
@@ -1673,14 +1719,14 @@
     </div>
 
     <div class="card">
-      <h2>Account</h2>
+      <h2 data-i18n="headingAccount">Account</h2>
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
-      <button type="button" class="today-btn" style="width:100%;" onclick="logout()">Uitloggen</button>
+      <button type="button" class="today-btn" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
     </div>
 
     <div class="card">
-      <h2>Weergave</h2>
-      <p class="hint-text" style="margin-bottom:12px;">
+      <h2><span data-i18n="headingWeergave">Weergave</span> <button type="button" class="info-btn" onclick="toggleInfoTip('iconStyleTip')" aria-label="Meer info">i</button></h2>
+      <p class="hint-text info-tip" id="iconStyleTip" style="display:none; margin-bottom:12px;">
         Rustige iconen gebruiken één kleur i.p.v. de kleurrijke emoji — een experiment, altijd terug te zetten.
       </p>
       <div class="icon-style-toggle">
@@ -1690,8 +1736,17 @@
     </div>
 
     <div class="card">
-      <h2>Huisdier archiveren</h2>
-      <p class="hint-text" style="margin-bottom:12px;">
+      <h2><span data-i18n="headingLanguage">Taal</span></h2>
+      <div class="icon-style-toggle">
+        <button type="button" class="lang-btn" data-lang="nl" onclick="setLang('nl')">Nederlands</button>
+        <button type="button" class="lang-btn" data-lang="en" onclick="setLang('en')">English</button>
+        <button type="button" class="lang-btn" data-lang="de" onclick="setLang('de')">Deutsch</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span data-i18n="headingArchivePet">Huisdier archiveren</span> <button type="button" class="info-btn" onclick="toggleInfoTip('archiveTip')" aria-label="Meer info">i</button></h2>
+      <p class="hint-text info-tip" id="archiveTip" style="display:none; margin-bottom:12px;">
         Archiveren verbergt dit huisdier uit het dashboard. Alle gegevens blijven bewaard en je kunt
         het huisdier later terugzetten via "Gearchiveerde huisdieren" in het huisdier-menu.
       </p>
@@ -1701,13 +1756,13 @@
 </main>
 
 <nav class="bottom-nav">
-  <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon" data-icon-key="dashboard">🏠</span><span>Start</span></button>
-  <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon" data-icon-key="weight">⚖️</span><span>Gewicht</span></button>
-  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon" data-icon-key="blood">🩸</span><span>Bloed</span></button>
-  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon" data-icon-key="vax">💉</span><span>Vaccins</span></button>
-  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon" data-icon-key="vet">🩺</span><span>Arts</span></button>
-  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span>Afwijking</span></button>
-  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon" data-icon-key="medication">💊</span><span>Medicatie</span></button>
+  <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon" data-icon-key="dashboard">🏠</span><span data-i18n="navStart">Start</span></button>
+  <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon" data-icon-key="weight">⚖️</span><span data-i18n="navWeight">Gewicht</span></button>
+  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon" data-icon-key="blood">🩸</span><span data-i18n="navBlood">Bloed</span></button>
+  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon" data-icon-key="vax">💉</span><span data-i18n="navVax">Vaccins</span></button>
+  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon" data-icon-key="vet">🩺</span><span data-i18n="navVet">Arts</span></button>
+  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span data-i18n="navSymptoms">Afwijking</span></button>
+  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon" data-icon-key="medication">💊</span><span data-i18n="navMedication">Medicatie</span></button>
 </nav>
 
 </div>
@@ -1716,7 +1771,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Huisdieren</h2>
-      <button type="button" class="today-btn" onclick="closePetMenu()">Sluiten</button>
+      <button type="button" class="today-btn" onclick="closePetMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="petMenuList"></div>
     <button type="button" class="pet-menu-item" style="justify-content:center;color:var(--accent);font-weight:700;" onclick="openAddPetForm()">+ Nieuw huisdier toevoegen</button>
@@ -1728,7 +1783,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Gearchiveerde huisdieren</h2>
-      <button type="button" class="today-btn" onclick="closeArchivedPetsMenu()">Sluiten</button>
+      <button type="button" class="today-btn" onclick="closeArchivedPetsMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="archivedPetsList"></div>
   </div>
@@ -1738,7 +1793,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Huisdier archiveren</h2>
-      <button type="button" class="today-btn" onclick="closeArchivePetConfirm()">Annuleren</button>
+      <button type="button" class="today-btn" onclick="closeArchivePetConfirm()" data-i18n="btnCancel">Annuleren</button>
     </div>
     <div id="archivePetStep1">
       <p class="hint-text" id="archivePetWarning" style="margin-bottom:14px;"></p>
@@ -1758,15 +1813,15 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Nieuw huisdier</h2>
-      <button type="button" class="today-btn" onclick="closeAddPetForm()">Annuleren</button>
+      <button type="button" class="today-btn" onclick="closeAddPetForm()" data-i18n="btnCancel">Annuleren</button>
     </div>
     <form class="entry-form" id="addPetForm">
       <div>
-        <label for="newPetName">Naam</label>
+        <label for="newPetName" data-i18n="fieldName">Naam</label>
         <input type="text" id="newPetName" placeholder="bijv. Bailey" required />
       </div>
       <div>
-        <label for="newPetSpecies">Diersoort</label>
+        <label for="newPetSpecies" data-i18n="fieldSpecies">Diersoort</label>
         <select id="newPetSpecies">
           <option value="kat">🐱 Kat</option>
           <option value="hond">🐶 Hond</option>
@@ -1782,7 +1837,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Gegeven toevoegen</h2>
-      <button type="button" class="today-btn" onclick="closeQuickAddMenu()">Sluiten</button>
+      <button type="button" class="today-btn" onclick="closeQuickAddMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <button type="button" class="pet-menu-item" onclick="quickAdd('weight')"><span data-icon-key="weight">⚖️</span> Gewicht</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('vax')"><span data-icon-key="vax">💉</span> Vaccinatie</button>
@@ -1797,7 +1852,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="bloodDetailDate"></h2>
-      <button type="button" class="today-btn" onclick="closeBloodDetail()">Sluiten</button>
+      <button type="button" class="today-btn" onclick="closeBloodDetail()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="bloodDetailBody"></div>
     <button type="button" class="submit" id="bloodDetailEditBtn" style="width:100%;margin-top:14px;">Bewerken</button>
@@ -1808,7 +1863,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>💉 Zorg-herinnering</h2>
-      <button type="button" class="today-btn" onclick="closeCareReminder()">Sluiten</button>
+      <button type="button" class="today-btn" onclick="closeCareReminder()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="careReminderBody"></div>
     <button type="button" class="submit" style="width:100%;margin-top:14px;" onclick="closeCareReminder()">Begrepen</button>
@@ -1835,12 +1890,23 @@
 
   function toggleAuthMode() {
     authMode = authMode === "login" ? "signup" : "login";
-    document.getElementById("authSubtitle").textContent =
-      authMode === "login" ? "Log in om verder te gaan." : "Maak een account aan.";
-    document.getElementById("authSubmitBtn").textContent = authMode === "login" ? "Inloggen" : "Registreren";
-    document.getElementById("authSwitchBtn").textContent =
-      authMode === "login" ? "Nog geen account? Registreren" : "Al een account? Inloggen";
+    const subtitleEl = document.getElementById("authSubtitle");
+    const submitEl = document.getElementById("authSubmitBtn");
+    const switchEl = document.getElementById("authSwitchBtn");
+    subtitleEl.dataset.i18n = authMode === "login" ? "authSubtitle" : "authSubtitleSignup";
+    submitEl.dataset.i18n = authMode === "login" ? "authSubmitLogin" : "authSubmitSignup";
+    switchEl.dataset.i18n = authMode === "login" ? "authSwitchToRegister" : "authSwitchToLogin";
+    // Clear the captured "original Dutch text" cache on these 3 elements —
+    // they now represent a DIFFERENT Dutch sentence than what was cached
+    // (login vs. signup copy), so it must be recaptured before re-use.
+    delete subtitleEl.dataset.i18nOrig;
+    delete submitEl.dataset.i18nOrig;
+    delete switchEl.dataset.i18nOrig;
+    subtitleEl.textContent = authMode === "login" ? "Log in om verder te gaan." : "Maak een account aan.";
+    submitEl.textContent = authMode === "login" ? "Inloggen" : "Registreren";
+    switchEl.textContent = authMode === "login" ? "Nog geen account? Registreren" : "Al een account? Inloggen";
     document.getElementById("authError").style.display = "none";
+    applyTranslations();
   }
 
   document.getElementById("loginForm").addEventListener("submit", async (e) => {
@@ -1925,9 +1991,215 @@
     return ICON_EMOJI[key];
   }
 
+  // --- Language (nl/en/de) --------------------------------------------------
+  // The app's static HTML is written in Dutch, which stays the source of
+  // truth: elements are never given hardcoded Dutch strings in the
+  // dictionary below, only English/German ones per key. applyTranslations()
+  // caches each element's original Dutch text the first time it sees it
+  // (data-i18n-orig), then always restores THAT when appLang is "nl" or a
+  // key has no translation — so nothing needs to be duplicated in nl.
+  let appLang = localStorage.getItem("appLang") || "nl";
+
+  const I18N = {
+    en: {
+      authTitle: "🐾 Pet Health",
+      authSubtitle: "Log in to continue.",
+      authSubtitleSignup: "Create an account.",
+      authEmailLabel: "Email address",
+      authPasswordLabel: "Password",
+      authSubmitLogin: "Log in",
+      authSubmitSignup: "Register",
+      authSwitchToRegister: "No account yet? Register",
+      authSwitchToLogin: "Already have an account? Log in",
+      ariaProfile: "Profile",
+      ariaAddPet: "Add new pet",
+      ariaRefresh: "Refresh",
+      navStart: "Start",
+      navWeight: "Weight",
+      navBlood: "Blood",
+      navVax: "Vaccines",
+      navVet: "Vet",
+      navSymptoms: "Symptoms",
+      navMedication: "Medication",
+      fieldDate: "Date",
+      fieldDateGiven: "Date given",
+      fieldNoteOptional: "Note (optional)",
+      fieldCostOptional: "Cost (optional)",
+      btnToday: "Today",
+      btnSave: "Save",
+      btnUpdate: "Update",
+      btnCancel: "Cancel",
+      btnClose: "Close",
+      btnCancelEdit: "Cancel editing",
+      btnLogout: "Log out",
+      fieldReasonOptional: "Reason (optional)",
+      fieldResult: "Result / findings",
+      fieldSeverityOptional: "Severity (optional)",
+      fieldDoseOptional: "Dose (optional)",
+      fieldPurposeOptional: "Purpose (optional)",
+      fieldMedicineName: "Medicine",
+      fieldBrandOptional: "Brand (optional)",
+      fieldActiveIngredientOptional: "Active ingredient (optional)",
+      fieldBatchOptional: "Batch (optional)",
+      fieldNextDoseOptional: "Next dose (optional)",
+      fieldSymptomName: "Symptom",
+      fieldBreedOptional: "Breed (optional)",
+      fieldName: "Name",
+      fieldSpecies: "Species",
+      fieldSex: "Sex",
+      headingAccount: "Account",
+      headingWeergave: "Display",
+      headingArchivePet: "Archive pet",
+      headingLanguage: "Language",
+    },
+    de: {
+      authTitle: "🐾 Tiergesundheit",
+      authSubtitle: "Melde dich an, um weiterzugehen.",
+      authSubtitleSignup: "Konto erstellen.",
+      authEmailLabel: "E-Mail-Adresse",
+      authPasswordLabel: "Passwort",
+      authSubmitLogin: "Anmelden",
+      authSubmitSignup: "Registrieren",
+      authSwitchToRegister: "Noch kein Konto? Registrieren",
+      authSwitchToLogin: "Schon ein Konto? Anmelden",
+      ariaProfile: "Profil",
+      ariaAddPet: "Neues Haustier hinzufügen",
+      ariaRefresh: "Aktualisieren",
+      navStart: "Start",
+      navWeight: "Gewicht",
+      navBlood: "Blut",
+      navVax: "Impfungen",
+      navVet: "Tierarzt",
+      navSymptoms: "Symptome",
+      navMedication: "Medikamente",
+      fieldDate: "Datum",
+      fieldDateGiven: "Datum verabreicht",
+      fieldNoteOptional: "Notiz (optional)",
+      fieldCostOptional: "Kosten (optional)",
+      btnToday: "Heute",
+      btnSave: "Speichern",
+      btnUpdate: "Aktualisieren",
+      btnCancel: "Abbrechen",
+      btnClose: "Schließen",
+      btnCancelEdit: "Bearbeiten abbrechen",
+      btnLogout: "Abmelden",
+      fieldReasonOptional: "Grund (optional)",
+      fieldResult: "Ergebnis / Befund",
+      fieldSeverityOptional: "Schweregrad (optional)",
+      fieldDoseOptional: "Dosis (optional)",
+      fieldPurposeOptional: "Zweck (optional)",
+      fieldMedicineName: "Medikament",
+      fieldBrandOptional: "Marke (optional)",
+      fieldActiveIngredientOptional: "Wirkstoff (optional)",
+      fieldBatchOptional: "Charge (optional)",
+      fieldNextDoseOptional: "Nächste Dosis (optional)",
+      fieldSymptomName: "Symptom",
+      fieldBreedOptional: "Rasse (optional)",
+      fieldName: "Name",
+      fieldSpecies: "Tierart",
+      fieldSex: "Geschlecht",
+      headingAccount: "Konto",
+      headingWeergave: "Anzeige",
+      headingArchivePet: "Haustier archivieren",
+      headingLanguage: "Sprache",
+    },
+  };
+
+  // A small dictionary for JS-generated (template-string) UI text, which has
+  // no DOM element to cache an "original Dutch" value from — so nl IS
+  // stored here explicitly, unlike the HTML-driven dictionary above.
+  const I18N_NL = {
+    dashboardActueel: "Actueel",
+    dashboardAddData: "+ Gegeven toevoegen",
+    dashboardWeight: "Actueel gewicht",
+    dashboardWeightLastMeasured: "Laatste meting",
+    dashboardVax: "Vaccinaties",
+    dashboardMedication: "Medicatie",
+    dashboardBlood: "Bloedwaarden",
+    dashboardSymptoms: "Afwijkingen",
+    dashboardVet: "Dierenarts",
+    dashboardCost: "Kosten",
+  };
+  const I18N_EN = {
+    dashboardActueel: "Current",
+    dashboardAddData: "+ Add entry",
+    dashboardWeight: "Current weight",
+    dashboardWeightLastMeasured: "Last measured",
+    dashboardVax: "Vaccinations",
+    dashboardMedication: "Medication",
+    dashboardBlood: "Blood values",
+    dashboardSymptoms: "Symptoms",
+    dashboardVet: "Vet",
+    dashboardCost: "Cost",
+  };
+  const I18N_DE = {
+    dashboardActueel: "Aktuell",
+    dashboardAddData: "+ Eintrag hinzufügen",
+    dashboardWeight: "Aktuelles Gewicht",
+    dashboardWeightLastMeasured: "Zuletzt gemessen",
+    dashboardVax: "Impfungen",
+    dashboardMedication: "Medikamente",
+    dashboardBlood: "Blutwerte",
+    dashboardSymptoms: "Symptome",
+    dashboardVet: "Tierarzt",
+    dashboardCost: "Kosten",
+  };
+
+  // For JS-generated strings: looks up the key in the current language,
+  // falling back to Dutch (not the raw key) if a translation is missing.
+  function t(key) {
+    const dict = appLang === "en" ? I18N_EN : appLang === "de" ? I18N_DE : I18N_NL;
+    return dict[key] || I18N_NL[key] || key;
+  }
+
+  function applyTranslations() {
+    document.querySelectorAll("[data-i18n]").forEach((el) => {
+      if (el.dataset.i18nOrig === undefined) el.dataset.i18nOrig = el.textContent;
+      const val = appLang !== "nl" && I18N[appLang] && I18N[appLang][el.dataset.i18n];
+      el.textContent = val || el.dataset.i18nOrig;
+    });
+    document.querySelectorAll("[data-i18n-aria]").forEach((el) => {
+      if (el.dataset.i18nAriaOrig === undefined) el.dataset.i18nAriaOrig = el.getAttribute("aria-label");
+      const val = appLang !== "nl" && I18N[appLang] && I18N[appLang][el.dataset.i18nAria];
+      el.setAttribute("aria-label", val || el.dataset.i18nAriaOrig);
+    });
+    document.querySelectorAll("[data-i18n-js]").forEach((el) => {
+      el.textContent = t(el.dataset.i18nJs);
+    });
+    document.querySelectorAll(".lang-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.lang === appLang);
+    });
+    document.documentElement.lang = appLang;
+  }
+
+  // Used wherever JS swaps a button/label's text at runtime (e.g. "Opslaan"
+  // <-> "Bijwerken") — keeps the data-i18n key in sync with the NEW Dutch
+  // text so a stale cached translation doesn't stick around.
+  function setI18nText(el, key, dutchText) {
+    el.dataset.i18n = key;
+    delete el.dataset.i18nOrig;
+    el.textContent = dutchText;
+    applyTranslations();
+  }
+
+  function setLang(lang) {
+    appLang = lang;
+    localStorage.setItem("appLang", lang);
+    applyTranslations();
+    if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
+  }
+
   // Repaints every static icon-bearing element (bottom nav + quick-add menu
   // — dashboard cards regenerate their own icons on every render already)
   // and persists the choice.
+  // Long explanatory paragraphs collapse behind a small "i" button instead
+  // of always taking up a full line — click it to reveal, click again (or
+  // tap elsewhere and reopen) to hide.
+  function toggleInfoTip(id) {
+    const el = document.getElementById(id);
+    el.style.display = el.style.display === "none" ? "" : "none";
+  }
+
   function applyIconStyle() {
     document.querySelectorAll("[data-icon-key]").forEach((el) => {
       el.innerHTML = iconHtml(el.dataset.iconKey);
@@ -2492,7 +2764,7 @@
     document.getElementById("weightKg").value = (row.weight_grams / 1000).toFixed(1);
     document.getElementById("weightNote").value = row.note || "";
     document.getElementById("weightFormTitle").textContent = "Meting bewerken";
-    weightForm.querySelector("button.submit").textContent = "Bijwerken";
+    setI18nText(weightForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("weightCancelEditBtn").style.display = "";
     openWeightForm();
     switchTab("weight");
@@ -2504,7 +2776,7 @@
     weightForm.reset();
     document.getElementById("weightDate").valueAsDate = new Date();
     document.getElementById("weightFormTitle").textContent = "+ Nieuwe meting";
-    weightForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(weightForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("weightCancelEditBtn").style.display = "none";
     toggleWeightForm(false);
   }
@@ -2843,7 +3115,7 @@
         Herinner na
         <input type="number" id="inlineReminderDaysInput" min="1" step="1" value="${current}" />
         dagen zonder meting
-        <button type="button" class="today-btn" style="padding:2px 12px;" onclick="saveWeightReminderDaysInline()">Opslaan</button>
+        <button type="button" class="today-btn" style="padding:2px 12px;" onclick="saveWeightReminderDaysInline()" data-i18n="btnSave">Opslaan</button>
       </span>
     `;
     document.getElementById("inlineReminderDaysInput").focus();
@@ -3170,7 +3442,7 @@
     fillBloodFormFromRows(rows);
     document.getElementById("bloodNote").value = rows.find((r) => r.note)?.note || "";
     document.getElementById("bloodFormTitle").textContent = "Bloeduitslag bewerken — " + formatDate(date);
-    bloodForm.querySelector("button.submit").textContent = "Bijwerken";
+    setI18nText(bloodForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("bloodCancelEditBtn").style.display = "";
     openBloodForm();
     switchTab("blood");
@@ -3184,7 +3456,7 @@
     resetBloodFields();
     document.getElementById("ocrStatus").textContent = "Herkende waarden worden automatisch in de velden hieronder ingevuld.";
     document.getElementById("bloodFormTitle").textContent = "+ Nieuwe bloeduitslag";
-    bloodForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(bloodForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("bloodCancelEditBtn").style.display = "none";
     toggleBloodForm(false);
   }
@@ -3712,7 +3984,7 @@
     document.getElementById("vetVisitNote").value = row.note || "";
     document.getElementById("vetVisitCost").value = row.cost ?? "";
     document.getElementById("vetVisitFormTitle").textContent = "Bezoek bewerken";
-    vetVisitForm.querySelector("button.submit").textContent = "Bijwerken";
+    setI18nText(vetVisitForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("vetVisitCancelEditBtn").style.display = "";
     openVetVisitForm();
     switchTab("vet");
@@ -3724,7 +3996,7 @@
     vetVisitForm.reset();
     document.getElementById("vetVisitDate").valueAsDate = new Date();
     document.getElementById("vetVisitFormTitle").textContent = "+ Nieuw dierenartsbezoek";
-    vetVisitForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(vetVisitForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("vetVisitCancelEditBtn").style.display = "none";
     toggleVetVisitForm(false);
   }
@@ -3909,7 +4181,7 @@
     document.getElementById("vaxNote").value = row.note || "";
     document.getElementById("vaxCost").value = row.cost ?? "";
     document.getElementById("vaxFormTitle").textContent = "Vaccinatie bewerken";
-    vaxForm.querySelector("button.submit").textContent = "Bijwerken";
+    setI18nText(vaxForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("vaxCancelEditBtn").style.display = "";
     openVaxForm();
     switchTab("vax");
@@ -3921,7 +4193,7 @@
     vaxForm.reset();
     document.getElementById("vaxDate").valueAsDate = new Date();
     document.getElementById("vaxFormTitle").textContent = "+ Nieuwe vaccinatie";
-    vaxForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(vaxForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("vaxCancelEditBtn").style.display = "none";
     toggleVaxForm(false);
   }
@@ -4216,7 +4488,7 @@
     document.getElementById("symptomSeverity").value = row.severity || "";
     document.getElementById("symptomNote").value = row.note || "";
     document.getElementById("symptomFormTitle").textContent = "Afwijking bewerken";
-    symptomForm.querySelector("button.submit").textContent = "Bijwerken";
+    setI18nText(symptomForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("symptomCancelEditBtn").style.display = "";
     // A single existing entry maps to one row — the multi-dag range option
     // only makes sense when creating fresh entries, not editing one.
@@ -4235,7 +4507,7 @@
     document.getElementById("symptomEndDate").value = "";
     document.getElementById("symptomSeverity").value = row.severity || "";
     document.getElementById("symptomNote").value = row.note || "";
-    symptomForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(symptomForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("symptomCancelEditBtn").style.display = "none";
     document.getElementById("symptomEndDateRow").style.display = "";
     openSymptomForm();
@@ -4249,7 +4521,7 @@
     symptomForm.reset();
     document.getElementById("symptomDate").valueAsDate = new Date();
     document.getElementById("symptomFormTitle").textContent = "+ Nieuwe afwijking";
-    symptomForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(symptomForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("symptomCancelEditBtn").style.display = "none";
     document.getElementById("symptomEndDateRow").style.display = "";
     toggleSymptomForm(false);
@@ -4625,7 +4897,7 @@
     document.getElementById("medicationCost").value = row.cost ?? "";
     updateMedicationDetailSuggestions(row.name);
     document.getElementById("medicationFormTitle").textContent = "Medicatie bewerken";
-    medicationForm.querySelector("button.submit").textContent = "Bijwerken";
+    setI18nText(medicationForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("medicationCancelEditBtn").style.display = "";
     openMedicationForm();
     switchTab("medication");
@@ -4647,7 +4919,7 @@
     document.getElementById("medicationNextDue").value = "";
     document.getElementById("medicationNote").value = row.note || "";
     document.getElementById("medicationCost").value = "";
-    medicationForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(medicationForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("medicationCancelEditBtn").style.display = "none";
     updateMedicationNameSuggestions(row.purpose || "");
     openMedicationForm();
@@ -4664,7 +4936,7 @@
     medicationForm.reset();
     document.getElementById("medicationDate").valueAsDate = new Date();
     document.getElementById("medicationFormTitle").textContent = "+ Nieuwe medicatie";
-    medicationForm.querySelector("button.submit").textContent = "Opslaan";
+    setI18nText(medicationForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("medicationCancelEditBtn").style.display = "none";
     toggleMedicationForm(false);
   }
@@ -4783,8 +5055,23 @@
   // app (weight/vaccinations/medications/blood/symptoms) — no new medical
   // judgement is introduced here, just factual restatement + prioritization.
 
+  // Only vaccines that are still an active protocol belong in the summary —
+  // either they carry a valid_until (something to track), or they've been
+  // given more than once (an ongoing series). A single old entry with no
+  // expiry (e.g. a brand that was later switched and never continued) is
+  // just history, not something "open" that should keep showing up here.
+  function activeVaccineData(data) {
+    const grouped = {};
+    (data || []).forEach((v) => {
+      if (!grouped[v.vaccine]) grouped[v.vaccine] = [];
+      grouped[v.vaccine].push(v);
+    });
+    const activeNames = new Set(Object.keys(grouped).filter((name) => grouped[name].length > 1 || grouped[name].some((r) => r.valid_until)));
+    return (data || []).filter((v) => activeNames.has(v.vaccine));
+  }
+
   function computeVaccinationSummary() {
-    const latest = bestVaxStatusByVaccine(latestVaxData || []);
+    const latest = bestVaxStatusByVaccine(activeVaccineData(latestVaxData));
     if (!latest.length) return null;
     const items = latest.map((v) => ({ v, status: dueStatusFromDate(v.valid_until) }));
     const withDate = items.filter((x) => x.v.valid_until);
@@ -5206,7 +5493,7 @@
 
     const cards = [
       `<div class="card dashboard-card" onclick="switchTab('weight')"${tileGlowStyle(weightGlowColor)}>
-        <h3>${iconHtml("weight")} Actueel gewicht</h3>
+        <h3>${iconHtml("weight")} ${t("dashboardWeight")}</h3>
         ${
           weightS
             ? `<div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg${weightTrendHtml(weightS)}</div>
@@ -5215,7 +5502,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vax')"${tileGlowStyle(vaxGlowColor)}>
-        <h3>${iconHtml("vax")} Vaccinaties</h3>
+        <h3>${iconHtml("vax")} ${t("dashboardVax")}</h3>
         ${
           vaxS
             ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
@@ -5224,7 +5511,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('medication')"${tileGlowStyle(medGlowColor)}>
-        <h3>${iconHtml("medication")} Medicatie</h3>
+        <h3>${iconHtml("medication")} ${t("dashboardMedication")}</h3>
         ${
           openMeds.length
             ? openMeds
@@ -5247,7 +5534,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('blood')"${tileGlowStyle(bloodGlowColor)}>
-        <h3>${iconHtml("blood")} Bloedwaarden</h3>
+        <h3>${iconHtml("blood")} ${t("dashboardBlood")}</h3>
         ${
           bloodS
             ? `<div class="dashboard-card-value">Laatste meting: ${formatMonthYear(bloodS.date)}</div>
@@ -5256,7 +5543,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
-        <h3>${iconHtml("symptoms")} Afwijkingen</h3>
+        <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")}</h3>
         ${
           !symS.hasData
             ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
@@ -5265,7 +5552,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
-        <h3>${iconHtml("vet")} Dierenarts</h3>
+        <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
           lastVetVisit
             ? `<div class="dashboard-card-value">Laatste bezoek: ${formatDate(lastVetVisit.date)}</div>
@@ -5274,7 +5561,7 @@
         }
       </div>`,
       `<div class="card dashboard-card dashboard-card-static" id="costCard">
-        <h3>💰 Kosten</h3>
+        <h3>💰 ${t("dashboardCost")}</h3>
         <div class="cost-toggle">
           <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">Rollend jaar</button>
           <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">Kalenderjaar</button>
@@ -5525,6 +5812,7 @@
   // calls loadPets() -> refreshAll() once a user is known.
 
   applyIconStyle();
+  applyTranslations();
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
