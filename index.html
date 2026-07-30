@@ -2140,8 +2140,6 @@
     timeOneYearAgo: "1 jaar geleden",
     timeYearsAgo: "jaar geleden",
     weightTrendEqual: "gelijk",
-    vaxOfCount: "van",
-    vaxCurrent: "actueel",
     vaxOverdueShort: "verlopen",
     vaxValidUntil: "Geldig tot",
     vaxExpiredSince: "Verlopen sinds",
@@ -2244,8 +2242,6 @@
     timeOneYearAgo: "1 year ago",
     timeYearsAgo: "years ago",
     weightTrendEqual: "unchanged",
-    vaxOfCount: "of",
-    vaxCurrent: "current",
     vaxOverdueShort: "expired",
     vaxValidUntil: "Valid until",
     vaxExpiredSince: "Expired since",
@@ -2348,8 +2344,6 @@
     timeOneYearAgo: "vor 1 Jahr",
     timeYearsAgo: "Jahren",
     weightTrendEqual: "gleich",
-    vaxOfCount: "von",
-    vaxCurrent: "aktuell",
     vaxOverdueShort: "abgelaufen",
     vaxValidUntil: "Gültig bis",
     vaxExpiredSince: "Abgelaufen seit",
@@ -5667,15 +5661,6 @@
     return ` <span class="weight-trend" style="color:${color};">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span></span>`;
   }
 
-  // Green only when every vaccine with a known valid_until is up to date —
-  // otherwise red (something overdue) beats orange (something due soon).
-  function overallVaxColor(vaxS) {
-    if (!vaxS.withDate) return "var(--text-muted)";
-    if (vaxS.items.some((x) => x.v.valid_until && x.status.daysLeft < 0)) return "#ff3b30";
-    if (vaxS.items.some((x) => x.v.valid_until && x.status.daysLeft <= 30)) return "#ff9500";
-    return "#34c759";
-  }
-
   function rgbToRgba(rgbStr, alpha) {
     return rgbStr.replace("rgb(", "rgba(").replace(")", `, ${alpha})`);
   }
@@ -5920,15 +5905,13 @@
         <h3>${iconHtml("vax")} ${t("dashboardVax")}</h3>
         ${
           vaxS
-            ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} ${t("vaxOfCount")} ${vaxS.withDate} ${t("vaxCurrent")}</div>
-               ${vaxS.items
-                 .map(
-                   ({ v, status }) =>
-                     `<div class="dashboard-card-sub"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(v.vaccine)} — ${t("medNextLabel")} ${
-                       v.valid_until ? formatFullMonthYear(v.valid_until) : t("vaxNoExpiry")
-                     }</div>`
-                 )
-                 .join("")}`
+            ? vaxS.items
+                .map(
+                  ({ v, status }) =>
+                    `<div class="dashboard-card-value">${escapeHtml(v.vaccine)}</div>
+                     <div class="dashboard-card-sub">${t("medNextLabel")} ${duePillHtml(status.daysLeft, v.valid_until ? formatFullMonthYear(v.valid_until) : t("vaxNoExpiry"))}</div>`
+                )
+                .join("")
             : `<div class="dashboard-card-empty">${t("emptyVax")}</div>`
         }
       </div>`,
