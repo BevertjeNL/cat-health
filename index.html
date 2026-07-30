@@ -105,14 +105,22 @@
     background: rgba(0, 0, 0, 0.18);
     border: none;
     color: #fff;
-    font-size: 1.3rem;
-    line-height: 1;
-    padding: 7px;
-    border-radius: 10px;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    transition: background 0.15s ease, transform 0.1s ease;
   }
 
   .refresh-btn:active {
     color: var(--accent-contrast);
+    transform: scale(0.92);
+  }
+
+  .refresh-icon {
+    transform-origin: center;
   }
 
   /* Solid, high-contrast circle so this stays visible against any photo,
@@ -135,12 +143,14 @@
     background: #fff;
   }
 
-  .refresh-btn.spinning {
-    animation: spin 0.6s linear;
+  .refresh-btn.spinning .refresh-icon {
+    animation: spin-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
-  @keyframes spin {
-    to { transform: translateY(-50%) rotate(360deg); }
+  @keyframes spin-pop {
+    0% { transform: rotate(0deg) scale(1); }
+    45% { transform: rotate(220deg) scale(1.2); }
+    100% { transform: rotate(360deg) scale(1); }
   }
 
   .bottom-nav {
@@ -739,6 +749,29 @@
     color: #fff;
   }
 
+  .icon-style-toggle {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .icon-style-btn {
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .icon-style-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
   #costYearSelect {
     border: 1px solid var(--border);
     background: var(--card-bg);
@@ -803,13 +836,11 @@
     font-weight: 600;
   }
 
-  .severity-badge {
-    display: inline-flex;
+  .severity-badge-row {
+    display: flex;
     align-items: center;
-    gap: 4px;
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin-right: 10px;
+    gap: 8px;
+    margin-bottom: 3px;
   }
 
   .purpose-tag {
@@ -1151,12 +1182,17 @@
         <span id="appTitle">🐾 Huisdier</span>
         <span class="caret">▾</span>
       </button>
-      <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
     </div>
   </div>
   <div class="header-icons">
     <button type="button" class="profile-icon-btn" aria-label="Profiel" onclick="switchTab('profile')">🐾</button>
-    <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">⟳</button>
+    <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" onclick="openAddPetForm()">+</button>
+    <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" onclick="refreshAll(true)">
+      <svg class="refresh-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
+        <polyline points="21 3 21 9 15 9"></polyline>
+      </svg>
+    </button>
   </div>
 </header>
 
@@ -1643,6 +1679,17 @@
     </div>
 
     <div class="card">
+      <h2>Weergave</h2>
+      <p class="hint-text" style="margin-bottom:12px;">
+        Rustige iconen gebruiken één kleur i.p.v. de kleurrijke emoji — een experiment, altijd terug te zetten.
+      </p>
+      <div class="icon-style-toggle">
+        <button type="button" class="icon-style-btn" data-style="color" onclick="setIconStyle('color')">Kleur (emoji)</button>
+        <button type="button" class="icon-style-btn" data-style="mono" onclick="setIconStyle('mono')">Rustig (uni-kleur)</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Huisdier archiveren</h2>
       <p class="hint-text" style="margin-bottom:12px;">
         Archiveren verbergt dit huisdier uit het dashboard. Alle gegevens blijven bewaard en je kunt
@@ -1654,13 +1701,13 @@
 </main>
 
 <nav class="bottom-nav">
-  <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon">🏠</span><span>Start</span></button>
-  <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon">⚖️</span><span>Gewicht</span></button>
-  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon">🩸</span><span>Bloed</span></button>
-  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon">💉</span><span>Vaccins</span></button>
-  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon">🩺</span><span>Arts</span></button>
-  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon">🩹</span><span>Afwijking</span></button>
-  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon">💊</span><span>Medicatie</span></button>
+  <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon" data-icon-key="dashboard">🏠</span><span>Start</span></button>
+  <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon" data-icon-key="weight">⚖️</span><span>Gewicht</span></button>
+  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon" data-icon-key="blood">🩸</span><span>Bloed</span></button>
+  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon" data-icon-key="vax">💉</span><span>Vaccins</span></button>
+  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon" data-icon-key="vet">🩺</span><span>Arts</span></button>
+  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span>Afwijking</span></button>
+  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon" data-icon-key="medication">💊</span><span>Medicatie</span></button>
 </nav>
 
 </div>
@@ -1737,12 +1784,12 @@
       <h2>Gegeven toevoegen</h2>
       <button type="button" class="today-btn" onclick="closeQuickAddMenu()">Sluiten</button>
     </div>
-    <button type="button" class="pet-menu-item" onclick="quickAdd('weight')">⚖️ Gewicht</button>
-    <button type="button" class="pet-menu-item" onclick="quickAdd('vax')">💉 Vaccinatie</button>
-    <button type="button" class="pet-menu-item" onclick="quickAdd('medication')">💊 Medicatie</button>
-    <button type="button" class="pet-menu-item" onclick="quickAdd('blood')">🩸 Bloedwaarden</button>
-    <button type="button" class="pet-menu-item" onclick="quickAdd('vetvisit')">🩺 Dierenartsbezoek</button>
-    <button type="button" class="pet-menu-item" onclick="quickAdd('symptoms')">🩹 Afwijking</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('weight')"><span data-icon-key="weight">⚖️</span> Gewicht</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('vax')"><span data-icon-key="vax">💉</span> Vaccinatie</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('medication')"><span data-icon-key="medication">💊</span> Medicatie</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('blood')"><span data-icon-key="blood">🩸</span> Bloedwaarden</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('vetvisit')"><span data-icon-key="vet">🩺</span> Dierenartsbezoek</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('symptoms')"><span data-icon-key="symptoms">🩹</span> Afwijking</button>
   </div>
 </div>
 
@@ -1829,8 +1876,72 @@
     await supabaseClient.auth.signOut();
   }
 
-  function speciesEmoji(species) {
-    return species === "hond" ? "🐶" : species === "overig" ? "🐾" : "🐱";
+  // Custom flat single-color glyphs instead of the standard cat/dog emoji —
+  // pointy-eared circle for cat (accent/terracotta), floppy-eared circle for
+  // dog (accent-secondary/sage). "Overig" keeps the paw emoji: it's already
+  // the app's own icon elsewhere, no need for a bespoke glyph there.
+  function speciesIconHtml(species) {
+    if (species === "hond") {
+      return `<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="var(--accent-secondary)" style="vertical-align:-0.15em;" aria-hidden="true"><ellipse cx="5.5" cy="11" rx="2.6" ry="4.2" transform="rotate(-20 5.5 11)"/><ellipse cx="18.5" cy="11" rx="2.6" ry="4.2" transform="rotate(20 18.5 11)"/><circle cx="12" cy="13" r="7"/></svg>`;
+    }
+    if (species === "overig") return "🐾";
+    return `<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="var(--accent)" style="vertical-align:-0.15em;" aria-hidden="true"><path d="M5 3l3 5.2M19 3l-3 5.2" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" fill="none"/><circle cx="12" cy="13" r="7.2"/></svg>`;
+  }
+
+  // --- Icon style: calm uni-color glyphs vs. the original color emoji -----
+  // A reversible experiment: nav/dashboard icons can render as either the
+  // original multicolor emoji, or a calm single-accent-color line-icon set.
+  // Persisted so the choice survives a reload; always reversible via the
+  // toggle in the Profiel tab.
+  let iconStyle = localStorage.getItem("iconStyle") || "color";
+
+  const ICON_EMOJI = {
+    dashboard: "🏠",
+    weight: "⚖️",
+    blood: "🩸",
+    vax: "💉",
+    vet: "🩺",
+    symptoms: "🩹",
+    medication: "💊",
+  };
+
+  const ICON_SVG_BODY = {
+    dashboard: '<path d="M4 11L12 4l8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M6 10v9h5v-6h2v6h5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    weight:
+      '<circle cx="4.5" cy="12" r="2.7" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="19.5" cy="12" r="2.7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7.2 12h9.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    blood: '<path d="M12 3c-3.3 4.7-5.7 8-5.7 10.8a5.7 5.7 0 0 0 11.4 0C17.7 11 15.3 7.7 12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>',
+    vax: '<path d="M19 2.5l2.5 2.5-1.6 1.6-2.5-2.5z" fill="currentColor"/><path d="M18.7 5.7L5.7 18.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8.7 11.5l1.8 1.8M11.7 8.5l1.8 1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.5 19.8l1-3.4 2.4 2.4z" fill="currentColor"/>',
+    vet: '<path d="M19.5 8.3c0-2-1.5-3.6-3.4-3.6-1.1 0-2.2.5-2.9 1.5a3.6 3.6 0 0 0-2.9-1.5c-1.9 0-3.4 1.6-3.4 3.6 0 3.7 6.3 8 6.3 8s6.3-4.3 6.3-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>',
+    symptoms:
+      '<rect x="5" y="9.3" width="14" height="5.4" rx="2.7" transform="rotate(-20 12 12)" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="9.3" cy="10.6" r="0.9" fill="currentColor"/><circle cx="14.7" cy="13.4" r="0.9" fill="currentColor"/>',
+    medication:
+      '<rect x="4.8" y="9.3" width="14.4" height="5.4" rx="2.7" transform="rotate(45 12 12)" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8.5L15.5 12" stroke="currentColor" stroke-width="2"/>',
+  };
+
+  function iconHtml(key) {
+    if (iconStyle === "mono") {
+      return `<svg viewBox="0 0 24 24" width="20" height="20" style="vertical-align:-0.2em; color:var(--accent);" aria-hidden="true">${ICON_SVG_BODY[key]}</svg>`;
+    }
+    return ICON_EMOJI[key];
+  }
+
+  // Repaints every static icon-bearing element (bottom nav + quick-add menu
+  // — dashboard cards regenerate their own icons on every render already)
+  // and persists the choice.
+  function applyIconStyle() {
+    document.querySelectorAll("[data-icon-key]").forEach((el) => {
+      el.innerHTML = iconHtml(el.dataset.iconKey);
+    });
+    document.querySelectorAll(".icon-style-btn").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.style === iconStyle);
+    });
+    localStorage.setItem("iconStyle", iconStyle);
+  }
+
+  function setIconStyle(style) {
+    iconStyle = style;
+    applyIconStyle();
+    if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
   }
 
   function showAuthScreen() {
@@ -1906,7 +2017,7 @@
   function applyCurrentPetToHeader() {
     const pet = currentPet();
     if (!pet) return;
-    document.getElementById("appTitle").textContent = speciesEmoji(pet.species) + " " + pet.name;
+    document.getElementById("appTitle").innerHTML = speciesIconHtml(pet.species) + " " + escapeHtml(pet.name);
     document.getElementById("profileHeading").textContent = "🐾 Bewerk " + pet.name;
 
     const header = document.getElementById("appHeader");
@@ -1925,16 +2036,18 @@
       .map(
         (p) => `
         <button type="button" class="pet-menu-item${p.id === currentPetId ? " active" : ""}" onclick="switchPet(${p.id})">
-          ${p.photo_data_url ? `<span class="pet-menu-thumb" style="background-image:url('${p.photo_data_url}')"></span>` : `<span>${speciesEmoji(p.species)}</span>`}
+          ${p.photo_data_url ? `<span class="pet-menu-thumb" style="background-image:url('${p.photo_data_url}')"></span>` : `<span>${speciesIconHtml(p.species)}</span>`}
           <span>${escapeHtml(p.name)}</span>
         </button>
       `
       )
       .join("");
     document.getElementById("petMenuOverlay").classList.add("show");
+    pushNavEntry();
   }
 
   function closePetMenu() {
+    if (document.getElementById("petMenuOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("petMenuOverlay").classList.remove("show");
   }
 
@@ -1951,12 +2064,14 @@
     document.getElementById("newPetName").value = "";
     document.getElementById("newPetSpecies").value = "kat";
     document.getElementById("addPetOverlay").classList.add("show");
+    pushNavEntry();
   }
 
   function closeAddPetForm() {
     // Only allow closing if the user already has at least one pet —
     // otherwise there'd be nothing for the app to show.
     if (!pets.length) return;
+    if (document.getElementById("addPetOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("addPetOverlay").classList.remove("show");
   }
 
@@ -1980,6 +2095,7 @@
     pets.push(data);
     currentPetId = data.id;
     localStorage.setItem(activePetIdStorageKey(), String(data.id));
+    consumeNavEntry();
     document.getElementById("addPetOverlay").classList.remove("show");
     applyCurrentPetToHeader();
     await refreshAll(false);
@@ -2006,7 +2122,7 @@
           .map(
             (p) => `
         <div class="pet-menu-item" style="justify-content:space-between;">
-          <span>${speciesEmoji(p.species)} ${escapeHtml(p.name)}</span>
+          <span>${speciesIconHtml(p.species)} ${escapeHtml(p.name)}</span>
           <button type="button" class="today-btn" onclick="restorePet(${p.id})">Herstel</button>
         </div>
       `
@@ -2014,9 +2130,11 @@
           .join("");
 
     document.getElementById("archivedPetsOverlay").classList.add("show");
+    pushNavEntry();
   }
 
   function closeArchivedPetsMenu() {
+    if (document.getElementById("archivedPetsOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("archivedPetsOverlay").classList.remove("show");
   }
 
@@ -2042,9 +2160,11 @@
     document.getElementById("archivePetStep1").style.display = "";
     document.getElementById("archivePetStep2").style.display = "none";
     document.getElementById("archivePetOverlay").classList.add("show");
+    pushNavEntry();
   }
 
   function closeArchivePetConfirm() {
+    if (document.getElementById("archivePetOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("archivePetOverlay").classList.remove("show");
   }
 
@@ -2091,8 +2211,52 @@
     }
   }
 
+  // --- iOS-style edge-swipe-back ------------------------------------------
+  // The app is a single static page with no router, so the iOS edge-swipe
+  // gesture (which just triggers the browser's normal back navigation) has
+  // nothing to go "back" to by default. Pushing a history entry whenever a
+  // tab or overlay opens gives the swipe something real to undo: closing
+  // the topmost overlay, or returning to the dashboard tab.
+  let currentTabState = "dashboard";
+  let isPoppingState = false;
+
+  function pushNavEntry() {
+    if (isPoppingState) return;
+    history.pushState({ appNav: true }, "", location.href);
+  }
+
+  // Called from a manual (button-click) close, so the history entry that
+  // open() pushed gets consumed even when the user didn't swipe/press back
+  // — otherwise the stack would drift out of sync with what's on screen.
+  function consumeNavEntry() {
+    if (isPoppingState || !(history.state && history.state.appNav)) return;
+    history.back();
+  }
+
+  function anyOverlayOpen() {
+    return !!document.querySelector(".detail-overlay.show");
+  }
+
+  window.addEventListener("popstate", () => {
+    isPoppingState = true;
+    if (anyOverlayOpen()) {
+      document.querySelectorAll(".detail-overlay.show").forEach((el) => el.classList.remove("show"));
+    } else if (currentTabState !== "dashboard") {
+      switchTab("dashboard");
+    }
+    // Let the current call stack (including any consumeNavEntry() a close
+    // function triggers) finish before allowing new pushes again.
+    setTimeout(() => {
+      isPoppingState = false;
+    }, 0);
+  });
+
   // --- Tabs --------------------------------------------------------------
   function switchTab(tab) {
+    if (tab !== currentTabState) {
+      pushNavEntry();
+      currentTabState = tab;
+    }
     document.getElementById("tabDashboard").classList.toggle("active", tab === "dashboard");
     document.getElementById("tabWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBlood").classList.toggle("active", tab === "blood");
@@ -2109,6 +2273,14 @@
     document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
     if (tab === "dashboard") renderDashboard();
+    // Belt-and-suspenders against the "neutral color until refresh" bug:
+    // even with catProfile guaranteed correct by the time refreshAll()
+    // finishes, a chart rendered while its tab-panel was display:none can
+    // end up with a stale/incorrect canvas gradient. Re-rendering the
+    // instant the tab actually becomes visible guarantees a correct paint
+    // regardless of what the canvas looked like while hidden.
+    if (tab === "weight" && weightChart) renderWeightChart(latestWeightData);
+    if (tab === "symptoms" && symptomChart) renderSymptomChart(latestSymptomData);
   }
 
   function showError(message) {
@@ -3225,9 +3397,11 @@
       editBloodGroup(date);
     };
     document.getElementById("bloodDetailOverlay").classList.add("show");
+    pushNavEntry();
   }
 
   function closeBloodDetail() {
+    if (document.getElementById("bloodDetailOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("bloodDetailOverlay").classList.remove("show");
   }
 
@@ -3997,10 +4171,12 @@
 
     document.getElementById("careReminderBody").innerHTML = body;
     document.getElementById("careReminderOverlay").classList.add("show");
+    pushNavEntry();
     localStorage.setItem("careReminderShownDate", today);
   }
 
   function closeCareReminder() {
+    if (document.getElementById("careReminderOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("careReminderOverlay").classList.remove("show");
   }
 
@@ -4160,7 +4336,15 @@
     const freq = {};
     data.forEach((r) => (freq[r.symptom] = (freq[r.symptom] || 0) + 1));
     const names = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
-    wrapEl.style.height = Math.max(160, 60 + names.length * 46) + "px";
+
+    // Dierenartsbezoeken get their own reference row (gray triangles, distinct
+    // from the round symptom bubbles) at the top, so it's visually obvious
+    // from which point onward the "sinds laatste bezoek" count on the
+    // dashboard restarts.
+    const VET_ROW_LABEL = "🐾 Dierenarts";
+    const vetVisitDates = (latestVetVisitData || []).map((v) => v.date);
+    const allLabels = vetVisitDates.length ? [VET_ROW_LABEL, ...names] : names;
+    wrapEl.style.height = Math.max(160, 60 + allLabels.length * 46) + "px";
 
     // Multiple entries for the same afwijking on the same day used to stack
     // exactly on top of each other — invisible instead of "many entries".
@@ -4178,17 +4362,19 @@
     const points = Object.values(grouped);
     const colors = points.map((p) => SYMPTOM_SEVERITY_COLOR[p.severity] || "#8e8e93");
     const radii = points.map((p) => 5 + Math.min(9, (p.count - 1) * 3));
-    const xRange = computeTimelineXRange(data.map((r) => r.date));
+    const vetPoints = vetVisitDates.map((d) => ({ x: d, y: VET_ROW_LABEL }));
+    const xRange = computeTimelineXRange([...data.map((r) => r.date), ...vetVisitDates]);
 
     if (symptomChart) {
-      symptomChart.data.labels = names;
+      symptomChart.data.labels = allLabels;
       symptomChart.data.datasets[0].data = points;
       symptomChart.data.datasets[0].backgroundColor = colors;
       symptomChart.data.datasets[0].pointRadius = radii;
       symptomChart.data.datasets[0].pointHoverRadius = radii.map((r) => r + 2);
+      symptomChart.data.datasets[1].data = vetPoints;
       symptomChart.options.scales.x.min = xRange.min;
       symptomChart.options.scales.x.max = xRange.max;
-      symptomChart.options.scales.y.labels = names;
+      symptomChart.options.scales.y.labels = allLabels;
       symptomChart.update();
       return;
     }
@@ -4196,13 +4382,21 @@
     symptomChart = new Chart(document.getElementById("symptomChart"), {
       type: "scatter",
       data: {
-        labels: names,
+        labels: allLabels,
         datasets: [
           {
             data: points,
             backgroundColor: colors,
             pointRadius: radii,
             pointHoverRadius: radii.map((r) => r + 2),
+          },
+          {
+            data: vetPoints,
+            backgroundColor: "#8e8e93",
+            borderColor: "#8e8e93",
+            pointStyle: "triangle",
+            pointRadius: 7,
+            pointHoverRadius: 9,
           },
         ],
       },
@@ -4224,7 +4418,7 @@
           },
           y: {
             type: "category",
-            labels: names,
+            labels: allLabels,
             offset: true,
             grid: { display: false },
             ticks: { font: { size: 11 } },
@@ -4851,16 +5045,26 @@
     return `<span class="due-pill" style="border-color:${color}; color:${color};">${text}</span>`;
   }
 
-  // One count badge per severity present (licht=green/matig=orange/ernstig=red),
-  // so the Afwijkingen tile shows the color mix at a glance instead of a
-  // single flat number.
+  // One row per severity present (licht=green/matig=orange/ernstig=red): an
+  // oval-bordered count pill (matching the medication tile's due-pill style,
+  // instead of a plain colored dot) followed by the actual afwijking names
+  // for that severity, so both "how many" and "what kind" are visible at a
+  // glance. Ernstig gets a ⚠️ prefix so it still stands out on its own line.
   function symptomSeverityBadgesHtml(bySeverity) {
     const order = ["ernstig", "matig", "licht"];
-    const badges = order
+    const rows = order
       .filter((sev) => bySeverity[sev].length)
-      .map((sev) => `<span class="severity-badge" style="color:${SYMPTOM_SEVERITY_COLOR[sev]};"><span class="status-dot" style="background:${SYMPTOM_SEVERITY_COLOR[sev]};"></span>${bySeverity[sev].length}</span>`)
-      .join(" ");
-    return badges || "0 afwijkingen";
+      .map((sev) => {
+        const color = SYMPTOM_SEVERITY_COLOR[sev];
+        const names = [...new Set(bySeverity[sev].map((r) => r.symptom))].join(", ");
+        const prefix = sev === "ernstig" ? "⚠️ " : "";
+        return `<div class="dashboard-card-sub severity-badge-row">
+          <span class="due-pill" style="border-color:${color}; color:${color};">${bySeverity[sev].length}</span>
+          <span>${prefix}${escapeHtml(names)}</span>
+        </div>`;
+      })
+      .join("");
+    return rows || `<div class="dashboard-card-empty">0 afwijkingen</div>`;
   }
 
   // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
@@ -5002,7 +5206,7 @@
 
     const cards = [
       `<div class="card dashboard-card" onclick="switchTab('weight')"${tileGlowStyle(weightGlowColor)}>
-        <h3>⚖️ Actueel gewicht</h3>
+        <h3>${iconHtml("weight")} Actueel gewicht</h3>
         ${
           weightS
             ? `<div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg${weightTrendHtml(weightS)}</div>
@@ -5011,7 +5215,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vax')"${tileGlowStyle(vaxGlowColor)}>
-        <h3>💉 Vaccinaties</h3>
+        <h3>${iconHtml("vax")} Vaccinaties</h3>
         ${
           vaxS
             ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
@@ -5020,7 +5224,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('medication')"${tileGlowStyle(medGlowColor)}>
-        <h3>💊 Medicatie</h3>
+        <h3>${iconHtml("medication")} Medicatie</h3>
         ${
           openMeds.length
             ? openMeds
@@ -5043,7 +5247,7 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('blood')"${tileGlowStyle(bloodGlowColor)}>
-        <h3>🩸 Bloedwaarden</h3>
+        <h3>${iconHtml("blood")} Bloedwaarden</h3>
         ${
           bloodS
             ? `<div class="dashboard-card-value">Laatste meting: ${formatMonthYear(bloodS.date)}</div>
@@ -5052,21 +5256,20 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
-        <h3>🩹 Afwijkingen</h3>
+        <h3>${iconHtml("symptoms")} Afwijkingen</h3>
         ${
           !symS.hasData
             ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
-            : `<div class="dashboard-card-value">${symptomSeverityBadgesHtml(symS.bySeverity)}</div>
-               ${symS.bySeverity.ernstig.length ? `<div class="dashboard-card-sub" style="color:#ff3b30;">⚠️ ${symS.bySeverity.ernstig.map((r) => escapeHtml(r.symptom)).join(", ")}</div>` : ""}
+            : `${symptomSeverityBadgesHtml(symS.bySeverity)}
                <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
-        <h3>🩺 Dierenarts</h3>
+        <h3>${iconHtml("vet")} Dierenarts</h3>
         ${
           lastVetVisit
-            ? `<div class="dashboard-card-value">${escapeHtml(lastVetVisit.reason || "Bezoek")}</div>
-               <div class="dashboard-card-sub">${formatDate(lastVetVisit.date)}</div>`
+            ? `<div class="dashboard-card-value">Laatste bezoek: ${formatDate(lastVetVisit.date)}</div>
+               <div class="dashboard-card-sub">${escapeHtml(lastVetVisit.reason || "Bezoek")}</div>`
             : `<div class="dashboard-card-empty">Nog geen bezoeken gelogd</div>`
         }
       </div>`,
@@ -5091,9 +5294,11 @@
 
   function openQuickAddMenu() {
     document.getElementById("quickAddOverlay").classList.add("show");
+    pushNavEntry();
   }
 
   function closeQuickAddMenu() {
+    if (document.getElementById("quickAddOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("quickAddOverlay").classList.remove("show");
   }
 
@@ -5295,6 +5500,10 @@
     // once more here, after every load has settled, makes the very first
     // paint correct too.
     renderWeightChart(latestWeightData);
+    // Same parallel-load race as weight/profile above: the symptom timeline
+    // draws its gray dierenartsbezoek markers from latestVetVisitData, which
+    // may not be populated yet when loadSymptoms() first renders it.
+    if (symptomChart) renderSymptomChart(latestSymptomData);
     maybeShowCareReminders();
     if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
 
@@ -5314,6 +5523,8 @@
   // Auth state (including the session already on disk from a previous visit)
   // drives everything else — see onAuthStateChange/bootstrapApp above, which
   // calls loadPets() -> refreshAll() once a user is known.
+
+  applyIconStyle();
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
