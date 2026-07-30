@@ -395,6 +395,21 @@
     min-width: 0;
   }
 
+  .checkbox-field label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  .checkbox-field input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    flex-shrink: 0;
+  }
+
   input[type="date"] {
     width: 100%;
     box-sizing: border-box;
@@ -857,18 +872,6 @@
     font-weight: 600;
   }
 
-  .med-given-btn {
-    display: block;
-    margin-top: 4px;
-    border: none;
-    background: none;
-    color: var(--accent);
-    font-size: 0.78rem;
-    font-weight: 600;
-    padding: 0;
-    cursor: pointer;
-  }
-
   .severity-badge-row {
     display: flex;
     align-items: center;
@@ -1205,7 +1208,13 @@
     </div>
   </div>
   <div class="header-icons">
-    <button type="button" class="profile-icon-btn" aria-label="Instellingen" data-i18n-aria="ariaProfile" onclick="switchTab('profile')">
+    <button type="button" class="profile-icon-btn" aria-label="Profiel" data-i18n-aria="ariaEditProfile" onclick="switchTab('profile')">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="8" r="3.6"></circle>
+        <path d="M4.5 20c0-3.6 3.4-6 7.5-6s7.5 2.4 7.5 6"></path>
+      </svg>
+    </button>
+    <button type="button" class="profile-icon-btn" aria-label="Instellingen" data-i18n-aria="ariaProfile" onclick="switchTab('settings')">
       <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -1330,11 +1339,11 @@
       <div class="chart-wrap" style="height:200px;">
         <canvas id="bloodChart"></canvas>
       </div>
-      <p class="hint-text" id="bloodChartEmpty">Nog geen metingen voor deze marker.</p>
+      <p class="hint-text" id="bloodChartEmpty" data-i18n-js="emptyBloodChart">Nog geen metingen voor deze marker.</p>
     </div>
 
     <div class="card">
-      <h2>Resultaten</h2>
+      <h2 data-i18n="headingResults">Resultaten</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
       <ul class="entry-list" id="bloodList"></ul>
     </div>
@@ -1419,6 +1428,9 @@
             </div>
             <p class="hint-text" style="margin-top:6px;">Vul zelf in, of gebruik een snelknop om automatisch te berekenen vanaf de datum hierboven.</p>
           </div>
+          <div class="checkbox-field">
+            <label for="vaxNoRepeat"><input type="checkbox" id="vaxNoRepeat" /> <span data-i18n="fieldVaxNoRepeat">Geen vervolg meer nodig (uit overzicht/herinneringen houden)</span></label>
+          </div>
           <div>
             <label for="vaxNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
             <input type="text" id="vaxNote" placeholder="bijv. bij Caressa Delft" />
@@ -1434,15 +1446,15 @@
     </div>
 
     <div class="card">
-      <h2>Tijdlijn</h2>
-      <p class="hint-text" id="vaxChartEmpty" style="margin-bottom:8px;">Nog geen vaccinaties om een tijdlijn te tonen.</p>
+      <h2 data-i18n="headingTimeline">Tijdlijn</h2>
+      <p class="hint-text" id="vaxChartEmpty" style="margin-bottom:8px;" data-i18n-js="emptyVaxChart">Nog geen vaccinaties om een tijdlijn te tonen.</p>
       <div class="chart-wrap" id="vaxChartWrap" style="display:none;">
         <canvas id="vaxChart"></canvas>
       </div>
     </div>
 
     <div class="card">
-      <h2>Overzicht</h2>
+      <h2 data-i18n="headingOverview">Overzicht</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
       <ul class="entry-list" id="vaxList"></ul>
     </div>
@@ -1492,8 +1504,8 @@
     </div>
 
     <div class="card">
-      <h2>Tijdlijn</h2>
-      <p class="hint-text" id="symptomChartEmpty" style="margin-bottom:8px;">Nog geen afwijkingen om een tijdlijn te tonen.</p>
+      <h2 data-i18n="headingTimeline">Tijdlijn</h2>
+      <p class="hint-text" id="symptomChartEmpty" style="margin-bottom:8px;" data-i18n-js="emptySymptomChart">Nog geen afwijkingen om een tijdlijn te tonen.</p>
       <div class="chart-wrap" id="symptomChartWrap" style="display:none;">
         <canvas id="symptomChart"></canvas>
       </div>
@@ -1501,7 +1513,7 @@
 
     <div class="card">
       <h2>Vaakst voorkomend</h2>
-      <p class="hint-text" id="symptomSummaryEmpty" style="margin-bottom:10px;">Nog geen afwijkingen gelogd.</p>
+      <p class="hint-text" id="symptomSummaryEmpty" style="margin-bottom:10px;" data-i18n-js="emptySymptomsLogged">Nog geen afwijkingen gelogd.</p>
       <table class="summary-table" id="symptomSummaryTable" style="display:none;">
         <thead>
           <tr><th>Afwijking</th><th>Aantal</th><th>Laatst</th></tr>
@@ -1591,7 +1603,7 @@
     </div>
 
     <div class="card">
-      <h2>Overzicht</h2>
+      <h2 data-i18n="headingOverview">Overzicht</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
       <ul class="entry-list" id="medicationList"></ul>
     </div>
@@ -1602,8 +1614,8 @@
       <h2><span id="profileHeading">🐾 Bewerk huisdier</span> <button type="button" class="info-btn" onclick="toggleInfoTip('profileIntroTip')" aria-label="Meer info">i</button></h2>
       <p class="hint-text info-tip" id="profileIntroTip" style="display:none;">
         Hoe meer we van je huisgenoot weten, hoe beter we het ideale gewicht kunnen inschatten.
-        Dit bewerkt het huisdier dat nu bovenin geselecteerd is — voor een extra huisdier gebruik je
-        de "+"-knop naast de naam bovenaan.
+        Dit bewerkt het huisdier dat nu bovenin geselecteerd is — voor een extra huisdier open je
+        het huisdier-menu bovenaan en kies je "+ Nieuw huisdier toevoegen".
       </p>
       <div class="photo-upload-row">
         <div class="photo-preview" id="photoPreview">🐾</div>
@@ -1692,21 +1704,21 @@
     </div>
 
     <div class="card">
+      <h2><span data-i18n="headingArchivePet">Huisdier archiveren</span> <button type="button" class="info-btn" onclick="toggleInfoTip('archiveTip')" aria-label="Meer info">i</button></h2>
+      <p class="hint-text info-tip" id="archiveTip" style="display:none; margin-bottom:12px;">
+        Archiveren verbergt dit huisdier uit het dashboard. Alle gegevens blijven bewaard en je kunt
+        het huisdier later terugzetten via "Gearchiveerde huisdieren" in het huisdier-menu.
+      </p>
+      <button type="button" class="today-btn" style="width:100%;" onclick="openArchivePetConfirm()">Archiveer dit huisdier</button>
+    </div>
+  </section>
+
+  <section id="tabSettings" class="tab-panel">
+    <div class="card">
       <h2 data-i18n="headingAccount">Account</h2>
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
       <button type="button" class="today-btn" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
       <button type="button" class="today-btn" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
-    </div>
-
-    <div class="card">
-      <h2><span data-i18n="headingWeergave">Weergave</span> <button type="button" class="info-btn" onclick="toggleInfoTip('iconStyleTip')" aria-label="Meer info">i</button></h2>
-      <p class="hint-text info-tip" id="iconStyleTip" style="display:none; margin-bottom:12px;">
-        Rustige iconen gebruiken één kleur i.p.v. de kleurrijke emoji — een experiment, altijd terug te zetten.
-      </p>
-      <div class="icon-style-toggle">
-        <button type="button" class="icon-style-btn" data-style="color" onclick="setIconStyle('color')">Kleur (emoji)</button>
-        <button type="button" class="icon-style-btn" data-style="mono" onclick="setIconStyle('mono')">Rustig (uni-kleur)</button>
-      </div>
     </div>
 
     <div class="card">
@@ -1719,12 +1731,14 @@
     </div>
 
     <div class="card">
-      <h2><span data-i18n="headingArchivePet">Huisdier archiveren</span> <button type="button" class="info-btn" onclick="toggleInfoTip('archiveTip')" aria-label="Meer info">i</button></h2>
-      <p class="hint-text info-tip" id="archiveTip" style="display:none; margin-bottom:12px;">
-        Archiveren verbergt dit huisdier uit het dashboard. Alle gegevens blijven bewaard en je kunt
-        het huisdier later terugzetten via "Gearchiveerde huisdieren" in het huisdier-menu.
+      <h2><span data-i18n="headingWeergave">Weergave</span> <button type="button" class="info-btn" onclick="toggleInfoTip('iconStyleTip')" aria-label="Meer info">i</button></h2>
+      <p class="hint-text info-tip" id="iconStyleTip" style="display:none; margin-bottom:12px;">
+        Rustige iconen gebruiken één kleur i.p.v. de kleurrijke emoji — een experiment, altijd terug te zetten.
       </p>
-      <button type="button" class="today-btn" style="width:100%;" onclick="openArchivePetConfirm()">Archiveer dit huisdier</button>
+      <div class="icon-style-toggle">
+        <button type="button" class="icon-style-btn" data-style="color" onclick="setIconStyle('color')">Kleur (emoji)</button>
+        <button type="button" class="icon-style-btn" data-style="mono" onclick="setIconStyle('mono')">Rustig (uni-kleur)</button>
+      </div>
     </div>
   </section>
 </main>
@@ -1943,12 +1957,15 @@
     vet: "🩺",
     symptoms: "🩹",
     medication: "💊",
+    cost: "💰",
   };
 
   const ICON_SVG_BODY = {
     dashboard: '<path d="M4 11L12 4l8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/><path d="M6 10v9h5v-6h2v6h5v-9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>',
+    // A kettlebell-style weight, not a barbell — reads unambiguously as
+    // "gewicht" (body weight) rather than a gym/fitness dumbbell.
     weight:
-      '<circle cx="4.5" cy="12" r="2.7" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="19.5" cy="12" r="2.7" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7.2 12h9.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+      '<rect x="9" y="3" width="6" height="4" rx="1.5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M7 8.3a5 5 0 0 1 10 0v5.7a5 5 0 0 1-10 0z" stroke="currentColor" stroke-width="2" fill="none"/>',
     blood: '<path d="M12 3c-3.3 4.7-5.7 8-5.7 10.8a5.7 5.7 0 0 0 11.4 0C17.7 11 15.3 7.7 12 3z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>',
     vax: '<path d="M19 2.5l2.5 2.5-1.6 1.6-2.5-2.5z" fill="currentColor"/><path d="M18.7 5.7L5.7 18.7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M8.7 11.5l1.8 1.8M11.7 8.5l1.8 1.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M4.5 19.8l1-3.4 2.4 2.4z" fill="currentColor"/>',
     vet: '<path d="M19.5 8.3c0-2-1.5-3.6-3.4-3.6-1.1 0-2.2.5-2.9 1.5a3.6 3.6 0 0 0-2.9-1.5c-1.9 0-3.4 1.6-3.4 3.6 0 3.7 6.3 8 6.3 8s6.3-4.3 6.3-8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none"/>',
@@ -1956,6 +1973,9 @@
       '<rect x="5" y="9.3" width="14" height="5.4" rx="2.7" transform="rotate(-20 12 12)" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="9.3" cy="10.6" r="0.9" fill="currentColor"/><circle cx="14.7" cy="13.4" r="0.9" fill="currentColor"/>',
     medication:
       '<rect x="4.8" y="9.3" width="14.4" height="5.4" rx="2.7" transform="rotate(45 12 12)" stroke="currentColor" stroke-width="2" fill="none"/><path d="M12 8.5L15.5 12" stroke="currentColor" stroke-width="2"/>',
+    // A coin/wallet, not the money-bag emoji's shape — keeps the mono set's
+    // line-icon language (rect + stroke), matching the other glyphs here.
+    cost: '<rect x="3" y="7" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 10.3h18" stroke="currentColor" stroke-width="2"/><circle cx="16.3" cy="14.3" r="1.3" fill="currentColor"/>',
   };
 
   function iconHtml(key) {
@@ -1986,6 +2006,7 @@
       authSwitchToRegister: "No account yet? Register",
       authSwitchToLogin: "Already have an account? Log in",
       ariaProfile: "Settings",
+      ariaEditProfile: "Profile",
       btnRefreshData: "Refresh data",
       navStart: "Start",
       navWeight: "Weight",
@@ -2024,6 +2045,9 @@
       headingWeergave: "Display",
       headingArchivePet: "Archive pet",
       headingLanguage: "Language",
+      headingResults: "Results",
+      headingTimeline: "Timeline",
+      headingOverview: "Overview",
     },
     de: {
       authTitle: "🐾 Tiergesundheit",
@@ -2036,6 +2060,7 @@
       authSwitchToRegister: "Noch kein Konto? Registrieren",
       authSwitchToLogin: "Schon ein Konto? Anmelden",
       ariaProfile: "Einstellungen",
+      ariaEditProfile: "Profil",
       btnRefreshData: "Daten aktualisieren",
       navStart: "Start",
       navWeight: "Gewicht",
@@ -2074,6 +2099,9 @@
       headingWeergave: "Anzeige",
       headingArchivePet: "Haustier archivieren",
       headingLanguage: "Sprache",
+      headingResults: "Ergebnisse",
+      headingTimeline: "Zeitachse",
+      headingOverview: "Übersicht",
     },
   };
 
@@ -2098,6 +2126,85 @@
     ageYears: "jaar",
     ageDay: "dag",
     ageDays: "dagen",
+    timeAgoPrefix: "",
+    timeUnknown: "onbekend",
+    timeToday: "vandaag",
+    timeOneDayAgo: "1 dag geleden",
+    timeDaysAgo: "dagen geleden",
+    timeOneMonthAgo: "1 maand geleden",
+    timeMonthsAgo: "maanden geleden",
+    timeOneYearAgo: "1 jaar geleden",
+    timeYearsAgo: "jaar geleden",
+    weightTrendEqual: "gelijk",
+    vaxOfCount: "van",
+    vaxCurrent: "actueel",
+    vaxOverdueShort: "verlopen",
+    vaxValidUntil: "Geldig tot",
+    vaxExpiredSince: "Verlopen sinds",
+    vaxNoExpiry: "Geen vervaldatum",
+    vaxNoRepeatTag: "geen vervolg nodig",
+    dayLate: "dag te laat",
+    daysLate: "dagen te laat",
+    dueToday: "Vandaag",
+    dueInLabel: "Over",
+    dayUnit: "dag",
+    daysUnit: "dagen",
+    medNextLabel: "Volgende:",
+    emptyVax: "Nog geen vaccinaties",
+    emptyMedicationLogged: "Nog geen medicatie gelogd",
+    emptyWeightMeasurements: "Nog geen metingen",
+    emptyBloodExam: "Nog geen bloedonderzoek",
+    emptyBloodResults: "Nog geen resultaten",
+    emptyVetVisitsLogged: "Nog geen bezoeken gelogd",
+    emptySymptomsLogged: "Nog geen afwijkingen gelogd",
+    emptyCostsRegistered: "Nog geen kosten geregistreerd",
+    emptyWeightRegistered: "Nog geen gewichtsmetingen geregistreerd.",
+    emptyPrevWeight: "Nog geen vorige meting om mee te vergelijken",
+    emptyBloodChart: "Nog geen metingen voor deze marker.",
+    emptyVaxChart: "Nog geen vaccinaties om een tijdlijn te tonen.",
+    emptySymptomChart: "Nog geen afwijkingen om een tijdlijn te tonen.",
+    emptyArchivedPets: "Geen gearchiveerde huisdieren.",
+    symptomTrendUp: "komt vaker voor dan normaal",
+    symptomTrendDown: "komt minder vaak voor dan normaal",
+    symptomTrendDetail: "keer in",
+    symptomTrendDays: "dagen · gemiddeld was",
+    alertVaxExpiredSince: "is verlopen sinds",
+    alertVaxExpiresIn: "verloopt over",
+    alertVaxAllCurrent: "Vaccinaties zijn actueel.",
+    alertWeightLastMeasured: "Gewicht is voor het laatst gemeten:",
+    alertMedOverdueSince: "had een vervolgdosis gepland op",
+    alertMedOpenToday: "staat vandaag nog open.",
+    alertMedExpiresIn: "verloopt over",
+    alertBloodOutOfRange: "van de",
+    alertBloodKnownValues: "bekende waarden lagen buiten het referentiegebied bij het laatste bloedonderzoek",
+    alertNoData: "Nog onvoldoende gegevens.",
+    alertAllGood: "Er zijn geen actuele aandachtspunten.",
+    emptySeverityCount: "0 afwijkingen",
+    costPeriodRolling: "afgelopen 12 maanden",
+    costVsSamePeriod: "vs. dezelfde periode vorig jaar",
+    costToggleRolling: "Rollend jaar",
+    costToggleCalendar: "Kalenderjaar",
+    dashboardVetLastVisit: "Laatste bezoek",
+    vetVisitFallback: "Bezoek",
+    errSaveFailed: "Opslaan mislukt",
+    errLoadFailed: "Laden mislukt",
+    errDeleteFailed: "Verwijderen mislukt",
+    errUpdateFailed: "Bijwerken mislukt",
+    errRestoreFailed: "Herstellen mislukt",
+    errArchiveFailed: "Archiveren mislukt",
+    errPetsLoadFailed: "Huisdieren laden mislukt",
+    errPetCreateFailed: "Huisdier aanmaken mislukt",
+    errArchivedPetsLoadFailed: "Gearchiveerde huisdieren laden mislukt",
+    errAnalyzeFailed: "Analyseren mislukt",
+    errProfileSaveFailed: "Profiel opslaan mislukt",
+    errProfileLoadFailed: "Profiel laden mislukt",
+    successVaxSaved: "Vaccinatie opgeslagen ✓",
+    successBloodSaved: "Bloeduitslag opgeslagen ✓",
+    successVetVisitSaved: "Bezoek opgeslagen ✓",
+    successSymptomSaved: "Afwijking opgeslagen ✓",
+    successMedicationSaved: "Medicatie opgeslagen ✓",
+    successProfileSaved: "Profiel opgeslagen ✓",
+    successPetArchived: "is gearchiveerd ✓",
   };
   const I18N_EN = {
     dashboardActueel: "Current",
@@ -2117,6 +2224,85 @@
     ageYears: "years",
     ageDay: "day",
     ageDays: "days",
+    timeAgoPrefix: "",
+    timeUnknown: "unknown",
+    timeToday: "today",
+    timeOneDayAgo: "1 day ago",
+    timeDaysAgo: "days ago",
+    timeOneMonthAgo: "1 month ago",
+    timeMonthsAgo: "months ago",
+    timeOneYearAgo: "1 year ago",
+    timeYearsAgo: "years ago",
+    weightTrendEqual: "unchanged",
+    vaxOfCount: "of",
+    vaxCurrent: "current",
+    vaxOverdueShort: "expired",
+    vaxValidUntil: "Valid until",
+    vaxExpiredSince: "Expired since",
+    vaxNoExpiry: "No expiry date",
+    vaxNoRepeatTag: "no repeat needed",
+    dayLate: "day late",
+    daysLate: "days late",
+    dueToday: "Today",
+    dueInLabel: "In",
+    dayUnit: "day",
+    daysUnit: "days",
+    medNextLabel: "Next:",
+    emptyVax: "No vaccinations yet",
+    emptyMedicationLogged: "No medication logged yet",
+    emptyWeightMeasurements: "No measurements yet",
+    emptyBloodExam: "No blood tests yet",
+    emptyBloodResults: "No results yet",
+    emptyVetVisitsLogged: "No visits logged yet",
+    emptySymptomsLogged: "No symptoms logged yet",
+    emptyCostsRegistered: "No costs recorded yet",
+    emptyWeightRegistered: "No weight measurements recorded yet.",
+    emptyPrevWeight: "No previous measurement to compare with yet",
+    emptyBloodChart: "No measurements for this marker yet.",
+    emptyVaxChart: "No vaccinations yet to show a timeline.",
+    emptySymptomChart: "No symptoms yet to show a timeline.",
+    emptyArchivedPets: "No archived pets.",
+    symptomTrendUp: "is occurring more often than usual",
+    symptomTrendDown: "is occurring less often than usual",
+    symptomTrendDetail: "times in",
+    symptomTrendDays: "days · average was",
+    alertVaxExpiredSince: "expired on",
+    alertVaxExpiresIn: "expires in",
+    alertVaxAllCurrent: "Vaccinations are up to date.",
+    alertWeightLastMeasured: "Weight was last measured:",
+    alertMedOverdueSince: "had a follow-up dose planned on",
+    alertMedOpenToday: "is still open today.",
+    alertMedExpiresIn: "expires in",
+    alertBloodOutOfRange: "of the",
+    alertBloodKnownValues: "known values were outside the reference range at the last blood test",
+    alertNoData: "Not enough data yet.",
+    alertAllGood: "There are no current concerns.",
+    emptySeverityCount: "0 symptoms",
+    costPeriodRolling: "past 12 months",
+    costVsSamePeriod: "vs. same period last year",
+    costToggleRolling: "Rolling year",
+    costToggleCalendar: "Calendar year",
+    dashboardVetLastVisit: "Last visit",
+    vetVisitFallback: "Visit",
+    errSaveFailed: "Save failed",
+    errLoadFailed: "Loading failed",
+    errDeleteFailed: "Delete failed",
+    errUpdateFailed: "Update failed",
+    errRestoreFailed: "Restore failed",
+    errArchiveFailed: "Archiving failed",
+    errPetsLoadFailed: "Loading pets failed",
+    errPetCreateFailed: "Creating pet failed",
+    errArchivedPetsLoadFailed: "Loading archived pets failed",
+    errAnalyzeFailed: "Analysis failed",
+    errProfileSaveFailed: "Saving profile failed",
+    errProfileLoadFailed: "Loading profile failed",
+    successVaxSaved: "Vaccination saved ✓",
+    successBloodSaved: "Blood test saved ✓",
+    successVetVisitSaved: "Visit saved ✓",
+    successSymptomSaved: "Symptom saved ✓",
+    successMedicationSaved: "Medication saved ✓",
+    successProfileSaved: "Profile saved ✓",
+    successPetArchived: "has been archived ✓",
   };
   const I18N_DE = {
     dashboardActueel: "Aktuell",
@@ -2136,13 +2322,97 @@
     ageYears: "Jahre",
     ageDay: "Tag",
     ageDays: "Tage",
+    timeAgoPrefix: "vor",
+    timeUnknown: "unbekannt",
+    timeToday: "heute",
+    timeOneDayAgo: "vor 1 Tag",
+    timeDaysAgo: "Tagen",
+    timeOneMonthAgo: "vor 1 Monat",
+    timeMonthsAgo: "Monaten",
+    timeOneYearAgo: "vor 1 Jahr",
+    timeYearsAgo: "Jahren",
+    weightTrendEqual: "gleich",
+    vaxOfCount: "von",
+    vaxCurrent: "aktuell",
+    vaxOverdueShort: "abgelaufen",
+    vaxValidUntil: "Gültig bis",
+    vaxExpiredSince: "Abgelaufen seit",
+    vaxNoExpiry: "Kein Ablaufdatum",
+    vaxNoRepeatTag: "keine Wiederholung nötig",
+    dayLate: "Tag zu spät",
+    daysLate: "Tage zu spät",
+    dueToday: "Heute",
+    dueInLabel: "In",
+    dayUnit: "Tag",
+    daysUnit: "Tagen",
+    medNextLabel: "Nächste:",
+    emptyVax: "Noch keine Impfungen",
+    emptyMedicationLogged: "Noch keine Medikamente protokolliert",
+    emptyWeightMeasurements: "Noch keine Messungen",
+    emptyBloodExam: "Noch keine Blutuntersuchung",
+    emptyBloodResults: "Noch keine Ergebnisse",
+    emptyVetVisitsLogged: "Noch keine Besuche protokolliert",
+    emptySymptomsLogged: "Noch keine Symptome protokolliert",
+    emptyCostsRegistered: "Noch keine Kosten erfasst",
+    emptyWeightRegistered: "Noch keine Gewichtsmessungen erfasst.",
+    emptyPrevWeight: "Noch keine vorherige Messung zum Vergleich",
+    emptyBloodChart: "Noch keine Messungen für diesen Marker.",
+    emptyVaxChart: "Noch keine Impfungen für eine Zeitachse.",
+    emptySymptomChart: "Noch keine Symptome für eine Zeitachse.",
+    emptyArchivedPets: "Keine archivierten Haustiere.",
+    symptomTrendUp: "tritt häufiger auf als normal",
+    symptomTrendDown: "tritt seltener auf als normal",
+    symptomTrendDetail: "mal in",
+    symptomTrendDays: "Tagen · Durchschnitt war",
+    alertVaxExpiredSince: "ist abgelaufen seit",
+    alertVaxExpiresIn: "läuft ab in",
+    alertVaxAllCurrent: "Impfungen sind aktuell.",
+    alertWeightLastMeasured: "Gewicht wurde zuletzt gemessen:",
+    alertMedOverdueSince: "hatte eine Folgedosis geplant am",
+    alertMedOpenToday: "steht heute noch offen.",
+    alertMedExpiresIn: "läuft ab in",
+    alertBloodOutOfRange: "von",
+    alertBloodKnownValues: "bekannten Werten lagen bei der letzten Blutuntersuchung außerhalb des Referenzbereichs",
+    alertNoData: "Noch nicht genug Daten.",
+    alertAllGood: "Es gibt keine aktuellen Punkte.",
+    emptySeverityCount: "0 Symptome",
+    costPeriodRolling: "letzte 12 Monate",
+    costVsSamePeriod: "vs. gleicher Zeitraum letztes Jahr",
+    costToggleRolling: "Rollierendes Jahr",
+    costToggleCalendar: "Kalenderjahr",
+    dashboardVetLastVisit: "Letzter Besuch",
+    vetVisitFallback: "Besuch",
+    errSaveFailed: "Speichern fehlgeschlagen",
+    errLoadFailed: "Laden fehlgeschlagen",
+    errDeleteFailed: "Löschen fehlgeschlagen",
+    errUpdateFailed: "Aktualisieren fehlgeschlagen",
+    errRestoreFailed: "Wiederherstellen fehlgeschlagen",
+    errArchiveFailed: "Archivieren fehlgeschlagen",
+    errPetsLoadFailed: "Haustiere laden fehlgeschlagen",
+    errPetCreateFailed: "Haustier erstellen fehlgeschlagen",
+    errArchivedPetsLoadFailed: "Archivierte Haustiere laden fehlgeschlagen",
+    errAnalyzeFailed: "Analyse fehlgeschlagen",
+    errProfileSaveFailed: "Profil speichern fehlgeschlagen",
+    errProfileLoadFailed: "Profil laden fehlgeschlagen",
+    successVaxSaved: "Impfung gespeichert ✓",
+    successBloodSaved: "Blutwert gespeichert ✓",
+    successVetVisitSaved: "Besuch gespeichert ✓",
+    successSymptomSaved: "Symptom gespeichert ✓",
+    successMedicationSaved: "Medikament gespeichert ✓",
+    successProfileSaved: "Profil gespeichert ✓",
+    successPetArchived: "wurde archiviert ✓",
   };
 
   // For JS-generated strings: looks up the key in the current language,
   // falling back to Dutch (not the raw key) if a translation is missing.
   function t(key) {
     const dict = appLang === "en" ? I18N_EN : appLang === "de" ? I18N_DE : I18N_NL;
-    return dict[key] || I18N_NL[key] || key;
+    // Uses `in`/`!= null` rather than `||` — a deliberately empty-string
+    // translation (e.g. a language-specific "ago" prefix) must not fall
+    // through to the Dutch value or the raw key.
+    if (key in dict && dict[key] != null) return dict[key];
+    if (key in I18N_NL && I18N_NL[key] != null) return I18N_NL[key];
+    return key;
   }
 
   function applyTranslations() {
@@ -2257,7 +2527,7 @@
       .order("created_at", { ascending: true });
 
     if (error) {
-      showError("Huisdieren laden mislukt: " + error.message);
+      showError(t("errPetsLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -2382,7 +2652,7 @@
       .single();
 
     if (error) {
-      showError("Huisdier aanmaken mislukt: " + error.message);
+      showError(t("errPetCreateFailed") + ": " + error.message);
       return;
     }
 
@@ -2405,13 +2675,13 @@
       .order("archived_at", { ascending: false });
 
     if (error) {
-      showError("Gearchiveerde huisdieren laden mislukt: " + error.message);
+      showError(t("errArchivedPetsLoadFailed") + ": " + error.message);
       return;
     }
 
     const list = document.getElementById("archivedPetsList");
     list.innerHTML = !data.length
-      ? '<p class="hint-text">Geen gearchiveerde huisdieren.</p>'
+      ? `<p class="hint-text">${t("emptyArchivedPets")}</p>`
       : data
           .map(
             (p) => `
@@ -2435,7 +2705,7 @@
   async function restorePet(id) {
     const { error } = await supabaseClient.from("pets").update({ archived_at: null }).eq("id", id);
     if (error) {
-      showError("Herstellen mislukt: " + error.message);
+      showError(t("errRestoreFailed") + ": " + error.message);
       return;
     }
     closeArchivedPetsMenu();
@@ -2483,7 +2753,7 @@
     const { error } = await supabaseClient.from("pets").update({ archived_at: new Date().toISOString() }).eq("id", pet.id);
 
     if (error) {
-      showError("Archiveren mislukt: " + error.message);
+      showError(t("errArchiveFailed") + ": " + error.message);
       btn.disabled = false;
       return;
     }
@@ -2497,10 +2767,10 @@
       applyCurrentPetToHeader();
       await refreshAll(false);
       switchTab("dashboard");
-      showSuccess(`${pet.name} is gearchiveerd ✓`);
+      showSuccess(`${pet.name} ${t("successPetArchived")}`);
     } else {
       currentPetId = null;
-      showSuccess(`${pet.name} is gearchiveerd ✓`);
+      showSuccess(`${pet.name} ${t("successPetArchived")}`);
       openAddPetForm();
     }
   }
@@ -2559,6 +2829,7 @@
     document.getElementById("tabSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabMedication").classList.toggle("active", tab === "medication");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
+    document.getElementById("tabSettings").classList.toggle("active", tab === "settings");
     document.getElementById("tabBtnDashboard").classList.toggle("active", tab === "dashboard");
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
     document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
@@ -2821,7 +3092,7 @@
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
@@ -2839,7 +3110,7 @@
       .order("date", { ascending: true });
 
     if (error) {
-      showError("Laden mislukt: " + error.message);
+      showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -3063,14 +3334,16 @@
   }
 
   function formatDaysAgo(days) {
-    if (days == null) return "onbekend";
-    if (days <= 0) return "vandaag";
-    if (days === 1) return "1 dag geleden";
-    if (days < 31) return `${days} dagen geleden`;
+    const prefix = t("timeAgoPrefix");
+    const p = (n, unit) => `${prefix}${prefix ? " " : ""}${n} ${unit}`.trim();
+    if (days == null) return t("timeUnknown");
+    if (days <= 0) return t("timeToday");
+    if (days === 1) return t("timeOneDayAgo");
+    if (days < 31) return p(days, t("timeDaysAgo"));
     const months = Math.round(days / 30);
-    if (months < 12) return months === 1 ? "1 maand geleden" : `${months} maanden geleden`;
+    if (months < 12) return months === 1 ? t("timeOneMonthAgo") : p(months, t("timeMonthsAgo"));
     const years = Math.round(days / 365);
-    return years === 1 ? "1 jaar geleden" : `${years} jaar geleden`;
+    return years === 1 ? t("timeOneYearAgo") : p(years, t("timeYearsAgo"));
   }
 
   // Reusable so both the Gewicht-tab summary and the dashboard card can show
@@ -3096,11 +3369,11 @@
     const s = computeWeightSummary();
 
     if (!s) {
-      el.innerHTML = '<p class="hint-text">Nog geen gewichtsmetingen geregistreerd.</p>';
+      el.innerHTML = '<p class="hint-text">' + t("emptyWeightRegistered") + '</p>';
     } else {
       const deltaText =
         s.diffKg == null
-          ? "Nog geen vorige meting om mee te vergelijken"
+          ? t("emptyPrevWeight")
           : `${s.diffKg > 0 ? "+" : ""}${s.diffKg.toFixed(1)} kg (${s.diffPct > 0 ? "+" : ""}${s.diffPct.toFixed(1)}%) sinds de vorige meting`;
       el.innerHTML = `
         <span class="metric-value">${s.lastKg.toFixed(1)} kg</span>
@@ -3150,7 +3423,7 @@
 
     const { error } = await supabaseClient.from("pets").update({ weight_reminder_days: val }).eq("id", currentPetId);
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
@@ -3168,7 +3441,7 @@
     weightList.innerHTML = "";
 
     if (data.length === 0) {
-      weightList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen metingen</li>';
+      weightList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyWeightMeasurements") + '</li>';
       return;
     }
 
@@ -3191,7 +3464,7 @@
   async function deleteWeight(id) {
     const { error } = await supabaseClient.from("weight_measurements").delete().eq("id", id);
     if (error) {
-      showError("Verwijderen mislukt: " + error.message);
+      showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
     await loadWeights();
@@ -3507,7 +3780,7 @@
         .eq("date", editingBloodDate)
         .eq("pet_id", currentPetId);
       if (delError) {
-        showError("Bijwerken mislukt: " + delError.message);
+        showError(t("errUpdateFailed") + ": " + delError.message);
         submitBtn.disabled = false;
         return;
       }
@@ -3518,12 +3791,12 @@
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
     cancelBloodEdit();
-    showSuccess("Bloeduitslag opgeslagen ✓");
+    showSuccess(t("successBloodSaved"));
     await loadBloodValues();
   });
 
@@ -3537,7 +3810,7 @@
       .order("date", { ascending: false });
 
     if (error) {
-      showError("Laden mislukt: " + error.message);
+      showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -3554,7 +3827,7 @@
     bloodList.innerHTML = "";
 
     if (data.length === 0) {
-      bloodList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen resultaten</li>';
+      bloodList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyBloodResults") + '</li>';
       return;
     }
 
@@ -3606,7 +3879,7 @@
   async function deleteBloodGroup(date) {
     const { error } = await supabaseClient.from("blood_values").delete().eq("date", date).eq("pet_id", currentPetId);
     if (error) {
-      showError("Verwijderen mislukt: " + error.message);
+      showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
     await loadBloodValues();
@@ -3969,7 +4242,7 @@
 
       statusEl.textContent = `${filled} waarde(n) herkend en ingevuld — controleer hieronder en pas aan waar nodig.`;
     } catch (err) {
-      statusEl.textContent = "Analyseren mislukt: " + err.message;
+      statusEl.textContent = t("errAnalyzeFailed") + ": " + err.message;
     } finally {
       e.target.value = "";
     }
@@ -4044,12 +4317,12 @@
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
     cancelVetVisitEdit();
-    showSuccess("Bezoek opgeslagen ✓");
+    showSuccess(t("successVetVisitSaved"));
     await loadVetVisits();
   });
 
@@ -4063,7 +4336,7 @@
       .order("date", { ascending: false });
 
     if (error) {
-      showError("Laden mislukt: " + error.message);
+      showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -4075,7 +4348,7 @@
     vetVisitList.innerHTML = "";
 
     if (data.length === 0) {
-      vetVisitList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen bezoeken gelogd</li>';
+      vetVisitList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyVetVisitsLogged") + '</li>';
       return;
     }
 
@@ -4097,7 +4370,7 @@
   async function deleteVetVisit(id) {
     const { error } = await supabaseClient.from("vet_visits").delete().eq("id", id);
     if (error) {
-      showError("Verwijderen mislukt: " + error.message);
+      showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
     await loadVetVisits();
@@ -4200,6 +4473,7 @@
     document.getElementById("vaxName").value = row.vaccine;
     document.getElementById("vaxDate").value = row.date;
     document.getElementById("vaxValidUntil").value = row.valid_until || "";
+    document.getElementById("vaxNoRepeat").checked = !!row.no_repeat;
     document.getElementById("vaxNote").value = row.note || "";
     document.getElementById("vaxCost").value = row.cost ?? "";
     document.getElementById("vaxFormTitle").textContent = "Vaccinatie bewerken";
@@ -4213,6 +4487,7 @@
   function cancelVaxEdit() {
     editingVaxId = null;
     vaxForm.reset();
+    document.getElementById("vaxNoRepeat").checked = false;
     document.getElementById("vaxDate").valueAsDate = new Date();
     document.getElementById("vaxFormTitle").textContent = "+ Nieuwe vaccinatie";
     setI18nText(vaxForm.querySelector("button.submit"), "btnSave", "Opslaan");
@@ -4230,23 +4505,24 @@
     const vaccine = document.getElementById("vaxName").value.trim();
     const date = document.getElementById("vaxDate").value;
     const valid_until = document.getElementById("vaxValidUntil").value || null;
+    const no_repeat = document.getElementById("vaxNoRepeat").checked;
     const note = document.getElementById("vaxNote").value.trim() || null;
     const costVal = document.getElementById("vaxCost").value;
     const cost = costVal ? parseFloat(costVal) : null;
 
     const { error } = editingVaxId
-      ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, note, cost }).eq("id", editingVaxId)
-      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, note, cost, pet_id: currentPetId }]);
+      ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, no_repeat, note, cost }).eq("id", editingVaxId)
+      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, no_repeat, note, cost, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
     cancelVaxEdit();
-    showSuccess("Vaccinatie opgeslagen ✓");
+    showSuccess(t("successVaxSaved"));
     await loadVaccinations();
   });
 
@@ -4260,7 +4536,7 @@
       .order("date", { ascending: false });
 
     if (error) {
-      showError("Laden mislukt: " + error.message);
+      showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -4273,7 +4549,7 @@
     vaxList.innerHTML = "";
 
     if (data.length === 0) {
-      vaxList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen vaccinaties</li>';
+      vaxList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyVax") + '</li>';
       return;
     }
 
@@ -4281,13 +4557,14 @@
       const status = vaccinationStatus(row);
       const validText = row.valid_until
         ? status.daysLeft < 0
-          ? `Verlopen sinds ${formatDate(row.valid_until)}`
-          : `Geldig tot ${formatDate(row.valid_until)}`
-        : "Geen vervaldatum";
+          ? `${t("vaxExpiredSince")} ${formatDate(row.valid_until)}`
+          : `${t("vaxValidUntil")} ${formatDate(row.valid_until)}`
+        : t("vaxNoExpiry");
+      const noRepeatText = row.no_repeat ? " · " + t("vaxNoRepeatTag") : "";
       const innerHtml = `
         <div class="entry-main">
           <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}</span>
-          <span class="secondary">${formatDate(row.date)} · ${validText}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
+          <span class="secondary">${formatDate(row.date)} · ${validText}${noRepeatText}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -4419,7 +4696,7 @@
   async function deleteVax(id) {
     const { error } = await supabaseClient.from("vaccinations").delete().eq("id", id);
     if (error) {
-      showError("Verwijderen mislukt: " + error.message);
+      showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
     await loadVaccinations();
@@ -4580,12 +4857,12 @@
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
     cancelSymptomEdit();
-    showSuccess("Afwijking opgeslagen ✓");
+    showSuccess(t("successSymptomSaved"));
     await loadSymptoms();
   });
 
@@ -4599,7 +4876,7 @@
       .order("date", { ascending: false });
 
     if (error) {
-      showError("Laden mislukt: " + error.message);
+      showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -4735,7 +5012,7 @@
     symptomList.innerHTML = "";
 
     if (data.length === 0) {
-      symptomList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen afwijkingen gelogd</li>';
+      symptomList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptySymptomsLogged") + '</li>';
       return;
     }
 
@@ -4788,7 +5065,7 @@
   async function deleteSymptom(id) {
     const { error } = await supabaseClient.from("symptom_logs").delete().eq("id", id);
     if (error) {
-      showError("Verwijderen mislukt: " + error.message);
+      showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
     await loadSymptoms();
@@ -4989,13 +5266,13 @@
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Opslaan mislukt: " + error.message);
+      showError(t("errSaveFailed") + ": " + error.message);
       return;
     }
 
     await registerMedicationInCatalog(name, purpose, brand, active_ingredient, dose);
     cancelMedicationEdit();
-    showSuccess("Medicatie opgeslagen ✓");
+    showSuccess(t("successMedicationSaved"));
     await loadMedications();
   });
 
@@ -5009,7 +5286,7 @@
       .order("date", { ascending: false });
 
     if (error) {
-      showError("Laden mislukt: " + error.message);
+      showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
@@ -5022,7 +5299,7 @@
     medicationList.innerHTML = "";
 
     if (data.length === 0) {
-      medicationList.innerHTML = '<li class="empty-state" style="border:none;">Nog geen medicatie gelogd</li>';
+      medicationList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyMedicationLogged") + '</li>';
       return;
     }
 
@@ -5066,7 +5343,7 @@
   async function deleteMedication(id) {
     const { error } = await supabaseClient.from("medications").delete().eq("id", id);
     if (error) {
-      showError("Verwijderen mislukt: " + error.message);
+      showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
     await loadMedications();
@@ -5088,7 +5365,20 @@
       if (!grouped[v.vaccine]) grouped[v.vaccine] = [];
       grouped[v.vaccine].push(v);
     });
-    const activeNames = new Set(Object.keys(grouped).filter((name) => grouped[name].length > 1 || grouped[name].some((r) => r.valid_until)));
+    const activeNames = new Set(
+      Object.keys(grouped).filter((name) => {
+        const rows = grouped[name];
+        // The most recently GIVEN dose decides whether this vaccine series
+        // is still "open" — a manual "geen vervolg nodig" flag on that dose
+        // permanently excludes the series from the summary/reminders, so a
+        // one-off vaccine from years ago (different name, never repeated)
+        // doesn't sit "openstaand" forever just because it once had a
+        // valid_until. The full history still shows in the Vaccinaties tab.
+        const latestRow = rows.slice().sort((a, b) => (a.date > b.date ? -1 : 1))[0];
+        if (latestRow && latestRow.no_repeat) return false;
+        return rows.length > 1 || rows.some((r) => r.valid_until);
+      })
+    );
     return (data || []).filter((v) => activeNames.has(v.vaccine));
   }
 
@@ -5204,10 +5494,10 @@
   function symptomTrendHtml(trend) {
     if (!trend) return "";
     const up = trend.direction === "up";
-    const verb = up ? "komt vaker voor dan normaal" : "komt minder vaak voor dan normaal";
+    const verb = up ? t("symptomTrendUp") : t("symptomTrendDown");
     const color = up ? "#ff9500" : "#34c759";
     return `<div class="dashboard-card-sub" style="color:${color}; font-weight:600; margin-top:6px;">${escapeHtml(trend.name)} ${verb}</div>
-            <div class="dashboard-card-sub">${trend.recentCount}x in ${trend.windowDays} dagen · gemiddeld was ${trend.expected.toFixed(1)}x</div>`;
+            <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${t("symptomTrendDays")} ${trend.expected.toFixed(1)}x</div>`;
   }
 
   function alertVaccination() {
@@ -5215,19 +5505,19 @@
     if (!s || !s.next) return null;
     const { v, status } = s.next;
     if (status.daysLeft < 0) {
-      return { message: `${v.vaccine} is verlopen sinds ${formatDate(v.valid_until)}.`, severity: 0, color: "#ff3b30", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
+      return { message: `${v.vaccine} ${t("alertVaxExpiredSince")} ${formatDate(v.valid_until)}.`, severity: 0, color: "#ff3b30", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
     }
     if (status.daysLeft <= 30) {
-      return { message: `${v.vaccine} verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}.`, severity: 1, color: "#ff9500", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
+      return { message: `${v.vaccine} ${t("alertVaxExpiresIn")} ${status.daysLeft} ${status.daysLeft === 1 ? t("dayUnit") : t("daysUnit")}.`, severity: 1, color: "#ff9500", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
     }
-    return { message: "Vaccinaties zijn actueel.", severity: 2, color: "#34c759", type: "vaccinatie", source: null, date: null, tabTarget: "vax" };
+    return { message: t("alertVaxAllCurrent"), severity: 2, color: "#34c759", type: "vaccinatie", source: null, date: null, tabTarget: "vax" };
   }
 
   function alertWeight() {
     const s = computeWeightSummary();
     if (!s || !s.reminderDue) return null;
     return {
-      message: `Gewicht is ${formatDaysAgo(s.daysSinceLast)} voor het laatst gemeten.`,
+      message: `${t("alertWeightLastMeasured")} ${formatDaysAgo(s.daysSinceLast)}.`,
       severity: 1,
       color: "#ff9500",
       type: "gewicht",
@@ -5246,7 +5536,7 @@
     const alerts = [];
     s.overdue.forEach((m) => {
       alerts.push({
-        message: `${m.name} had een vervolgdosis gepland op ${formatDate(m.next_due_date)}.`,
+        message: `${m.name} ${t("alertMedOverdueSince")} ${formatDate(m.next_due_date)}.`,
         severity: 0,
         color: "#ff3b30",
         type: "medicatie",
@@ -5259,8 +5549,8 @@
       const status = dueStatusFromDate(m.next_due_date);
       const message =
         status.daysLeft === 0
-          ? `${m.name} staat vandaag nog open.`
-          : `${m.name} verloopt over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}.`;
+          ? `${m.name} ${t("alertMedOpenToday")}`
+          : `${m.name} ${t("alertMedExpiresIn")} ${status.daysLeft} ${status.daysLeft === 1 ? t("dayUnit") : t("daysUnit")}.`;
       alerts.push({
         message,
         severity: 1,
@@ -5278,7 +5568,7 @@
     const s = computeBloodSummary();
     if (!s || !s.knownTotal || !s.outside) return null;
     return {
-      message: `Bij het laatste bloedonderzoek (${formatDate(s.date)}) lagen ${s.outside} van de ${s.knownTotal} bekende waarden buiten het referentiegebied.`,
+      message: `${s.outside} ${t("alertBloodOutOfRange")} ${s.knownTotal} ${t("alertBloodKnownValues")} (${formatDate(s.date)}).`,
       severity: 1,
       color: "#ff9500",
       type: "bloedwaarden",
@@ -5298,9 +5588,9 @@
       const noDataAtAll =
         !(latestVaxData || []).length && !(latestWeightData || []).length && !(latestMedicationData || []).length && !(latestBloodData || []).length;
       if (noDataAtAll) {
-        return [{ message: "Nog onvoldoende gegevens.", severity: 3, color: "var(--text-muted)", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
+        return [{ message: t("alertNoData"), severity: 3, color: "var(--text-muted)", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
       }
-      return [{ message: "Er zijn geen actuele aandachtspunten.", severity: 2, color: "#34c759", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
+      return [{ message: t("alertAllGood"), severity: 2, color: "#34c759", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
     }
     return candidates.sort((a, b) => a.severity - b.severity).slice(0, 3);
   }
@@ -5328,7 +5618,7 @@
   // independent of any target zone judgement.
   function weightTrendHtml(s) {
     if (s.diffKg == null) return "";
-    if (s.diffKg === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">gelijk</span></span>`;
+    if (s.diffKg === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">${t("weightTrendEqual")}</span></span>`;
     const up = s.diffKg > 0;
     const color = up ? "#ff3b30" : "#34c759";
     const pct = s.diffPct != null ? Math.abs(s.diffPct).toFixed(1) + "%" : "";
@@ -5337,6 +5627,14 @@
 
   // Green only when every vaccine with a known valid_until is up to date —
   // otherwise red (something overdue) beats orange (something due soon).
+  // Dashboard tile detail lines: only the vaccines that actually need a
+  // repeat (a known valid_until that's overdue or due within 30 days) —
+  // vaccines that are still comfortably valid, or have no valid_until at
+  // all, don't need to clutter the tile with a line of their own.
+  function vaxNeedsRepeatItems(vaxS) {
+    return vaxS.items.filter(({ v, status }) => v.valid_until && status.daysLeft <= 30);
+  }
+
   function overallVaxColor(vaxS) {
     if (!vaxS.withDate) return "var(--text-muted)";
     if (vaxS.items.some((x) => x.v.valid_until && x.status.daysLeft < 0)) return "#ff3b30";
@@ -5407,45 +5705,6 @@
     return `<span class="due-pill" style="border-color:${color}; color:${color};">${text}</span>`;
   }
 
-  // One-tap "given today" action on the dashboard: logs a fresh dose dated
-  // today and reuses the CURRENT entry's own interval (next_due_date minus
-  // date) to auto-compute the new next_due_date — no need to reopen the
-  // full form and retype name/dose/purpose just to log a routine dose.
-  async function quickMarkMedicationGiven(e, id) {
-    e.stopPropagation();
-    const row = (latestMedicationData || []).find((m) => m.id === id);
-    if (!row) return;
-
-    const today = dateToISO(new Date());
-    let next_due_date = null;
-    if (row.next_due_date) {
-      const intervalDays = Math.round((new Date(row.next_due_date) - new Date(row.date)) / 86400000);
-      if (intervalDays > 0) next_due_date = addDaysToDateStr(today, intervalDays);
-    }
-
-    const { error } = await supabaseClient.from("medications").insert([
-      {
-        name: row.name,
-        purpose: row.purpose,
-        brand: row.brand,
-        active_ingredient: row.active_ingredient,
-        date: today,
-        dose: row.dose,
-        next_due_date,
-        pet_id: currentPetId,
-      },
-    ]);
-
-    if (error) {
-      showError("Opslaan mislukt: " + error.message);
-      return;
-    }
-
-    showSuccess("Toegediend ✓");
-    await loadMedications();
-    renderDashboard();
-  }
-
   // One row per severity present (licht=green/matig=orange/ernstig=red): an
   // oval-bordered count pill (matching the medication tile's due-pill style,
   // instead of a plain colored dot) followed by the actual afwijking names
@@ -5465,7 +5724,7 @@
         </div>`;
       })
       .join("");
-    return rows || `<div class="dashboard-card-empty">0 afwijkingen</div>`;
+    return rows || `<div class="dashboard-card-empty">${t("emptySeverityCount")}</div>`;
   }
 
   // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
@@ -5500,7 +5759,7 @@
       end = today;
       prevStart = addDaysToDateStr(start, -365);
       prevEnd = addDaysToDateStr(start, -1);
-      periodLabel = "afgelopen 12 maanden";
+      periodLabel = t("costPeriodRolling");
     }
     return {
       hasAnyCostData,
@@ -5515,7 +5774,7 @@
   function costTrendHtml(total, prevTotal) {
     if (!prevTotal) return "";
     const diff = total - prevTotal;
-    if (diff === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">gelijk</span></span>`;
+    if (diff === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">${t("weightTrendEqual")}</span></span>`;
     const up = diff > 0;
     const color = up ? "#ff3b30" : "#34c759";
     const pct = Math.abs((diff / prevTotal) * 100).toFixed(0) + "%";
@@ -5535,10 +5794,10 @@
   function costCardBodyHtml() {
     const s = computeCostSummary(costViewMode, costViewYear);
     if (!s.hasAnyCostData) {
-      return `<div class="dashboard-card-empty">Nog geen kosten geregistreerd</div>`;
+      return `<div class="dashboard-card-empty">${t("emptyCostsRegistered")}</div>`;
     }
     return `<div class="dashboard-card-value">${formatEuro(s.total)}${costTrendHtml(s.total, s.prevTotal)}</div>
-            <div class="dashboard-card-sub">${s.periodLabel} · vs. dezelfde periode vorig jaar</div>`;
+            <div class="dashboard-card-sub">${s.periodLabel} · ${t("costVsSamePeriod")}</div>`;
   }
 
   function setCostViewMode(mode) {
@@ -5604,7 +5863,14 @@
 
     const bloodGlowColor = bloodS && bloodS.knownTotal ? majorityColor({ red: bloodS.outside, orange: 0, green: bloodS.within }) : null;
 
-    const symGlowColor = !symS.hasData ? null : symS.count === 0 ? "#34c759" : majorityColor({ red: symS.bySeverity.ernstig.length, orange: symS.bySeverity.matig.length, green: symS.bySeverity.licht.length });
+    let symGlowColor = !symS.hasData ? null : symS.count === 0 ? "#34c759" : majorityColor({ red: symS.bySeverity.ernstig.length, orange: symS.bySeverity.matig.length, green: symS.bySeverity.licht.length });
+    // A worsening trend ("komt vaker voor dan normaal") must never be shown
+    // behind a green glow, even when every individual entry logged so far
+    // was only "licht" — the glow should reflect the direction, not just
+    // the severity of what's already happened.
+    if (symGlowColor === "#34c759" && symptomTrend && symptomTrend.direction === "up") {
+      symGlowColor = "#ff9500";
+    }
 
     const cards = [
       `<div class="card dashboard-card" onclick="switchTab('weight')"${tileGlowStyle(weightGlowColor)}>
@@ -5612,17 +5878,19 @@
         ${
           weightS
             ? `<div class="dashboard-card-value">${weightS.lastKg.toFixed(1)} kg${weightTrendHtml(weightS)}</div>
-               <div class="dashboard-card-sub">Laatste meting: ${formatDaysAgo(weightS.daysSinceLast)}</div>`
-            : `<div class="dashboard-card-empty">Nog geen metingen</div>`
+               <div class="dashboard-card-sub">${t("dashboardWeightLastMeasured")}: ${formatDaysAgo(weightS.daysSinceLast)}</div>`
+            : `<div class="dashboard-card-empty">${t("emptyWeightMeasurements")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vax')"${tileGlowStyle(vaxGlowColor)}>
         <h3>${iconHtml("vax")} ${t("dashboardVax")}</h3>
         ${
           vaxS
-            ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} van ${vaxS.withDate} actueel</div>
-               ${vaxS.items.map(({ v }) => `<div class="dashboard-card-sub">${escapeHtml(v.vaccine)} — ${v.valid_until ? "tot " + formatFullMonthYear(v.valid_until) : "geen vervaldatum"}</div>`).join("")}`
-            : `<div class="dashboard-card-empty">Nog geen vaccinaties</div>`
+            ? `<div class="dashboard-card-value"><span class="status-dot" style="background:${overallVaxColor(vaxS)};"></span>${vaxS.upToDate} ${t("vaxOfCount")} ${vaxS.withDate} ${t("vaxCurrent")}</div>
+               ${vaxNeedsRepeatItems(vaxS)
+                 .map(({ v, status }) => `<div class="dashboard-card-sub">${escapeHtml(v.vaccine)} — ${status.daysLeft < 0 ? t("vaxOverdueShort") : formatFullMonthYear(v.valid_until)}</div>`)
+                 .join("")}`
+            : `<div class="dashboard-card-empty">${t("emptyVax")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('medication')"${tileGlowStyle(medGlowColor)}>
@@ -5634,35 +5902,34 @@
                   const status = dueStatusFromDate(m.next_due_date);
                   const dueText =
                     status.daysLeft < 0
-                      ? `Volgende toediening was ${Math.abs(status.daysLeft)} dag${Math.abs(status.daysLeft) === 1 ? "" : "en"} geleden`
+                      ? `${Math.abs(status.daysLeft)} ${status.daysLeft === -1 ? t("dayLate") : t("daysLate")}`
                       : status.daysLeft === 0
-                      ? "Volgende toediening vandaag"
-                      : `Volgende toediening over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}`;
+                      ? t("dueToday")
+                      : `${t("dueInLabel")} ${status.daysLeft} ${status.daysLeft === 1 ? t("dayUnit") : t("daysUnit")}`;
                   return `<div class="dashboard-card-value">${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
-                          <div class="dashboard-card-sub">${duePillHtml(status.daysLeft, dueText)}
-                          <button type="button" class="med-given-btn" onclick="quickMarkMedicationGiven(event, ${m.id})">✓ Toegediend</button></div>`;
+                          <div class="dashboard-card-sub">${t("medNextLabel")} ${duePillHtml(status.daysLeft, dueText)}</div>`;
                 })
                 .join("")
             : lastMed
             ? `<div class="dashboard-card-value">${escapeHtml(lastMed.name)}${purposeTagHtml(lastMed.purpose)}</div>
                <div class="dashboard-card-sub">${formatDate(lastMed.date)}</div>`
-            : `<div class="dashboard-card-empty">Nog geen medicatie gelogd</div>`
+            : `<div class="dashboard-card-empty">${t("emptyMedicationLogged")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('blood')"${tileGlowStyle(bloodGlowColor)}>
         <h3>${iconHtml("blood")} ${t("dashboardBlood")}</h3>
         ${
           bloodS
-            ? `<div class="dashboard-card-value">Laatste meting: ${formatMonthYear(bloodS.date)}</div>
+            ? `<div class="dashboard-card-value">${t("dashboardWeightLastMeasured")}: ${formatMonthYear(bloodS.date)}</div>
                <div class="dashboard-card-sub">${bloodS.knownTotal ? `${bloodS.within} binnen, ${bloodS.outside} buiten referentiegebied` : "Geen referentiewaarden bekend voor deze markers"}</div>`
-            : `<div class="dashboard-card-empty">Nog geen bloedonderzoek</div>`
+            : `<div class="dashboard-card-empty">${t("emptyBloodExam")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
         <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")}</h3>
         ${
           !symS.hasData
-            ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
+            ? `<div class="dashboard-card-empty">${t("emptySymptomsLogged")}</div>`
             : `${symptomSeverityBadgesHtml(symS.bySeverity)}
                <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>
                ${symptomTrendHtml(symptomTrend)}`
@@ -5672,16 +5939,16 @@
         <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
           lastVetVisit
-            ? `<div class="dashboard-card-value">Laatste bezoek: ${formatDate(lastVetVisit.date)}</div>
-               <div class="dashboard-card-sub">${escapeHtml(lastVetVisit.reason || "Bezoek")}</div>`
-            : `<div class="dashboard-card-empty">Nog geen bezoeken gelogd</div>`
+            ? `<div class="dashboard-card-value">${t("dashboardVetLastVisit")}: ${formatDate(lastVetVisit.date)}</div>
+               <div class="dashboard-card-sub">${escapeHtml(lastVetVisit.reason || t("vetVisitFallback"))}</div>`
+            : `<div class="dashboard-card-empty">${t("emptyVetVisitsLogged")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card dashboard-card-static" id="costCard">
-        <h3>💰 ${t("dashboardCost")}</h3>
+        <h3>${iconHtml("cost")} ${t("dashboardCost")}</h3>
         <div class="cost-toggle">
-          <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">Rollend jaar</button>
-          <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">Kalenderjaar</button>
+          <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">${t("costToggleRolling")}</button>
+          <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">${t("costToggleCalendar")}</button>
           <select id="costYearSelect" style="display:${costViewMode === "calendar" ? "" : "none"};" onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
         </div>
         <div id="costCardBody">${costCardBodyHtml()}</div>
@@ -5818,7 +6085,7 @@
     submitBtn.disabled = false;
 
     if (error) {
-      showError("Profiel opslaan mislukt: " + error.message);
+      showError(t("errProfileSaveFailed") + ": " + error.message);
       return;
     }
 
@@ -5828,7 +6095,7 @@
     if (pet) Object.assign(pet, profile);
     applyCurrentPetToHeader();
     renderWeightChart(latestWeightData);
-    showSuccess("Profiel opgeslagen ✓");
+    showSuccess(t("successProfileSaved"));
     switchTab("dashboard");
   });
 
@@ -5842,7 +6109,7 @@
       .maybeSingle();
 
     if (error) {
-      showError("Profiel laden mislukt: " + error.message);
+      showError(t("errProfileLoadFailed") + ": " + error.message);
       return;
     }
 

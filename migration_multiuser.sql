@@ -288,3 +288,13 @@ alter table medications add column if not exists batch text;
 alter table vet_visits add column if not exists cost numeric;
 alter table medications add column if not exists cost numeric;
 alter table vaccinations add column if not exists cost numeric;
+
+
+-- ------------------------------------------------------------
+-- STAP 12: vaccinatie handmatig kunnen uitsluiten van het overzicht/
+-- herinneringen ("geen vervolg nodig"). Nodig voor een oude eenmalige
+-- vaccinatie (andere naam, nooit herhaald) die anders permanent als
+-- openstaand/verlopen blijft meetellen. Veilig om nu te draaien, additief.
+-- ------------------------------------------------------------
+
+alter table vaccinations add column if not exists no_repeat boolean not null default false;
