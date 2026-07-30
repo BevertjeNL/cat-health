@@ -32,7 +32,7 @@
     --accent-contrast: #ffffff;
     --border: #e6e2d8;
     --danger: #d9432c;
-    --radius: 14px;
+    --radius: 12px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -75,7 +75,7 @@
   }
 
   header.has-photo {
-    min-height: 230px;
+    min-height: 200px;
   }
 
   /* A frosted strip anchored to the bottom of the photo — legible against
@@ -86,10 +86,17 @@
     width: 100%;
     display: flex;
     justify-content: center;
-    padding: 10px 54px 10px 16px;
+    padding: 7px 50px 7px 16px;
     background: rgba(0, 0, 0, 0.34);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+  }
+
+  .pet-title-detail {
+    font-weight: 400;
+    font-size: 0.72em;
+    opacity: 0.88;
+    letter-spacing: 0;
   }
 
   .header-icons {
@@ -99,28 +106,6 @@
     display: flex;
     gap: 6px;
     z-index: 1;
-  }
-
-  .refresh-btn {
-    background: rgba(0, 0, 0, 0.18);
-    border: none;
-    color: #fff;
-    width: 38px;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    transition: background 0.15s ease, transform 0.1s ease;
-  }
-
-  .refresh-btn:active {
-    color: var(--accent-contrast);
-    transform: scale(0.92);
-  }
-
-  .refresh-icon {
-    transform-origin: center;
   }
 
   /* Solid, high-contrast circle so this stays visible against any photo,
@@ -141,16 +126,6 @@
 
   .profile-icon-btn:active {
     background: #fff;
-  }
-
-  .refresh-btn.spinning .refresh-icon {
-    animation: spin-pop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @keyframes spin-pop {
-    0% { transform: rotate(0deg) scale(1); }
-    45% { transform: rotate(220deg) scale(1.2); }
-    100% { transform: rotate(360deg) scale(1); }
   }
 
   .bottom-nav {
@@ -207,7 +182,7 @@
     background: var(--card-bg);
     border-radius: var(--radius);
     border: 1px solid var(--border);
-    padding: 16px;
+    padding: 18px;
     margin-bottom: 16px;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
   }
@@ -742,7 +717,7 @@
   .dashboard-cards {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    gap: 12px;
   }
 
   .dashboard-card {
@@ -827,24 +802,26 @@
   }
 
   .dashboard-card h3 {
-    font-size: 0.75rem;
-    margin: 0 0 8px;
+    font-size: 0.72rem;
+    margin: 0 0 10px;
     color: var(--text-muted);
     text-transform: uppercase;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.04em;
+    font-weight: 600;
   }
 
   .dashboard-card-value {
     font-size: 1.05rem;
-    font-weight: 700;
-    margin-bottom: 2px;
-    line-height: 1.3;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    margin-bottom: 4px;
+    line-height: 1.35;
   }
 
   .dashboard-card-sub {
     font-size: 0.78rem;
     color: var(--text-muted);
-    line-height: 1.3;
+    line-height: 1.45;
   }
 
   .dashboard-card-empty {
@@ -872,13 +849,24 @@
     font-weight: 600;
   }
 
+  /* Deliberately no border/pill — plain colored text reads calmer and fits
+     the "not too many competing shapes" direction better than a badge. */
   .due-pill {
-    display: inline-block;
-    padding: 2px 10px;
-    border-radius: 999px;
-    border: 1.5px solid currentColor;
-    font-size: 0.75rem;
+    display: inline;
+    font-size: 0.78rem;
     font-weight: 600;
+  }
+
+  .med-given-btn {
+    display: block;
+    margin-top: 4px;
+    border: none;
+    background: none;
+    color: var(--accent);
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 0;
+    cursor: pointer;
   }
 
   .severity-badge-row {
@@ -1104,8 +1092,9 @@
     gap: 6px;
     background: none;
     border: none;
-    font-size: 1.4rem;
-    font-weight: 700;
+    font-size: 1.1rem;
+    font-weight: 650;
+    letter-spacing: -0.01em;
     color: #fff;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
     padding: 4px 8px;
@@ -1114,20 +1103,6 @@
   .pet-switch-btn .caret {
     font-size: 0.8rem;
     color: rgba(255, 255, 255, 0.8);
-  }
-
-  .add-pet-quick-btn {
-    background: rgba(0, 0, 0, 0.18);
-    border: none;
-    color: #fff;
-    font-size: 1.2rem;
-    line-height: 1;
-    width: 32px;
-    height: 32px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .photo-upload-row {
@@ -1230,12 +1205,10 @@
     </div>
   </div>
   <div class="header-icons">
-    <button type="button" class="profile-icon-btn" aria-label="Profiel" data-i18n-aria="ariaProfile" onclick="switchTab('profile')">🐾</button>
-    <button type="button" class="add-pet-quick-btn" aria-label="Nieuw huisdier toevoegen" data-i18n-aria="ariaAddPet" onclick="openAddPetForm()">+</button>
-    <button id="refreshBtn" class="refresh-btn" aria-label="Vernieuwen" data-i18n-aria="ariaRefresh" onclick="refreshAll(true)">
-      <svg class="refresh-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12a9 9 0 1 1-2.64-6.36"></path>
-        <polyline points="21 3 21 9 15 9"></polyline>
+    <button type="button" class="profile-icon-btn" aria-label="Instellingen" data-i18n-aria="ariaProfile" onclick="switchTab('profile')">
+      <svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
       </svg>
     </button>
   </div>
@@ -1721,6 +1694,7 @@
     <div class="card">
       <h2 data-i18n="headingAccount">Account</h2>
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
+      <button type="button" class="today-btn" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
       <button type="button" class="today-btn" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
     </div>
 
@@ -2011,9 +1985,8 @@
       authSubmitSignup: "Register",
       authSwitchToRegister: "No account yet? Register",
       authSwitchToLogin: "Already have an account? Log in",
-      ariaProfile: "Profile",
-      ariaAddPet: "Add new pet",
-      ariaRefresh: "Refresh",
+      ariaProfile: "Settings",
+      btnRefreshData: "Refresh data",
       navStart: "Start",
       navWeight: "Weight",
       navBlood: "Blood",
@@ -2062,9 +2035,8 @@
       authSubmitSignup: "Registrieren",
       authSwitchToRegister: "Noch kein Konto? Registrieren",
       authSwitchToLogin: "Schon ein Konto? Anmelden",
-      ariaProfile: "Profil",
-      ariaAddPet: "Neues Haustier hinzufügen",
-      ariaRefresh: "Aktualisieren",
+      ariaProfile: "Einstellungen",
+      btnRefreshData: "Daten aktualisieren",
       navStart: "Start",
       navWeight: "Gewicht",
       navBlood: "Blut",
@@ -2119,6 +2091,13 @@
     dashboardSymptoms: "Afwijkingen",
     dashboardVet: "Dierenarts",
     dashboardCost: "Kosten",
+    speciesLabelCat: "Kat",
+    speciesLabelDog: "Hond",
+    speciesLabelOther: "Huisdier",
+    ageYear: "jaar",
+    ageYears: "jaar",
+    ageDay: "dag",
+    ageDays: "dagen",
   };
   const I18N_EN = {
     dashboardActueel: "Current",
@@ -2131,6 +2110,13 @@
     dashboardSymptoms: "Symptoms",
     dashboardVet: "Vet",
     dashboardCost: "Cost",
+    speciesLabelCat: "Cat",
+    speciesLabelDog: "Dog",
+    speciesLabelOther: "Pet",
+    ageYear: "year",
+    ageYears: "years",
+    ageDay: "day",
+    ageDays: "days",
   };
   const I18N_DE = {
     dashboardActueel: "Aktuell",
@@ -2143,6 +2129,13 @@
     dashboardSymptoms: "Symptome",
     dashboardVet: "Tierarzt",
     dashboardCost: "Kosten",
+    speciesLabelCat: "Katze",
+    speciesLabelDog: "Hund",
+    speciesLabelOther: "Haustier",
+    ageYear: "Jahr",
+    ageYears: "Jahre",
+    ageDay: "Tag",
+    ageDays: "Tage",
   };
 
   // For JS-generated strings: looks up the key in the current language,
@@ -2186,6 +2179,7 @@
     appLang = lang;
     localStorage.setItem("appLang", lang);
     applyTranslations();
+    applyCurrentPetToHeader();
     if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
   }
 
@@ -2286,10 +2280,38 @@
     return pets.find((p) => p.id === currentPetId) || null;
   }
 
+  function speciesLabel(species) {
+    return t(species === "hond" ? "speciesLabelDog" : species === "overig" ? "speciesLabelOther" : "speciesLabelCat");
+  }
+
+  // "9 jaar 23 dagen" — years since the last birthday, plus the days since
+  // that anniversary, so it stays precise without needing full date math
+  // spelled out for the reader.
+  function formatAge(birthDate) {
+    if (!birthDate) return null;
+    const birth = new Date(birthDate);
+    const today = new Date();
+    let years = today.getFullYear() - birth.getFullYear();
+    const anniversary = new Date(birth);
+    anniversary.setFullYear(today.getFullYear());
+    if (anniversary > today) {
+      years -= 1;
+      anniversary.setFullYear(today.getFullYear() - 1);
+    }
+    const days = Math.round((today - anniversary) / 86400000);
+    const dayWord = t(days === 1 ? "ageDay" : "ageDays");
+    if (years <= 0) return `${days} ${dayWord}`;
+    const yearWord = t(years === 1 ? "ageYear" : "ageYears");
+    return `${years} ${yearWord} ${days} ${dayWord}`;
+  }
+
   function applyCurrentPetToHeader() {
     const pet = currentPet();
     if (!pet) return;
-    document.getElementById("appTitle").innerHTML = speciesIconHtml(pet.species) + " " + escapeHtml(pet.name);
+    const age = formatAge(pet.birth_date);
+    const detail = speciesLabel(pet.species) + (age ? " · " + age : "");
+    document.getElementById("appTitle").innerHTML =
+      speciesIconHtml(pet.species) + ` <strong>${escapeHtml(pet.name)}</strong><span class="pet-title-detail"> - ${detail}</span>`;
     document.getElementById("profileHeading").textContent = "🐾 Bewerk " + pet.name;
 
     const header = document.getElementById("appHeader");
@@ -5135,6 +5157,59 @@
     return { hasData: true, none: false, count: relevant.length, bySeverity: computeSeverityBreakdown(relevant), mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
   }
 
+  // Turns loose log entries into a usable pattern signal: compares how often
+  // a symptom occurred in the last 14 days against its own historical
+  // average rate (before that window) — a factual frequency comparison, not
+  // a diagnosis or health score, consistent with the rest of the dashboard.
+  // Only fires with enough history to establish a real baseline; a single
+  // past entry isn't a rate.
+  function computeSymptomTrend() {
+    const data = latestSymptomData || [];
+    if (!data.length) return null;
+
+    const windowDays = 14;
+    const recentStart = addDaysToDateStr(dateToISO(new Date()), -windowDays);
+
+    const byName = {};
+    data.forEach((r) => {
+      if (!byName[r.symptom]) byName[r.symptom] = [];
+      byName[r.symptom].push(r);
+    });
+
+    const trends = [];
+    Object.keys(byName).forEach((name) => {
+      const rows = byName[name];
+      const recent = rows.filter((r) => r.date >= recentStart);
+      const historical = rows.filter((r) => r.date < recentStart);
+      if (historical.length < 2) return;
+
+      const earliestHistorical = historical.reduce((min, r) => (r.date < min ? r.date : min), historical[0].date);
+      const spanDays = Math.max(1, Math.round((new Date(recentStart) - new Date(earliestHistorical)) / 86400000));
+      const expected = (historical.length / spanDays) * windowDays;
+      if (expected < 0.2) return; // baseline too sparse to compare meaningfully
+
+      const ratio = recent.length / expected;
+      if (recent.length >= 2 && ratio >= 1.6) {
+        trends.push({ name, direction: "up", recentCount: recent.length, windowDays, expected });
+      } else if (expected >= 1 && ratio <= 0.4) {
+        trends.push({ name, direction: "down", recentCount: recent.length, windowDays, expected });
+      }
+    });
+
+    if (!trends.length) return null;
+    trends.sort((a, b) => b.recentCount - b.expected - (a.recentCount - a.expected));
+    return trends[0];
+  }
+
+  function symptomTrendHtml(trend) {
+    if (!trend) return "";
+    const up = trend.direction === "up";
+    const verb = up ? "komt vaker voor dan normaal" : "komt minder vaak voor dan normaal";
+    const color = up ? "#ff9500" : "#34c759";
+    return `<div class="dashboard-card-sub" style="color:${color}; font-weight:600; margin-top:6px;">${escapeHtml(trend.name)} ${verb}</div>
+            <div class="dashboard-card-sub">${trend.recentCount}x in ${trend.windowDays} dagen · gemiddeld was ${trend.expected.toFixed(1)}x</div>`;
+  }
+
   function alertVaccination() {
     const s = computeVaccinationSummary();
     if (!s || !s.next) return null;
@@ -5332,6 +5407,45 @@
     return `<span class="due-pill" style="border-color:${color}; color:${color};">${text}</span>`;
   }
 
+  // One-tap "given today" action on the dashboard: logs a fresh dose dated
+  // today and reuses the CURRENT entry's own interval (next_due_date minus
+  // date) to auto-compute the new next_due_date — no need to reopen the
+  // full form and retype name/dose/purpose just to log a routine dose.
+  async function quickMarkMedicationGiven(e, id) {
+    e.stopPropagation();
+    const row = (latestMedicationData || []).find((m) => m.id === id);
+    if (!row) return;
+
+    const today = dateToISO(new Date());
+    let next_due_date = null;
+    if (row.next_due_date) {
+      const intervalDays = Math.round((new Date(row.next_due_date) - new Date(row.date)) / 86400000);
+      if (intervalDays > 0) next_due_date = addDaysToDateStr(today, intervalDays);
+    }
+
+    const { error } = await supabaseClient.from("medications").insert([
+      {
+        name: row.name,
+        purpose: row.purpose,
+        brand: row.brand,
+        active_ingredient: row.active_ingredient,
+        date: today,
+        dose: row.dose,
+        next_due_date,
+        pet_id: currentPetId,
+      },
+    ]);
+
+    if (error) {
+      showError("Opslaan mislukt: " + error.message);
+      return;
+    }
+
+    showSuccess("Toegediend ✓");
+    await loadMedications();
+    renderDashboard();
+  }
+
   // One row per severity present (licht=green/matig=orange/ernstig=red): an
   // oval-bordered count pill (matching the medication tile's due-pill style,
   // instead of a plain colored dot) followed by the actual afwijking names
@@ -5453,6 +5567,7 @@
     const vaxS = computeVaccinationSummary();
     const bloodS = computeBloodSummary();
     const symS = computeSymptomSinceVetVisit();
+    const symptomTrend = computeSymptomTrend();
     const medS = computeMedicationSummary();
     const openMeds = [...medS.overdue, ...medS.dueSoon];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
@@ -5519,12 +5634,13 @@
                   const status = dueStatusFromDate(m.next_due_date);
                   const dueText =
                     status.daysLeft < 0
-                      ? `${Math.abs(status.daysLeft)} dag${Math.abs(status.daysLeft) === 1 ? "" : "en"} te laat`
+                      ? `Volgende toediening was ${Math.abs(status.daysLeft)} dag${Math.abs(status.daysLeft) === 1 ? "" : "en"} geleden`
                       : status.daysLeft === 0
-                      ? "Vandaag"
-                      : `Over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}`;
+                      ? "Volgende toediening vandaag"
+                      : `Volgende toediening over ${status.daysLeft} dag${status.daysLeft === 1 ? "" : "en"}`;
                   return `<div class="dashboard-card-value">${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
-                          <div class="dashboard-card-sub">${duePillHtml(status.daysLeft, dueText)}</div>`;
+                          <div class="dashboard-card-sub">${duePillHtml(status.daysLeft, dueText)}
+                          <button type="button" class="med-given-btn" onclick="quickMarkMedicationGiven(event, ${m.id})">✓ Toegediend</button></div>`;
                 })
                 .join("")
             : lastMed
@@ -5548,7 +5664,8 @@
           !symS.hasData
             ? `<div class="dashboard-card-empty">Nog geen afwijkingen gelogd</div>`
             : `${symptomSeverityBadgesHtml(symS.bySeverity)}
-               <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>`
+               <div class="dashboard-card-sub">${symS.sinceDate ? "Sinds laatste dierenartsbezoek (" + formatDate(symS.sinceDate) + ")" : "Sinds start logboek"}</div>
+               ${symptomTrendHtml(symptomTrend)}`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
