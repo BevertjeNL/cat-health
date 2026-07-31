@@ -46,12 +46,16 @@ nummers blijven alleen als historische tekst in commit-logs/CHANGELOG staan.
 - Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` —
   bepaalt automatisch de volgende semver-bump (feat = minor, fix = patch,
   `BREAKING CHANGE:` in de body = major).
-- Werk op een branch, open een PR, laat de `lint`-CI-check slagen, merge
-  zelf naar `main`. `main` triggert automatisch de release-job
-  (semantic-release: versiebump, CHANGELOG, git-tag, GitHub release).
-- Vraag vooraf goedkeuring bij risicovolle wijzigingen: schema/RLS-
-  aanpassingen, iets dat data kan laten verliezen, of een grote
-  herstructurering (bv. index.html opsplitsen).
+- Werk op een branch, laat lokaal `npm run lint` slagen, merge daarna zelf
+  door naar `main` — ook bij schema/RLS-migraties, zonder daar per keer
+  vooraf los toestemming voor te vragen. `main` triggert automatisch de
+  release-job (semantic-release: versiebump, CHANGELOG, git-tag, GitHub
+  release) en, bij wijzigingen in `supabase/migrations/**`, de migratie-
+  workflow tegen de live database.
+- Uitzondering die wél eerst overleg verdient: iets dat data onomkeerbaar
+  kan laten verliezen (bv. een `drop table`/`drop column` migratie) of een
+  grote herstructurering (bv. index.html opsplitsen in meerdere bestanden).
+  Een nieuwe tabel/kolom toevoegen is geen reden om te wachten.
 
 ## Branch protection — bekende beperking
 Op `main` staat (of hoort te staan) een **klassieke** branch protection rule
