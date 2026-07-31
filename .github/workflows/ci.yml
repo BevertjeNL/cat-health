@@ -26,13 +26,22 @@ jobs:
       issues: write
       pull-requests: write
     steps:
+      # Branch protection's "Require status checks to pass" blocks ANY push
+      # to main without a passing check recorded for that exact commit SHA
+      # — including the release commit semantic-release pushes directly,
+      # not just PR merges. The default GITHUB_TOKEN pushes as the
+      # github-actions[bot] identity, which has no bypass rights, so that
+      # push gets rejected (GH006). RELEASE_TOKEN is a PAT from a repo
+      # admin account, which does get the same bypass treatment an admin's
+      # own direct push gets.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          token: ${{ secrets.RELEASE_TOKEN }}
       - uses: actions/setup-node@v4
         with:
           node-version: 20
       - run: npm ci
       - run: npx semantic-release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RELEASE_TOKEN }}
