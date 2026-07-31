@@ -151,7 +151,7 @@
     background: none;
     border: none;
     color: var(--text-muted);
-    font-size: 0.66rem;
+    font-size: 0.72rem;
     font-weight: 600;
     padding: 6px 2px;
     border-radius: 10px;
@@ -248,7 +248,7 @@
   }
 
   .marker-cat-label {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -262,7 +262,7 @@
   .watch-badge {
     background: #f59e0b;
     color: #1c1c1e;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     font-weight: 700;
     text-transform: none;
     letter-spacing: 0;
@@ -301,7 +301,7 @@
 
   .marker-label-row label {
     margin: 0;
-    font-size: 0.82rem;
+    font-size: 0.85rem;
     color: var(--text);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -341,7 +341,7 @@
 
   .marker-unit {
     grid-area: unit;
-    font-size: 0.72rem;
+    font-size: 0.76rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -416,7 +416,7 @@
   }
 
   label {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
     display: block;
     margin-bottom: 4px;
@@ -543,7 +543,7 @@
     text-align: left;
     color: var(--text-muted);
     font-weight: 600;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     text-transform: uppercase;
     padding: 0 8px 6px 0;
     border-bottom: 1px solid var(--border);
@@ -591,7 +591,7 @@
   }
 
   .entry-main .secondary {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
@@ -630,14 +630,14 @@
   }
 
   .swipe-hint {
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     color: var(--text-muted);
     text-align: center;
     margin: 2px 0 0;
   }
 
   .hint-text {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     color: var(--text-muted);
     margin: 0;
     line-height: 1.4;
@@ -735,6 +735,13 @@
     gap: 12px;
   }
 
+  /* Slightly tighter than the default .card padding — reclaims the width
+     the larger dashboard type scale below needs inside the 2-column grid
+     on narrow phones (iPhone SE/mini, 375px). */
+  .dashboard-cards .card {
+    padding: 14px;
+  }
+
   .dashboard-card {
     cursor: pointer;
   }
@@ -756,7 +763,7 @@
     color: var(--text-muted);
     border-radius: 999px;
     padding: 3px 10px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     cursor: pointer;
   }
@@ -813,15 +820,16 @@
     color: var(--text);
     border-radius: 999px;
     padding: 3px 8px;
-    font-size: 0.72rem;
+    font-size: 0.75rem;
   }
 
   /* Dashboard type scale, deliberately just two sizes (a small uppercase
      label tier and one body tier) plus a single larger tier reserved for
      each card's one hero value — kept small on purpose so the dashboard
-     reads calm instead of a different size for every line. */
+     reads calm instead of a different size for every line. Sized up from
+     the original pass so it stays comfortably legible on an iPhone. */
   .dashboard-card h3 {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     margin: 0 0 10px;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -830,26 +838,26 @@
   }
 
   .dashboard-card-value {
-    font-size: 1.05rem;
+    font-size: 1.15rem;
     font-weight: 700;
     letter-spacing: -0.01em;
     margin-bottom: 4px;
-    line-height: 1.35;
+    line-height: 1.3;
   }
 
   .dashboard-card-sub {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
     line-height: 1.45;
   }
 
   .dashboard-card-empty {
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: var(--text-muted);
   }
 
   .dashboard-card-label {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
     margin-bottom: 1px;
   }
@@ -858,13 +866,13 @@
     display: inline-flex;
     align-items: baseline;
     gap: 3px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 700;
     margin-left: 4px;
   }
 
   .dashboard-card-pct {
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
   }
 
@@ -872,7 +880,7 @@
      the "not too many competing shapes" direction better than a badge. */
   .due-pill {
     display: inline;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     font-weight: 600;
   }
 
@@ -890,7 +898,7 @@
     border-radius: 999px;
     background: var(--bg);
     color: var(--text-muted);
-    font-size: 0.72rem;
+    font-size: 0.75rem;
     font-weight: 600;
     vertical-align: middle;
     white-space: nowrap;
@@ -903,7 +911,7 @@
     padding: 9px 2px;
     border-bottom: 1px solid var(--border);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
   }
 
   .dashboard-alert-row:last-child {
@@ -927,7 +935,7 @@
     margin: 0 auto 12px;
     padding: 10px 16px;
     border-radius: 10px;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     display: none;
   }
 
@@ -1015,7 +1023,7 @@
   }
 
   .detail-ref {
-    font-size: 0.72rem;
+    font-size: 0.78rem;
     color: var(--text-muted);
   }
 
@@ -2170,6 +2178,7 @@
     symptomTrendDown: "komt minder vaak voor dan normaal",
     symptomTrendDetail: "keer in",
     symptomTrendDays: "dagen · gemiddeld was",
+    symptomTrendPrevDays: "dagen · vorige periode was",
     alertVaxExpiredSince: "is verlopen sinds",
     alertVaxExpiresIn: "verloopt over",
     alertVaxAllCurrent: "Vaccinaties zijn actueel.",
@@ -2272,6 +2281,7 @@
     symptomTrendDown: "is occurring less often than usual",
     symptomTrendDetail: "times in",
     symptomTrendDays: "days · average was",
+    symptomTrendPrevDays: "days · previous period was",
     alertVaxExpiredSince: "expired on",
     alertVaxExpiresIn: "expires in",
     alertVaxAllCurrent: "Vaccinations are up to date.",
@@ -2374,6 +2384,7 @@
     symptomTrendDown: "tritt seltener auf als normal",
     symptomTrendDetail: "mal in",
     symptomTrendDays: "Tagen · Durchschnitt war",
+    symptomTrendPrevDays: "Tagen · vorheriger Zeitraum war",
     alertVaxExpiredSince: "ist abgelaufen seit",
     alertVaxExpiresIn: "läuft ab in",
     alertVaxAllCurrent: "Impfungen sind aktuell.",
@@ -5484,9 +5495,18 @@
   }
 
   // Turns loose log entries into a usable pattern signal: compares how often
-  // a symptom occurred in the last 14 days against its own historical
-  // average rate (before that window) — a factual frequency comparison, not
-  // a diagnosis or health score, consistent with the rest of the dashboard.
+  // a symptom occurred in the last 14 days against a benchmark rate — a
+  // factual frequency comparison, not a diagnosis or health score, consistent
+  // with the rest of the dashboard. Two benchmarks, tried in order per symptom:
+  //   1. Rolling year: the last 14 days vs. this symptom's own rate over the
+  //      trailing 365 days before that window. Deliberately NOT "since the
+  //      first ever log" — logging density is rarely even across years (a cat
+  //      logged sparsely in year one and closely in year three would get a
+  //      baseline dragged down by the thin early data), so the baseline is
+  //      capped to a rolling year and requires at least 30 days of it.
+  //   2. Previous period: the last 14 days vs. the 14 days directly before —
+  //      a lighter-weight fallback so a fresh spike/drop still surfaces for
+  //      pets that don't have a year of history yet.
   // Only fires with enough history to establish a real baseline; a single
   // past entry isn't a rate.
   function computeSymptomTrend() {
@@ -5494,7 +5514,10 @@
     if (!data.length) return null;
 
     const windowDays = 14;
-    const recentStart = addDaysToDateStr(dateToISO(new Date()), -windowDays);
+    const today = dateToISO(new Date());
+    const recentStart = addDaysToDateStr(today, -windowDays);
+    const baselineStart = addDaysToDateStr(recentStart, -365);
+    const prevStart = addDaysToDateStr(recentStart, -windowDays);
 
     const byName = {};
     data.forEach((r) => {
@@ -5506,19 +5529,33 @@
     Object.keys(byName).forEach((name) => {
       const rows = byName[name];
       const recent = rows.filter((r) => r.date >= recentStart);
-      const historical = rows.filter((r) => r.date < recentStart);
-      if (historical.length < 2) return;
 
-      const earliestHistorical = historical.reduce((min, r) => (r.date < min ? r.date : min), historical[0].date);
-      const spanDays = Math.max(1, Math.round((new Date(recentStart) - new Date(earliestHistorical)) / 86400000));
-      const expected = (historical.length / spanDays) * windowDays;
-      if (expected < 0.2) return; // baseline too sparse to compare meaningfully
+      // 1. Rolling year vs. the last 14 days.
+      const yearHistorical = rows.filter((r) => r.date >= baselineStart && r.date < recentStart);
+      if (yearHistorical.length >= 2) {
+        const earliest = yearHistorical.reduce((min, r) => (r.date < min ? r.date : min), yearHistorical[0].date);
+        const spanDays = Math.round((new Date(recentStart) - new Date(earliest)) / 86400000);
+        if (spanDays >= 30) {
+          const expected = (yearHistorical.length / spanDays) * windowDays;
+          if (expected >= 0.2) {
+            const ratio = recent.length / expected;
+            if (recent.length >= 2 && ratio >= 1.6) {
+              trends.push({ name, direction: "up", basis: "year", recentCount: recent.length, windowDays, expected });
+              return;
+            } else if (expected >= 1 && ratio <= 0.4) {
+              trends.push({ name, direction: "down", basis: "year", recentCount: recent.length, windowDays, expected });
+              return;
+            }
+          }
+        }
+      }
 
-      const ratio = recent.length / expected;
-      if (recent.length >= 2 && ratio >= 1.6) {
-        trends.push({ name, direction: "up", recentCount: recent.length, windowDays, expected });
-      } else if (expected >= 1 && ratio <= 0.4) {
-        trends.push({ name, direction: "down", recentCount: recent.length, windowDays, expected });
+      // 2. Fallback: previous 14 days vs. these 14 days.
+      const prevCount = rows.filter((r) => r.date >= prevStart && r.date < recentStart).length;
+      if (recent.length >= 2 && prevCount >= 1 && recent.length / prevCount >= 2.0) {
+        trends.push({ name, direction: "up", basis: "previous", recentCount: recent.length, windowDays, expected: prevCount });
+      } else if (prevCount >= 2 && recent.length / prevCount <= 0.5) {
+        trends.push({ name, direction: "down", basis: "previous", recentCount: recent.length, windowDays, expected: prevCount });
       }
     });
 
@@ -5532,8 +5569,9 @@
     const up = trend.direction === "up";
     const verb = up ? t("symptomTrendUp") : t("symptomTrendDown");
     const color = up ? "#ff9500" : "#34c759";
+    const daysLabel = trend.basis === "previous" ? t("symptomTrendPrevDays") : t("symptomTrendDays");
     return `<div class="dashboard-card-sub" style="color:${color}; font-weight:600; margin-top:6px;">${escapeHtml(trend.name)} ${verb}</div>
-            <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${t("symptomTrendDays")} ${trend.expected.toFixed(1)}x</div>`;
+            <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${daysLabel} ${trend.expected.toFixed(1)}x</div>`;
   }
 
   function alertVaccination() {
