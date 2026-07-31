@@ -1211,14 +1211,59 @@
   }
 
   /* --- Printbaar overzicht --- */
+  .print-banner {
+    position: relative;
+    overflow: hidden;
+    border-radius: 16px;
+    padding: 22px 18px;
+    margin-bottom: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-secondary));
+    color: #fff;
+  }
+
+  /* Subtle by design: a low-opacity, blended photo layer behind the text,
+     not a full-strength photo background that would fight with legibility.
+     Falls back to a plain gradient when the pet has no photo (--print-banner-
+     photo simply stays unset, so background-image resolves to `none`). */
+  .print-banner-photo-layer {
+    position: absolute;
+    inset: 0;
+    background-image: var(--print-banner-photo, none);
+    background-size: cover;
+    background-position: center;
+    opacity: 0.28;
+    mix-blend-mode: overlay;
+  }
+
+  .print-banner-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  .print-banner-text h2 {
+    margin: 0 0 4px;
+    font-size: 1.3rem;
+  }
+
+  .print-banner-text p {
+    margin: 0;
+    font-size: 0.9rem;
+    opacity: 0.92;
+  }
+
   .print-section {
     margin-bottom: 18px;
+    padding-left: 12px;
+    border-left: 3px solid var(--accent);
   }
 
   .print-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
     font-size: 0.85rem;
     margin: 0 0 6px;
-    color: var(--text-muted);
+    color: var(--accent);
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
@@ -1240,6 +1285,18 @@
 
   .print-section small {
     color: var(--text-muted);
+  }
+
+  /* Full afwijkingen entry list — reuses the entry-list tab's own
+     .entry-main/.primary/.secondary/.status-dot look (index.html's
+     renderSymptomList) rather than inventing a second visual style for the
+     same kind of row. */
+  .print-entry-list {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: grid;
+    gap: 8px;
   }
 
   /* Only the overview sheet's content should ever print — everything else
@@ -1273,6 +1330,17 @@
     }
     .print-hide {
       display: none !important;
+    }
+    /* Browsers strip background-color/background-image from print output
+       by default (a user setting, usually off) — without this, the banner
+       gradient/photo and the colored section borders would silently
+       disappear from "Opslaan als PDF" even though they show fine on
+       screen. This is the one CSS property built specifically to force it. */
+    .print-banner,
+    .print-banner-photo-layer,
+    .print-section {
+      print-color-adjust: exact;
+      -webkit-print-color-adjust: exact;
     }
   }
 </style>
@@ -1511,6 +1579,12 @@
             </div>
           </div>
           <div>
+            <label for="vetVisitVetId" data-i18n="fieldVetVisitVet">Dierenarts (optioneel)</label>
+            <select id="vetVisitVetId">
+              <option value="" data-i18n="optionVetUnknown">Onbekend / geen</option>
+            </select>
+          </div>
+          <div>
             <label for="vetVisitReason" data-i18n="fieldReasonOptional">Reden (optioneel)</label>
             <input type="text" id="vetVisitReason" placeholder="bijv. controle, kreupel been" />
           </div>
@@ -1520,7 +1594,7 @@
           </div>
           <div>
             <label for="vetVisitNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
-            <input type="text" id="vetVisitNote" placeholder="bijv. bij Caressa Delft" />
+            <input type="text" id="vetVisitNote" placeholder="bijv. moest 2 weken later terugkomen" />
           </div>
           <div>
             <label for="vetVisitCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
@@ -2222,6 +2296,10 @@
       fieldVetEmail: "Email (optional)",
       fieldVetAddress: "Address (optional)",
       fieldVetIsPrimary: "Primary vet",
+      fieldVetVisitVet: "Veterinarian (optional)",
+      optionVetUnknown: "Unknown / none",
+      dashboardSymptomsTitleSince: "(since last vet visit)",
+      dashboardSymptomsTitleStart: "(since log start)",
       headingShareOverview: "Share overview",
       hintShareOverview: "A concise overview with the current details — handy to print or send as a PDF to, for example, a pet sitter.",
       btnOpenOverview: "Open overview",
@@ -2286,6 +2364,10 @@
       fieldVetEmail: "E-Mail (optional)",
       fieldVetAddress: "Adresse (optional)",
       fieldVetIsPrimary: "Hauptierarzt",
+      fieldVetVisitVet: "Tierarzt (optional)",
+      optionVetUnknown: "Unbekannt / keiner",
+      dashboardSymptomsTitleSince: "(seit letztem Tierarztbesuch)",
+      dashboardSymptomsTitleStart: "(seit Beginn des Logbuchs)",
       headingShareOverview: "Übersicht teilen",
       hintShareOverview: "Ein kompakter Überblick mit den aktuellen Daten — praktisch zum Ausdrucken oder als PDF an z. B. eine Tiersitterin zu senden.",
       btnOpenOverview: "Übersicht öffnen",
@@ -2305,6 +2387,8 @@
     dashboardMedication: "Medicatie",
     dashboardBlood: "Bloedwaarden",
     dashboardSymptoms: "Afwijkingen",
+    dashboardSymptomsTitleSince: "(sinds laatste dierenartsbezoek)",
+    dashboardSymptomsTitleStart: "(sinds start logboek)",
     dashboardVet: "Dierenarts",
     dashboardCost: "Kosten",
     speciesLabelCat: "Kat",
@@ -4544,6 +4628,28 @@
       return a.name.localeCompare(b.name);
     });
     renderVetsList(latestVetsData);
+    populateVetVisitVetSelect();
+  }
+
+  function vetNameById(id) {
+    const vet = latestVetsData.find((v) => v.id === id);
+    return vet ? vet.name : null;
+  }
+
+  // Keeps the currently selected value (e.g. mid-edit) instead of resetting
+  // to "Onbekend/geen" whenever the vets list happens to reload.
+  function populateVetVisitVetSelect() {
+    const select = document.getElementById("vetVisitVetId");
+    if (!select) return;
+    const current = select.value;
+    select.innerHTML = `<option value="" data-i18n="optionVetUnknown">${t("optionVetUnknown")}</option>`;
+    latestVetsData.forEach((v) => {
+      const opt = document.createElement("option");
+      opt.value = v.id;
+      opt.textContent = v.name;
+      select.appendChild(opt);
+    });
+    select.value = current;
   }
 
   function renderVetsList(data) {
@@ -4605,6 +4711,7 @@
   function editVetVisit(row) {
     editingVetVisitId = row.id;
     document.getElementById("vetVisitDate").value = row.date;
+    document.getElementById("vetVisitVetId").value = row.vet_id ?? "";
     document.getElementById("vetVisitReason").value = row.reason || "";
     document.getElementById("vetVisitResult").value = row.result || "";
     document.getElementById("vetVisitNote").value = row.note || "";
@@ -4621,6 +4728,7 @@
     editingVetVisitId = null;
     vetVisitForm.reset();
     document.getElementById("vetVisitDate").valueAsDate = new Date();
+    document.getElementById("vetVisitVetId").value = "";
     document.getElementById("vetVisitFormTitle").textContent = "+ Nieuw dierenartsbezoek";
     setI18nText(vetVisitForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("vetVisitCancelEditBtn").style.display = "none";
@@ -4635,6 +4743,8 @@
     submitBtn.disabled = true;
 
     const date = document.getElementById("vetVisitDate").value;
+    const vetIdVal = document.getElementById("vetVisitVetId").value;
+    const vet_id = vetIdVal ? parseInt(vetIdVal, 10) : null;
     const reason = document.getElementById("vetVisitReason").value.trim() || null;
     const result = document.getElementById("vetVisitResult").value.trim() || null;
     const note = document.getElementById("vetVisitNote").value.trim() || null;
@@ -4642,8 +4752,8 @@
     const cost = costVal ? parseFloat(costVal) : null;
 
     const { error } = editingVetVisitId
-      ? await supabaseClient.from("vet_visits").update({ date, reason, result, note, cost }).eq("id", editingVetVisitId)
-      : await supabaseClient.from("vet_visits").insert([{ date, reason, result, note, cost, pet_id: currentPetId }]);
+      ? await supabaseClient.from("vet_visits").update({ date, vet_id, reason, result, note, cost }).eq("id", editingVetVisitId)
+      : await supabaseClient.from("vet_visits").insert([{ date, vet_id, reason, result, note, cost, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -4684,10 +4794,11 @@
     }
 
     data.forEach((row) => {
+      const vetName = row.vet_id ? vetNameById(row.vet_id) : null;
       const innerHtml = `
         <div class="entry-main">
           <span class="primary">${escapeHtml(row.reason || "Dierenartsbezoek")}</span>
-          <span class="secondary">${formatDate(row.date)}${row.result ? " · " + escapeHtml(row.result) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${vetName ? " · " + escapeHtml(vetName) : ""}${row.result ? " · " + escapeHtml(row.result) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -5085,35 +5196,47 @@
   // --- Printbaar overzicht (voor bv. een oppas) -----------------------------
   // Deliberately reuses the same summary functions the dashboard tiles use
   // (computeWeightSummary etc.) rather than re-deriving "what's current" —
-  // one source of truth for what counts as active/recent. Kept to current-
-  // state summaries only, no full history dumps, so it stays a one-page
-  // overview instead of a data export.
-  function printSection(title, bodyHtml) {
-    return `<div class="print-section"><h3>${escapeHtml(title)}</h3>${bodyHtml}</div>`;
+  // one source of truth for what counts as active/recent, except for
+  // Afwijkingen (deliberately the FULL entry list since the last vet visit,
+  // not a summary — the whole point here is precision for whoever's caring
+  // for the pet) and Vaccinaties (stricter than the dashboard tile: only
+  // vaccines with an actual repeat date).
+  function printSection(iconKey, title, bodyHtml) {
+    return `<div class="print-section"><h3>${iconHtml(iconKey)} ${escapeHtml(title)}</h3>${bodyHtml}</div>`;
+  }
+
+  function buildPrintBannerHtml(pet) {
+    const detail = [speciesLabel(pet.species), pet.breed, formatAge(pet.birth_date), pet.sex, pet.neutered ? "Gecastreerd/gesteriliseerd" : null]
+      .filter(Boolean)
+      .map(escapeHtml)
+      .join(" · ");
+    const photoVar = pet.photo_data_url ? `--print-banner-photo: url('${escapeHtml(pet.photo_data_url)}');` : "";
+    return `<div class="print-banner" style="${photoVar}">
+      <div class="print-banner-photo-layer"></div>
+      <div class="print-banner-text">
+        <h2>${escapeHtml(pet.name)}</h2>
+        <p>${detail}</p>
+      </div>
+    </div>`;
   }
 
   function buildPrintOverviewHtml() {
     const pet = currentPet();
     if (!pet) return "";
 
-    const parts = [];
+    const parts = [buildPrintBannerHtml(pet)];
 
-    const age = formatAge(pet.birth_date);
-    const profileLines = [
-      `${escapeHtml(pet.name)} — ${escapeHtml(speciesLabel(pet.species))}${pet.breed ? ", " + escapeHtml(pet.breed) : ""}`,
-      [age, pet.sex, pet.neutered ? "Gecastreerd/gesteriliseerd" : null].filter(Boolean).map(escapeHtml).join(" · "),
-    ];
     const weightS = computeWeightSummary();
     if (weightS) {
       const target = pet.target_min_kg && pet.target_max_kg ? ` (streef: ${pet.target_min_kg}–${pet.target_max_kg} kg)` : "";
-      profileLines.push(`${t("dashboardWeight")}: ${weightS.lastKg.toFixed(1)} kg${target} — ${formatDate(weightS.lastDate)}`);
+      parts.push(printSection("weight", t("dashboardWeight"), `<p>${weightS.lastKg.toFixed(1)} kg${target} — ${formatDate(weightS.lastDate)}</p>`));
     }
-    parts.push(printSection(pet.name, `<p>${profileLines.filter(Boolean).join("<br>")}</p>`));
 
     const medS = computeMedicationSummary();
     const openMeds = [...(medS?.overdue || []), ...(medS?.dueSoon || []), ...(medS?.active || [])];
     parts.push(
       printSection(
+        "medication",
         t("dashboardMedication"),
         openMeds.length
           ? "<ul>" +
@@ -5125,32 +5248,50 @@
       )
     );
 
+    // Only vaccines with an actual repeat/expiry date belong in a document
+    // meant to answer "what's due" — activeVaccineData() already dropped
+    // no_repeat vaccines, but still includes vaccines given >1x without a
+    // valid_until (relevant for the dashboard's "active protocol" framing,
+    // not for a printed sheet about upcoming dates).
     const vaxS = computeVaccinationSummary();
+    const vaxWithDate = vaxS ? vaxS.items.filter(({ v }) => v.valid_until) : [];
     parts.push(
       printSection(
+        "vax",
         t("dashboardVax"),
-        vaxS && vaxS.items.length
-          ? "<ul>" +
-              vaxS.items
-                .map(({ v }) => `<li>${escapeHtml(v.vaccine)}${v.valid_until ? " — " + t("vaxValidUntil") + " " + formatDate(v.valid_until) : ""}</li>`)
-                .join("") +
-              "</ul>"
+        vaxWithDate.length
+          ? "<ul>" + vaxWithDate.map(({ v }) => `<li>${escapeHtml(v.vaccine)} — ${t("vaxValidUntil")} ${formatDate(v.valid_until)}</li>`).join("") + "</ul>"
           : `<p>${t("emptyVax")}</p>`
       )
     );
 
     const symS = computeSymptomSinceVetVisit();
-    parts.push(
-      printSection(
-        t("dashboardSymptoms"),
-        symS.hasData && !symS.none
-          ? `<p>${symS.count}x — ${symS.sinceDate ? t("sinceLastVetVisit") : t("sinceLogStart")} — ${escapeHtml(symS.mostRecent.symptom)}${symS.mostRecent.note ? ": " + escapeHtml(symS.mostRecent.note) : ""}</p>`
-          : `<p>${t("emptySymptomsLogged")}</p>`
-      )
-    );
+    const lastVisit = symS.lastVisit;
+    const lastVisitVetName = lastVisit && lastVisit.vet_id ? vetNameById(lastVisit.vet_id) : null;
+    const lastVisitLine = lastVisit
+      ? `<p><strong>${t("dashboardVetLastVisit")}:</strong> ${formatDate(lastVisit.date)} — ${escapeHtml(lastVisit.reason || t("vetVisitFallback"))}${
+          lastVisitVetName ? " (" + escapeHtml(lastVisitVetName) + ")" : ""
+        }</p>`
+      : `<p>${t("emptyVetVisitsLogged")}</p>`;
+    const entries = symS.relevant || [];
+    const entriesHtml = entries.length
+      ? '<ul class="print-entry-list">' +
+        entries
+          .map((row) => {
+            const color = SYMPTOM_SEVERITY_COLOR[row.severity] || "var(--text-muted)";
+            return `<li><div class="entry-main">
+              <span class="primary"><span class="status-dot" style="background:${color};"></span>${escapeHtml(row.symptom)}</span>
+              <span class="secondary">${formatDate(row.date)}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+            </div></li>`;
+          })
+          .join("") +
+        "</ul>"
+      : `<p>${t("emptySymptomsLogged")}</p>`;
+    parts.push(printSection("symptoms", t("dashboardSymptoms"), lastVisitLine + entriesHtml));
 
     parts.push(
       printSection(
+        "vet",
         t("headingVets"),
         latestVetsData.length
           ? "<ul>" +
@@ -5885,14 +6026,41 @@
     return bySeverity;
   }
 
+  // Counts per distinct symptom name, most-frequent first — the dashboard
+  // tile's "Naam Nx" lines and the print overview's summary both want this,
+  // rather than the severity-grouped breakdown computeSeverityBreakdown()
+  // gives.
+  function groupSymptomCountsByName(rows) {
+    const counts = {};
+    rows.forEach((r) => {
+      counts[r.symptom] = (counts[r.symptom] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .map(([symptom, count]) => ({ symptom, count }))
+      .sort((a, b) => b.count - a.count);
+  }
+
   function computeSymptomSinceVetVisit() {
-    const lastVisit = (latestVetVisitData || [])[0];
+    const lastVisit = (latestVetVisitData || [])[0] || null;
     const symptoms = latestSymptomData || [];
-    if (!symptoms.length) return { hasData: false };
+    if (!symptoms.length) return { hasData: false, lastVisit };
     const relevant = lastVisit ? symptoms.filter((s) => s.date >= lastVisit.date) : symptoms;
-    if (!relevant.length) return { hasData: true, none: true, count: 0, bySeverity: computeSeverityBreakdown([]), sinceDate: lastVisit ? lastVisit.date : null };
-    const mostRecent = relevant.slice().sort((a, b) => (a.date > b.date ? -1 : 1))[0];
-    return { hasData: true, none: false, count: relevant.length, bySeverity: computeSeverityBreakdown(relevant), mostRecent, sinceDate: lastVisit ? lastVisit.date : null };
+    if (!relevant.length) {
+      return { hasData: true, none: true, count: 0, bySeverity: computeSeverityBreakdown([]), byName: [], relevant: [], lastVisit, sinceDate: lastVisit ? lastVisit.date : null };
+    }
+    const sorted = relevant.slice().sort((a, b) => (a.date > b.date ? -1 : 1));
+    const mostRecent = sorted[0];
+    return {
+      hasData: true,
+      none: false,
+      count: relevant.length,
+      bySeverity: computeSeverityBreakdown(relevant),
+      byName: groupSymptomCountsByName(relevant),
+      relevant: sorted,
+      mostRecent,
+      lastVisit,
+      sinceDate: lastVisit ? lastVisit.date : null,
+    };
   }
 
   // Turns loose log entries into a usable pattern signal: compares how often
@@ -6163,28 +6331,6 @@
     return `<span class="due-pill" style="border-color:${color}; color:${color};">${text}</span>`;
   }
 
-  // One row per severity present (licht=green/matig=orange/ernstig=red): an
-  // oval-bordered count pill (matching the medication tile's due-pill style,
-  // instead of a plain colored dot) followed by the actual afwijking names
-  // for that severity, so both "how many" and "what kind" are visible at a
-  // glance. Ernstig gets a ⚠️ prefix so it still stands out on its own line.
-  function symptomSeverityBadgesHtml(bySeverity) {
-    const order = ["ernstig", "matig", "licht"];
-    const rows = order
-      .filter((sev) => bySeverity[sev].length)
-      .map((sev) => {
-        const color = SYMPTOM_SEVERITY_COLOR[sev];
-        const names = [...new Set(bySeverity[sev].map((r) => r.symptom))].join(", ");
-        const prefix = sev === "ernstig" ? "⚠️ " : "";
-        return `<div class="dashboard-card-sub severity-badge-row">
-          <span class="due-pill" style="border-color:${color}; color:${color};">${bySeverity[sev].length}</span>
-          <span>${prefix}${escapeHtml(names)}</span>
-        </div>`;
-      })
-      .join("");
-    return rows || `<div class="dashboard-card-empty">${t("emptySeverityCount")}</div>`;
-  }
-
   // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
   let costViewMode = "rolling"; // "rolling" | "calendar"
   let costViewYear = new Date().getFullYear();
@@ -6400,12 +6546,14 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
-        <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")}</h3>
+        <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")} ${symS.hasData && symS.sinceDate ? t("dashboardSymptomsTitleSince") : t("dashboardSymptomsTitleStart")}</h3>
         ${
-          !symS.hasData
+          !symS.hasData || symS.none
             ? `<div class="dashboard-card-empty">${t("emptySymptomsLogged")}</div>`
-            : `${symptomSeverityBadgesHtml(symS.bySeverity)}
-               <div class="dashboard-card-sub">${symS.sinceDate ? t("sinceLastVetVisit") : t("sinceLogStart")}</div>
+            : `<div class="dashboard-card-sub">${symS.byName
+                .slice(0, 3)
+                .map((x) => `${escapeHtml(x.symptom)} ${x.count}x`)
+                .join("<br>")}</div>
                ${symptomTrendHtml(symptomTrend)}`
         }
       </div>`,
@@ -6650,6 +6798,10 @@
     // draws its gray dierenartsbezoek markers from latestVetVisitData, which
     // may not be populated yet when loadSymptoms() first renders it.
     if (symptomChart) renderSymptomChart(latestSymptomData);
+    // Same race again: renderVetVisitList() may have painted before
+    // loadVets() populated latestVetsData, so the linked vet's name would be
+    // missing on first load until a manual refresh.
+    renderVetVisitList(latestVetVisitData);
     maybeShowCareReminders();
     if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
 
