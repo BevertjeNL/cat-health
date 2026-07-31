@@ -1,4 +1,25 @@
 -- ============================================================
+-- GEARCHIVEERD — dit bestand zit NIET in de actieve migratieketen
+-- (supabase/migrations/) en wordt niet door de supabase-migrations
+-- CI-workflow uitgevoerd.
+--
+-- STAP 1-5 hierin beschrijven het eenmalige upgrade-pad van een oud
+-- single-user-schema (cat_profile-tabel) naar multi-user (pets-tabel)
+-- op een bestaand, live project — inclusief handwerk (zelf een
+-- Supabase Auth-user aanmaken, UUID's overtypen) dat alleen zinvol is
+-- als je vanaf die oude installatie komt. Voor een fresh project sla
+-- je STAP 1-5 over.
+--
+-- STAP 6-12 bevatten wél schema-wijzigingen die uiteindelijk deel zijn
+-- gaan uitmaken van het huidige schema (medications, symptom_logs,
+-- medication_catalog, vet_visits, en diverse kolommen) — die zijn
+-- verwerkt in supabase/migrations/0001_initial_schema.sql en hoeven
+-- dus niet los opnieuw uitgevoerd te worden. Dit bestand blijft alleen
+-- staan als historische referentie van hoe dat schema stapsgewijs is
+-- ontstaan.
+-- ============================================================
+--
+-- ============================================================
 -- Multi-user / multi-pet migratie (stap A)
 -- Voer dit STAP VOOR STAP uit in Supabase SQL Editor.
 -- Elke stap staat gemarkeerd met STAP 1, STAP 2, ... — niet

@@ -1,0 +1,88 @@
+# CatHealth
+
+## Wat dit is
+Single-file PWA om het gewicht, bloedwaarden, vaccinaties, medicatie,
+afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
+- `index.html` — alles inline: HTML, CSS en JS in één bestand. Bewuste
+  keuze, geen build-stap. Externe libraries komen via CDN `<script>`-tags
+  (Supabase JS, Chart.js, Hammer.js, chartjs-plugin-zoom, Tesseract.js,
+  pdf.js) — dit zijn globals (`supabase`, `Chart`, `Hammer`, `Tesseract`,
+  `pdfjsLib`), geen npm-afhankelijkheden.
+- `sw.js` — service worker voor PWA-offline-gebruik. Network-first voor
+  app-shell assets. `CACHE_NAME` ophogen bij elke deploy die je op een
+  geïnstalleerde PWA wilt forceren te verversen.
+- `manifest.json` — PWA-manifest.
+- Backend: Supabase (Auth met e-mail/wachtwoord + Postgres met RLS).
+- Hosting: **onbekend/niet door Claude geverifieerd.** Als je een gehoste
+  URL gebruikt (bv. Vercel), controleer zelf of die aan deze GitHub-repo/
+  branch hangt — dit is niet iets wat Claude namens jou instelt of kan
+  bevestigen.
+
+## Versienummer
+`APP_VERSION` in `index.html` (getoond onderaan het Account-kaartje in
+Instellingen) wordt na de eerste release automatisch bijgewerkt door
+semantic-release via `scripts/set-app-version.js` — nooit handmatig
+aanpassen zodra er releases lopen. Tot de eerste release bevat het nog een
+handmatige datum-string; zie punt hieronder over het semver-gedrag.
+
+**Bekend gedrag, geen bug:** de eerste semantic-release-run begint bij
+`v1.0.0`, ook al stond er al een oudere handmatige versie-string. Oudere
+nummers blijven alleen als historische tekst in commit-logs/CHANGELOG staan.
+
+## Commit- en release-flow
+- Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` —
+  bepaalt automatisch de volgende semver-bump (feat = minor, fix = patch,
+  `BREAKING CHANGE:` in de body = major).
+- Werk op een branch, open een PR, laat de `lint`-CI-check slagen, merge
+  zelf naar `main`. `main` triggert automatisch de release-job
+  (semantic-release: versiebump, CHANGELOG, git-tag, GitHub release).
+- Vraag vooraf goedkeuring bij risicovolle wijzigingen: schema/RLS-
+  aanpassingen, iets dat data kan laten verliezen, of een grote
+  herstructurering (bv. index.html opsplitsen).
+
+## Branch protection — bekende beperking
+Op `main` staat (of hoort te staan) een **klassieke** branch protection rule
+(niet de nieuwere "Ruleset"-functie — die vereist een betaald Team/
+Enterprise-account voor privé-repo's): branch pattern `main`, "Require
+status checks to pass before merging" aan met check `lint`. "Require a
+pull request before merging" staat bewust **uit** — anders zou de directe
+push van de semantic-release-bot naar `main` geblokkeerd worden.
+Op een gratis privé-repo toont GitHub de rule als "Not enforced" — de regel
+staat er, maar wordt technisch niet afgedwongen. Dit wordt gecompenseerd
+door eigen discipline: nooit mergen met een rode `lint`-check.
+
+## Secrets
+Nooit als environment variable van een gedeelde Claude Code cloud-omgeving
+zetten (zichtbaar voor iedereen die de omgeving gebruikt) — altijd als
+GitHub Actions secret (Settings → Secrets and variables → Actions).
+
+## Supabase
+- Project-ref: **nog niet ingevuld** in `supabase/config.toml`
+  (`project_id = ""`) — vul dit zelf in.
+- Check of dit Supabase-project gedeeld wordt met een andere app van
+  dezelfde gebruiker (gratis account = max. 2 projecten). Zo ja: RLS
+  isoleert per gebruiker (`auth.uid() = user_id`), niet per app — zorg dat
+  tabelnamen tussen apps uniek blijven.
+- Tabellen van déze app: `pets`, `weight_measurements`, `blood_values`,
+  `vaccinations`, `symptom_logs`, `medications`, `medication_catalog`,
+  `vet_visits`. Alle rijen scopen via `pet_id` → `pets.user_id = auth.uid()`.
+- Schema staat als migratie in `supabase/migrations/0001_initial_schema.sql`
+  — geen handmatige wijzigingen via de Supabase SQL-editor meer buiten
+  migraties om. Nieuwe schema-wijzigingen: nieuw bestand
+  `supabase/migrations/000N_....sql` toevoegen, niet 0001 aanpassen.
+- `supabase/migrations_archive/migration_multiuser.sql` is **historisch**,
+  zit niet in de actieve migratieketen en wordt niet door CI uitgevoerd —
+  het beschrijft het eenmalige upgrade-pad van een oude single-user-install
+  naar multi-user. `0001_initial_schema.sql` bevat de geconsolideerde,
+  actuele schema (inclusief de tabellen die pas in latere STAPpen van dat
+  archief-bestand zijn toegevoegd: `medications`, `medication_catalog`,
+  `symptom_logs`, `vet_visits`) — dit was voorheen niet zo (het oude losse
+  `supabase.sql` was buiten sync geraakt en miste die vier tabellen).
+
+## CI/CD
+- `.github/workflows/ci.yml`: `lint` (ESLint via `eslint-plugin-html` op
+  `index.html`, elke PR + push naar `main`) en `release` (semantic-release,
+  alleen push naar `main`, na een groene `lint`).
+- `.github/workflows/supabase-migrations.yml`: `supabase db push` bij een
+  push naar `main` die `supabase/migrations/**` raakt. Vereist secrets
+  `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`.

@@ -1,0 +1,18 @@
+{
+  "name": "cat-health",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Volg het gewicht en de bloedwaarden van je kat",
+  "scripts": {
+    "lint": "eslint index.html"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "eslint-plugin-html": "^8.1.0",
+    "globals": "^15.0.0",
+    "semantic-release": "^24.0.0",
+    "@semantic-release/changelog": "^6.0.0",
+    "@semantic-release/exec": "^6.0.0",
+    "@semantic-release/git": "^10.0.0"
+  }
+}
