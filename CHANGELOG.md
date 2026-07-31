@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/BevertjeNL/cat-health/compare/v1.0.1...v1.1.0) (2026-07-31)
+
+
+### Features
+
+* dierenarts-contactenlijst en printbaar overzicht voor oppas ([a57e706](https://github.com/BevertjeNL/cat-health/commit/a57e706d25bb7c291e742b1d7ce264d0fac18e5f))
+
 ## [1.0.1](https://github.com/BevertjeNL/cat-health/compare/v1.0.0...v1.0.1) (2026-07-31)
 
 
