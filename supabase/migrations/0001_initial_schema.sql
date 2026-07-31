@@ -141,48 +141,60 @@ alter table medications enable row level security;
 alter table medication_catalog enable row level security;
 alter table vet_visits enable row level security;
 
+-- Postgres has no `create policy if not exists`, so drop-then-create makes
+-- this idempotent — needed because these policies already exist on the live
+-- database (this migration is a from-code snapshot of an already-deployed
+-- schema, not a from-scratch history).
+drop policy if exists "owner full access pets" on pets;
 create policy "owner full access pets"
   on pets for all
   to authenticated
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
+drop policy if exists "owner full access weight_measurements" on weight_measurements;
 create policy "owner full access weight_measurements"
   on weight_measurements for all
   to authenticated
   using (auth.uid() = (select user_id from pets where pets.id = weight_measurements.pet_id))
   with check (auth.uid() = (select user_id from pets where pets.id = weight_measurements.pet_id));
 
+drop policy if exists "owner full access blood_values" on blood_values;
 create policy "owner full access blood_values"
   on blood_values for all
   to authenticated
   using (auth.uid() = (select user_id from pets where pets.id = blood_values.pet_id))
   with check (auth.uid() = (select user_id from pets where pets.id = blood_values.pet_id));
 
+drop policy if exists "owner full access vaccinations" on vaccinations;
 create policy "owner full access vaccinations"
   on vaccinations for all
   to authenticated
   using (auth.uid() = (select user_id from pets where pets.id = vaccinations.pet_id))
   with check (auth.uid() = (select user_id from pets where pets.id = vaccinations.pet_id));
 
+drop policy if exists "owner full access symptom_logs" on symptom_logs;
 create policy "owner full access symptom_logs"
   on symptom_logs for all
   to authenticated
   using (auth.uid() = (select user_id from pets where pets.id = symptom_logs.pet_id))
   with check (auth.uid() = (select user_id from pets where pets.id = symptom_logs.pet_id));
 
+drop policy if exists "owner full access medications" on medications;
 create policy "owner full access medications"
   on medications for all
   to authenticated
   using (auth.uid() = (select user_id from pets where pets.id = medications.pet_id))
   with check (auth.uid() = (select user_id from pets where pets.id = medications.pet_id));
 
+drop policy if exists "owner full access medication_catalog" on medication_catalog;
 create policy "owner full access medication_catalog"
   on medication_catalog for all
   to authenticated
   using (auth.uid() = (select user_id from pets where pets.id = medication_catalog.pet_id))
   with check (auth.uid() = (select user_id from pets where pets.id = medication_catalog.pet_id));
 
+drop policy if exists "owner full access vet_visits" on vet_visits;
 create policy "owner full access vet_visits"
   on vet_visits for all
   to authenticated
