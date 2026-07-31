@@ -6,6 +6,31 @@
 <title>Kattengezondheid</title>
 <meta name="description" content="Volg het gewicht en de bloedwaarden van je kat" />
 
+<!--
+  script-src/style-src need 'unsafe-inline': the app relies throughout on
+  inline onclick="..." handlers and template-generated style="..." attributes
+  (a deliberate single-file, no-build architecture — see CLAUDE.md). That
+  narrows what this CSP defends against for those two directives, but it
+  still meaningfully restricts everything else: only the pinned CDN hosts can
+  load as scripts (no arbitrary/compromised-origin script loading), no
+  plugins/objects, no framing, and network requests are locked to this
+  origin + the Supabase project.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
+  style-src 'self' 'unsafe-inline';
+  img-src 'self' data: blob:;
+  font-src 'self';
+  connect-src 'self' https://cbnfogvfordqatlogfdt.supabase.co wss://cbnfogvfordqatlogfdt.supabase.co;
+  worker-src 'self' blob: https://cdn.jsdelivr.net;
+  manifest-src 'self';
+  object-src 'none';
+  base-uri 'self';
+  form-action 'self';
+  frame-ancestors 'none';
+" />
+
 <link rel="manifest" href="manifest.json" />
 <meta name="theme-color" content="#D97757" />
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -13,12 +38,12 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Kat Health" />
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3"></script>
+<script src="https://unpkg.com/@supabase/supabase-js@2.111.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
-<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.2.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 
 <style>
@@ -2634,7 +2659,7 @@
       .map(
         (p) => `
         <button type="button" class="pet-menu-item${p.id === currentPetId ? " active" : ""}" onclick="switchPet(${p.id})">
-          ${p.photo_data_url ? `<span class="pet-menu-thumb" style="background-image:url('${p.photo_data_url}')"></span>` : `<span>${speciesIconHtml(p.species)}</span>`}
+          ${p.photo_data_url ? `<span class="pet-menu-thumb" style="background-image:url('${escapeHtml(p.photo_data_url)}')"></span>` : `<span>${speciesIconHtml(p.species)}</span>`}
           <span>${escapeHtml(p.name)}</span>
         </button>
       `

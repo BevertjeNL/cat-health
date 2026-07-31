@@ -7,7 +7,20 @@ afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
   keuze, geen build-stap. Externe libraries komen via CDN `<script>`-tags
   (Supabase JS, Chart.js, Hammer.js, chartjs-plugin-zoom, Tesseract.js,
   pdf.js) — dit zijn globals (`supabase`, `Chart`, `Hammer`, `Tesseract`,
-  `pdfjsLib`), geen npm-afhankelijkheden.
+  `pdfjsLib`), geen npm-afhankelijkheden. **CDN-versies staan altijd exact
+  gepind** (bv. `chart.js@4.5.1`, nooit `@4`) — voorkomt dat een nieuwe
+  release van een CDN-pakket stilzwijgend meegetrokken wordt. Bij bijwerken:
+  nieuwe exacte versie opzoeken (`npm view <pakket> version`) en zowel de
+  `<script src>` als eventuele losse verwijzingen (bv. `pdfjsLib.GlobalWorkerOptions.workerSrc`)
+  aanpassen.
+- **Content-Security-Policy** staat als `<meta http-equiv>` in de `<head>`.
+  `script-src`/`style-src` bevatten noodgedwongen `'unsafe-inline'` omdat de
+  app overal `onclick="..."`-attributen en template-gegenereerde
+  `style="..."`-attributen gebruikt (zie hierboven, geen build-stap) — de
+  overige directives (welke hosts mogen laden, geen framing, geen plugins,
+  `connect-src` beperkt tot het eigen Supabase-project) staan wél strak.
+  Nieuwe externe host toevoegen (nieuwe CDN, ander Supabase-project)? Ook de
+  CSP bijwerken, anders wordt die stilzwijgend geblokkeerd.
 - `sw.js` — service worker voor PWA-offline-gebruik. Network-first voor
   app-shell assets. `CACHE_NAME` ophogen bij elke deploy die je op een
   geïnstalleerde PWA wilt forceren te verversen.
