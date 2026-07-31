@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/BevertjeNL/cat-health/compare/v1.1.0...v1.2.0) (2026-07-31)
+
+
+### Features
+
+* printoverzicht herontwerpen, dierenartsbezoek koppelen aan contact, afwijkingen-tegel herzien ([c412021](https://github.com/BevertjeNL/cat-health/commit/c412021f10e1ba6f32f492bffe578341ed86c81c))
+
 # [1.1.0](https://github.com/BevertjeNL/cat-health/compare/v1.0.1...v1.1.0) (2026-07-31)
 
 
