@@ -1209,6 +1209,72 @@
   .pet-menu-item.danger {
     color: var(--danger);
   }
+
+  /* --- Printbaar overzicht --- */
+  .print-section {
+    margin-bottom: 18px;
+  }
+
+  .print-section h3 {
+    font-size: 0.85rem;
+    margin: 0 0 6px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .print-section p,
+  .print-section ul {
+    margin: 0;
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+
+  .print-section ul {
+    padding-left: 18px;
+  }
+
+  .print-section li {
+    margin-bottom: 6px;
+  }
+
+  .print-section small {
+    color: var(--text-muted);
+  }
+
+  /* Only the overview sheet's content should ever print — everything else
+     (bottom-nav, header, other tab-panels, this overlay's own backdrop and
+     buttons) is app chrome that makes no sense on paper/PDF. */
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #printOverviewContent,
+    #printOverviewContent * {
+      visibility: visible;
+    }
+    #printOverviewOverlay {
+      position: static;
+      background: none;
+      display: block;
+    }
+    .detail-sheet:has(#printOverviewContent) {
+      position: static;
+      max-height: none;
+      max-width: none;
+      overflow: visible;
+      padding: 0;
+    }
+    #printOverviewContent {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+    }
+    .print-hide {
+      display: none !important;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1388,6 +1454,48 @@
   </section>
 
   <section id="tabVet" class="tab-panel">
+    <div class="card">
+      <div class="collapsible-header" id="vetFormHeader" onclick="toggleVetForm()">
+        <h2 id="vetFormTitle">+ Nieuwe dierenarts</h2>
+        <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      </div>
+      <div class="collapsible-body" id="vetFormBody" style="display:none;">
+        <form class="entry-form" id="vetForm">
+          <div>
+            <label for="vetName" data-i18n="fieldVetName">Naam / praktijk</label>
+            <input type="text" id="vetName" placeholder="bijv. Dierenkliniek Delft" required />
+          </div>
+          <div>
+            <label for="vetPhone" data-i18n="fieldVetPhone">Telefoonnummer (optioneel)</label>
+            <input type="tel" id="vetPhone" placeholder="bijv. 015 123 4567" />
+          </div>
+          <div>
+            <label for="vetEmail" data-i18n="fieldVetEmail">E-mail (optioneel)</label>
+            <input type="email" id="vetEmail" placeholder="bijv. info@dierenkliniek.nl" />
+          </div>
+          <div>
+            <label for="vetAddress" data-i18n="fieldVetAddress">Adres (optioneel)</label>
+            <input type="text" id="vetAddress" placeholder="bijv. Marktstraat 1, Delft" />
+          </div>
+          <div>
+            <label for="vetNotes" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
+            <input type="text" id="vetNotes" placeholder="bijv. spoedgevallen 's nachts" />
+          </div>
+          <div class="checkbox-field">
+            <label for="vetIsPrimary"><input type="checkbox" id="vetIsPrimary" /> <span data-i18n="fieldVetIsPrimary">Hoofddierenarts</span></label>
+          </div>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="vetCancelEditBtn" style="display:none;" onclick="cancelVetEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="headingVets">Dierenartsen</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <ul class="entry-list" id="vetsList"></ul>
+    </div>
+
     <div class="card">
       <div class="collapsible-header" id="vetVisitFormHeader" onclick="toggleVetVisitForm()">
         <h2 id="vetVisitFormTitle">+ Nieuw dierenartsbezoek</h2>
@@ -1760,6 +1868,12 @@
     </div>
 
     <div class="card">
+      <h2 data-i18n="headingShareOverview">Overzicht delen</h2>
+      <p class="hint-text" style="margin-bottom:12px;" data-i18n="hintShareOverview">Een beknopt overzicht met de actuele gegevens — handig om te printen of als PDF te sturen naar bijvoorbeeld een oppas.</p>
+      <button type="button" class="today-btn" style="width:100%;" onclick="openPrintOverview()" data-i18n="btnOpenOverview">Overzicht openen</button>
+    </div>
+
+    <div class="card">
       <h2><span data-i18n="headingLanguage">Taal</span></h2>
       <div class="icon-style-toggle">
         <button type="button" class="lang-btn" data-lang="nl" onclick="setLang('nl')">Nederlands</button>
@@ -1893,6 +2007,17 @@
     </div>
     <div id="careReminderBody"></div>
     <button type="button" class="submit" style="width:100%;margin-top:14px;" onclick="closeCareReminder()">Begrepen</button>
+  </div>
+</div>
+
+<div class="detail-overlay" id="printOverviewOverlay" onclick="if (event.target === this) closePrintOverview();">
+  <div class="detail-sheet">
+    <div class="detail-header print-hide">
+      <h2 data-i18n="headingShareOverview">Overzicht delen</h2>
+      <button type="button" class="today-btn" onclick="closePrintOverview()" data-i18n="btnClose">Sluiten</button>
+    </div>
+    <button type="button" class="submit print-hide" style="width:100%;margin-bottom:14px;" onclick="window.print()" data-i18n="btnPrintOverview">Printen / opslaan als PDF</button>
+    <div id="printOverviewContent" class="print-overview"></div>
   </div>
 </div>
 
@@ -2091,6 +2216,16 @@
       headingResults: "Results",
       headingTimeline: "Timeline",
       headingOverview: "Overview",
+      headingVets: "Veterinarians",
+      fieldVetName: "Name / practice",
+      fieldVetPhone: "Phone number (optional)",
+      fieldVetEmail: "Email (optional)",
+      fieldVetAddress: "Address (optional)",
+      fieldVetIsPrimary: "Primary vet",
+      headingShareOverview: "Share overview",
+      hintShareOverview: "A concise overview with the current details — handy to print or send as a PDF to, for example, a pet sitter.",
+      btnOpenOverview: "Open overview",
+      btnPrintOverview: "Print / save as PDF",
     },
     de: {
       authTitle: "🐾 Tiergesundheit",
@@ -2145,6 +2280,16 @@
       headingResults: "Ergebnisse",
       headingTimeline: "Zeitachse",
       headingOverview: "Übersicht",
+      headingVets: "Tierärzte",
+      fieldVetName: "Name / Praxis",
+      fieldVetPhone: "Telefonnummer (optional)",
+      fieldVetEmail: "E-Mail (optional)",
+      fieldVetAddress: "Adresse (optional)",
+      fieldVetIsPrimary: "Hauptierarzt",
+      headingShareOverview: "Übersicht teilen",
+      hintShareOverview: "Ein kompakter Überblick mit den aktuellen Daten — praktisch zum Ausdrucken oder als PDF an z. B. eine Tiersitterin zu senden.",
+      btnOpenOverview: "Übersicht öffnen",
+      btnPrintOverview: "Drucken / als PDF speichern",
     },
   };
 
@@ -2197,6 +2342,8 @@
     emptyBloodExam: "Nog geen bloedonderzoek",
     emptyBloodResults: "Nog geen resultaten",
     emptyVetVisitsLogged: "Nog geen bezoeken gelogd",
+    emptyVets: "Nog geen dierenartsen toegevoegd",
+    emptyVetContactDetails: "Geen contactgegevens",
     emptySymptomsLogged: "Nog geen afwijkingen gelogd",
     emptyCostsRegistered: "Nog geen kosten geregistreerd",
     emptyWeightRegistered: "Nog geen gewichtsmetingen geregistreerd.",
@@ -2249,6 +2396,7 @@
     successVaxSaved: "Vaccinatie opgeslagen ✓",
     successBloodSaved: "Bloeduitslag opgeslagen ✓",
     successVetVisitSaved: "Bezoek opgeslagen ✓",
+    successVetSaved: "Dierenarts opgeslagen ✓",
     successSymptomSaved: "Afwijking opgeslagen ✓",
     successMedicationSaved: "Medicatie opgeslagen ✓",
     successProfileSaved: "Profiel opgeslagen ✓",
@@ -4307,6 +4455,130 @@
     }
   }
 
+  // --- Dierenartsen (contactenlijst, los van het bezoeken-logboek) ---------
+  const vetForm = document.getElementById("vetForm");
+  const vetsList = document.getElementById("vetsList");
+  let editingVetId = null;
+  let latestVetsData = [];
+
+  function toggleVetForm(forceOpen) {
+    const header = document.getElementById("vetFormHeader");
+    const body = document.getElementById("vetFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingVetId) {
+      document.getElementById("vetFormTitle").textContent = open ? "Nieuwe dierenarts" : "+ Nieuwe dierenarts";
+    }
+  }
+
+  function editVet(row) {
+    editingVetId = row.id;
+    document.getElementById("vetName").value = row.name;
+    document.getElementById("vetPhone").value = row.phone || "";
+    document.getElementById("vetEmail").value = row.email || "";
+    document.getElementById("vetAddress").value = row.address || "";
+    document.getElementById("vetNotes").value = row.notes || "";
+    document.getElementById("vetIsPrimary").checked = !!row.is_primary;
+    document.getElementById("vetFormTitle").textContent = "Dierenarts bewerken";
+    setI18nText(vetForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
+    document.getElementById("vetCancelEditBtn").style.display = "";
+    toggleVetForm(true);
+    switchTab("vet");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelVetEdit() {
+    editingVetId = null;
+    vetForm.reset();
+    document.getElementById("vetFormTitle").textContent = "+ Nieuwe dierenarts";
+    setI18nText(vetForm.querySelector("button.submit"), "btnSave", "Opslaan");
+    document.getElementById("vetCancelEditBtn").style.display = "none";
+    toggleVetForm(false);
+  }
+
+  vetForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = vetForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const name = document.getElementById("vetName").value.trim();
+    const phone = document.getElementById("vetPhone").value.trim() || null;
+    const email = document.getElementById("vetEmail").value.trim() || null;
+    const address = document.getElementById("vetAddress").value.trim() || null;
+    const notes = document.getElementById("vetNotes").value.trim() || null;
+    const is_primary = document.getElementById("vetIsPrimary").checked;
+
+    const { error } = editingVetId
+      ? await supabaseClient.from("veterinarians").update({ name, phone, email, address, notes, is_primary }).eq("id", editingVetId)
+      : await supabaseClient.from("veterinarians").insert([{ name, phone, email, address, notes, is_primary, pet_id: currentPetId }]);
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError(t("errSaveFailed") + ": " + error.message);
+      return;
+    }
+
+    cancelVetEdit();
+    showSuccess(t("successVetSaved"));
+    await loadVets();
+  });
+
+  async function loadVets() {
+    if (!isConfigured || !currentPetId) return;
+
+    const { data, error } = await supabaseClient.from("veterinarians").select("*").eq("pet_id", currentPetId);
+
+    if (error) {
+      showError(t("errLoadFailed") + ": " + error.message);
+      return;
+    }
+
+    // Hoofddierenarts eerst, dan alfabetisch — geen losse drag-and-drop
+    // volgorde-UI, dit dekt "sorteerbaar" met veel minder complexiteit.
+    latestVetsData = data.slice().sort((a, b) => {
+      if (a.is_primary !== b.is_primary) return a.is_primary ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    renderVetsList(latestVetsData);
+  }
+
+  function renderVetsList(data) {
+    vetsList.innerHTML = "";
+
+    if (data.length === 0) {
+      vetsList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyVets") + "</li>";
+      return;
+    }
+
+    data.forEach((row) => {
+      const contactBits = [row.phone, row.email, row.address, row.notes].filter(Boolean).map(escapeHtml).join(" · ");
+      const innerHtml = `
+        <div class="entry-main">
+          <span class="primary">${row.is_primary ? "⭐ " : ""}${escapeHtml(row.name)}</span>
+          <span class="secondary">${contactBits || t("emptyVetContactDetails")}</span>
+        </div>
+      `;
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteVet(row.id) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editVet(row) },
+      ]);
+      vetsList.appendChild(li);
+    });
+  }
+
+  async function deleteVet(id) {
+    const { error } = await supabaseClient.from("veterinarians").delete().eq("id", id);
+    if (error) {
+      showError(t("errDeleteFailed") + ": " + error.message);
+      return;
+    }
+    await loadVets();
+  }
+
   // --- Dierenartsbezoeken logboek --------------------------------------------
   const vetVisitForm = document.getElementById("vetVisitForm");
   const vetVisitList = document.getElementById("vetVisitList");
@@ -4808,6 +5080,103 @@
   function closeCareReminder() {
     if (document.getElementById("careReminderOverlay").classList.contains("show")) consumeNavEntry();
     document.getElementById("careReminderOverlay").classList.remove("show");
+  }
+
+  // --- Printbaar overzicht (voor bv. een oppas) -----------------------------
+  // Deliberately reuses the same summary functions the dashboard tiles use
+  // (computeWeightSummary etc.) rather than re-deriving "what's current" —
+  // one source of truth for what counts as active/recent. Kept to current-
+  // state summaries only, no full history dumps, so it stays a one-page
+  // overview instead of a data export.
+  function printSection(title, bodyHtml) {
+    return `<div class="print-section"><h3>${escapeHtml(title)}</h3>${bodyHtml}</div>`;
+  }
+
+  function buildPrintOverviewHtml() {
+    const pet = currentPet();
+    if (!pet) return "";
+
+    const parts = [];
+
+    const age = formatAge(pet.birth_date);
+    const profileLines = [
+      `${escapeHtml(pet.name)} — ${escapeHtml(speciesLabel(pet.species))}${pet.breed ? ", " + escapeHtml(pet.breed) : ""}`,
+      [age, pet.sex, pet.neutered ? "Gecastreerd/gesteriliseerd" : null].filter(Boolean).map(escapeHtml).join(" · "),
+    ];
+    const weightS = computeWeightSummary();
+    if (weightS) {
+      const target = pet.target_min_kg && pet.target_max_kg ? ` (streef: ${pet.target_min_kg}–${pet.target_max_kg} kg)` : "";
+      profileLines.push(`${t("dashboardWeight")}: ${weightS.lastKg.toFixed(1)} kg${target} — ${formatDate(weightS.lastDate)}`);
+    }
+    parts.push(printSection(pet.name, `<p>${profileLines.filter(Boolean).join("<br>")}</p>`));
+
+    const medS = computeMedicationSummary();
+    const openMeds = [...(medS?.overdue || []), ...(medS?.dueSoon || []), ...(medS?.active || [])];
+    parts.push(
+      printSection(
+        t("dashboardMedication"),
+        openMeds.length
+          ? "<ul>" +
+              openMeds
+                .map((m) => `<li>${escapeHtml(m.name)}${m.dose ? " — " + escapeHtml(m.dose) : ""}${m.purpose ? " (" + escapeHtml(m.purpose) + ")" : ""}</li>`)
+                .join("") +
+              "</ul>"
+          : `<p>${t("emptyMedicationLogged")}</p>`
+      )
+    );
+
+    const vaxS = computeVaccinationSummary();
+    parts.push(
+      printSection(
+        t("dashboardVax"),
+        vaxS && vaxS.items.length
+          ? "<ul>" +
+              vaxS.items
+                .map(({ v }) => `<li>${escapeHtml(v.vaccine)}${v.valid_until ? " — " + t("vaxValidUntil") + " " + formatDate(v.valid_until) : ""}</li>`)
+                .join("") +
+              "</ul>"
+          : `<p>${t("emptyVax")}</p>`
+      )
+    );
+
+    const symS = computeSymptomSinceVetVisit();
+    parts.push(
+      printSection(
+        t("dashboardSymptoms"),
+        symS.hasData && !symS.none
+          ? `<p>${symS.count}x — ${symS.sinceDate ? t("sinceLastVetVisit") : t("sinceLogStart")} — ${escapeHtml(symS.mostRecent.symptom)}${symS.mostRecent.note ? ": " + escapeHtml(symS.mostRecent.note) : ""}</p>`
+          : `<p>${t("emptySymptomsLogged")}</p>`
+      )
+    );
+
+    parts.push(
+      printSection(
+        t("headingVets"),
+        latestVetsData.length
+          ? "<ul>" +
+              latestVetsData
+                .map((v) => {
+                  const bits = [v.phone, v.email, v.address, v.notes].filter(Boolean).map(escapeHtml).join(" · ");
+                  return `<li>${v.is_primary ? "⭐ " : ""}${escapeHtml(v.name)}${bits ? "<br><small>" + bits + "</small>" : ""}</li>`;
+                })
+                .join("") +
+              "</ul>"
+          : `<p>${t("emptyVets")}</p>`
+      )
+    );
+
+    return parts.join("");
+  }
+
+  function openPrintOverview() {
+    document.getElementById("printOverviewContent").innerHTML = buildPrintOverviewHtml();
+    document.getElementById("printOverviewOverlay").classList.add("show");
+    pushNavEntry();
+  }
+
+  function closePrintOverview() {
+    if (document.getElementById("printOverviewOverlay").classList.contains("show")) consumeNavEntry();
+    document.getElementById("printOverviewOverlay").classList.remove("show");
   }
 
   // --- Symptomen / afwijkingen logboek --------------------------------------
@@ -6265,6 +6634,7 @@
       loadMedications(),
       loadMedicationCatalog(),
       loadVetVisits(),
+      loadVets(),
       loadProfile(),
     ]);
     // loadWeights() renders the weight chart as soon as its own fetch

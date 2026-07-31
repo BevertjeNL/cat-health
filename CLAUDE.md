@@ -78,11 +78,16 @@ GitHub Actions secret (Settings → Secrets and variables → Actions).
   tabelnamen tussen apps uniek blijven.
 - Tabellen van déze app: `pets`, `weight_measurements`, `blood_values`,
   `vaccinations`, `symptom_logs`, `medications`, `medication_catalog`,
-  `vet_visits`. Alle rijen scopen via `pet_id` → `pets.user_id = auth.uid()`.
-- Schema staat als migratie in `supabase/migrations/0001_initial_schema.sql`
-  — geen handmatige wijzigingen via de Supabase SQL-editor meer buiten
-  migraties om. Nieuwe schema-wijzigingen: nieuw bestand
-  `supabase/migrations/000N_....sql` toevoegen, niet 0001 aanpassen.
+  `vet_visits`, `veterinarians`. Alle rijen scopen via `pet_id` →
+  `pets.user_id = auth.uid()`. `veterinarians` is een losse contactenlijst
+  (naam, telefoon, e-mail, adres, notities, hoofddierenarts-vlag) — niet te
+  verwarren met `vet_visits`, dat alleen bezoek-logs bijhoudt.
+- Schema staat als migraties in `supabase/migrations/`
+  (`0001_initial_schema.sql` + volgende genummerde bestanden) — geen
+  handmatige wijzigingen via de Supabase SQL-editor meer buiten migraties
+  om. Nieuwe schema-wijzigingen: nieuw bestand
+  `supabase/migrations/000N_....sql` toevoegen, bestaande nummers niet meer
+  aanpassen.
 - `supabase/migrations_archive/migration_multiuser.sql` is **historisch**,
   zit niet in de actieve migratieketen en wordt niet door CI uitgevoerd —
   het beschrijft het eenmalige upgrade-pad van een oude single-user-install
