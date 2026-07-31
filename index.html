@@ -1731,6 +1731,7 @@
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
       <button type="button" class="today-btn" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
       <button type="button" class="today-btn" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
+      <p class="hint-text" id="appVersionText" style="margin-top:10px; text-align:center;"></p>
     </div>
 
     <div class="card">
@@ -1871,6 +1872,11 @@
 </div>
 
 <script>
+  // Bump on every deploy that should be visibly verifiable (e.g. in the
+  // Instellingen tab, or by comparing against the live site) — a plain
+  // timestamp so there's no ambiguity about which version is running.
+  const APP_VERSION = "2026.07.31-1";
+
   // --- Supabase config -------------------------------------------------
   // Fill these in with your project's URL and public anon key
   // (Supabase dashboard > Project Settings > API).
@@ -2534,6 +2540,7 @@
   async function bootstrapApp(session) {
     currentUser = session.user;
     document.getElementById("accountEmailText").textContent = "Ingelogd als " + currentUser.email;
+    document.getElementById("appVersionText").textContent = "App-versie " + APP_VERSION;
     showAppContent();
     await loadPets();
   }
