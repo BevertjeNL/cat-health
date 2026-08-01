@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/BevertjeNL/cat-health/compare/v1.2.0...v1.2.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* dierenarts-adres in 2 velden, twee echte bugs, JPEG-export en sectie-selectie ([20de196](https://github.com/BevertjeNL/cat-health/commit/20de196a0c0494e2e3ec02bb617c2e2da01e1354))
+
 # [1.2.0](https://github.com/BevertjeNL/cat-health/compare/v1.1.0...v1.2.0) (2026-07-31)
 
 
