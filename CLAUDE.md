@@ -6,8 +6,9 @@ afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
 - `index.html` — alles inline: HTML, CSS en JS in één bestand. Bewuste
   keuze, geen build-stap. Externe libraries komen via CDN `<script>`-tags
   (Supabase JS, Chart.js, Hammer.js, chartjs-plugin-zoom, Tesseract.js,
-  pdf.js) — dit zijn globals (`supabase`, `Chart`, `Hammer`, `Tesseract`,
-  `pdfjsLib`), geen npm-afhankelijkheden. **CDN-versies staan altijd exact
+  pdf.js, html2canvas) — dit zijn globals (`supabase`, `Chart`, `Hammer`,
+  `Tesseract`, `pdfjsLib`, `html2canvas`), geen npm-afhankelijkheden.
+  **CDN-versies staan altijd exact
   gepind** (bv. `chart.js@4.5.1`, nooit `@4`) — voorkomt dat een nieuwe
   release van een CDN-pakket stilzwijgend meegetrokken wordt. Bij bijwerken:
   nieuwe exacte versie opzoeken (`npm view <pakket> version`) en zowel de

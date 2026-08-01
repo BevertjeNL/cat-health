@@ -17,6 +17,7 @@ module.exports = [
         Hammer: "readonly",
         Tesseract: "readonly",
         pdfjsLib: "readonly",
+        html2canvas: "readonly",
       },
     },
     rules: {
