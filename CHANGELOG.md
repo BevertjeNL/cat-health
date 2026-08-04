@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/BevertjeNL/cat-health/compare/v1.2.1...v1.3.0) (2026-08-04)
+
+
+### Features
+
+* Liquid Glass materiaallaag (iOS 26) + app-icoon in glas-stijl ([f82eb0d](https://github.com/BevertjeNL/cat-health/commit/f82eb0dc266835b15f02bf2c30642bb57dfcd9eb))
+
 ## [1.2.1](https://github.com/BevertjeNL/cat-health/compare/v1.2.0...v1.2.1) (2026-08-01)
 
 
