@@ -1004,9 +1004,23 @@
     color: #1a7a3e;
   }
 
+  .status-banner.offline {
+    background: #eef1f7;
+    color: #3a4a63;
+  }
+
   @media (prefers-color-scheme: dark) {
     .status-banner.error { background: #3a1a16; color: #ff8f7a; }
     .status-banner.success { background: #123a24; color: #6ee7a0; }
+    .status-banner.offline { background: #202a3a; color: #a9b8d4; }
+  }
+
+  .pending-dot {
+    display: inline-block;
+    font-size: 0.75em;
+    margin-left: 4px;
+    vertical-align: middle;
+    opacity: 0.75;
   }
 
   .detail-overlay {
@@ -2537,6 +2551,9 @@
     errShareFailed: "Delen mislukt",
     errLoadFailed: "Laden mislukt",
     errDeleteFailed: "Verwijderen mislukt",
+    errSyncFailed: "Synchroniseren mislukt",
+    offlinePendingChanges: "Offline — {n} wijziging(en) wachten op synchronisatie",
+    offlinePendingRow: "Wacht op synchronisatie",
     errUpdateFailed: "Bijwerken mislukt",
     errRestoreFailed: "Herstellen mislukt",
     errArchiveFailed: "Archiveren mislukt",
@@ -2644,6 +2661,9 @@
     errShareFailed: "Sharing failed",
     errLoadFailed: "Loading failed",
     errDeleteFailed: "Delete failed",
+    errSyncFailed: "Sync failed",
+    offlinePendingChanges: "Offline — {n} change(s) waiting to sync",
+    offlinePendingRow: "Waiting to sync",
     errUpdateFailed: "Update failed",
     errRestoreFailed: "Restore failed",
     errArchiveFailed: "Archiving failed",
@@ -2750,6 +2770,9 @@
     errShareFailed: "Teilen fehlgeschlagen",
     errLoadFailed: "Laden fehlgeschlagen",
     errDeleteFailed: "Löschen fehlgeschlagen",
+    errSyncFailed: "Synchronisierung fehlgeschlagen",
+    offlinePendingChanges: "Offline — {n} Änderung(en) warten auf Synchronisierung",
+    offlinePendingRow: "Wartet auf Synchronisierung",
     errUpdateFailed: "Aktualisieren fehlgeschlagen",
     errRestoreFailed: "Wiederherstellen fehlgeschlagen",
     errArchiveFailed: "Archivieren fehlgeschlagen",
@@ -3226,8 +3249,249 @@
     banner.textContent = message;
     banner.classList.remove("error");
     banner.classList.add("show", "success");
-    setTimeout(() => banner.classList.remove("show", "success"), 2500);
+    setTimeout(() => {
+      banner.classList.remove("show", "success");
+      updateOfflineBanner();
+    }, 2500);
   }
+
+  // --- Offline queue (logboek-tabellen: gewicht, bloed, vaccinaties,
+  // afwijkingen, medicatie, dierenartsbezoeken) --------------------------
+  // iOS Safari heeft geen Background Sync API, dus de wachtrij wordt
+  // geleegd op het `online`-event, wanneer de app weer op de voorgrond komt
+  // (zie de bestaande visibilitychange-listener verderop) en via een
+  // periodieke timer zolang de app open blijft — geen echte achtergrond-
+  // sync buiten de actieve sessie om.
+  const OFFLINE_DB_NAME = "cathealth-offline";
+  const OFFLINE_DB_VERSION = 1;
+  let offlineDbPromise = null;
+
+  function openOfflineDb() {
+    if (offlineDbPromise) return offlineDbPromise;
+    offlineDbPromise = new Promise((resolve, reject) => {
+      const req = indexedDB.open(OFFLINE_DB_NAME, OFFLINE_DB_VERSION);
+      req.onupgradeneeded = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains("cache")) db.createObjectStore("cache");
+        if (!db.objectStoreNames.contains("outbox")) db.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
+      };
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+    return offlineDbPromise;
+  }
+
+  async function idbGet(storeName, key) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(storeName, "readonly").objectStore(storeName).get(key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbPut(storeName, key, value) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const store = db.transaction(storeName, "readwrite").objectStore(storeName);
+      const req = key === undefined ? store.put(value) : store.put(value, key);
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbGetAll(storeName) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(storeName, "readonly").objectStore(storeName).getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  async function idbDelete(storeName, key) {
+    const db = await openOfflineDb();
+    return new Promise((resolve, reject) => {
+      const req = db.transaction(storeName, "readwrite").objectStore(storeName).delete(key);
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+  }
+
+  function isNetworkError(err) {
+    return !navigator.onLine || (!!err && (err.message === "Failed to fetch" || err.name === "TypeError"));
+  }
+
+  function pendingDotHtml(row) {
+    return row && row._pending ? `<span class="pending-dot" title="${t("offlinePendingRow")}">⏳</span>` : "";
+  }
+
+  // Elke offline-schrijfbare tabel weet hoe je bij de in-memory array komt
+  // (voor de optimistische update) en hoe je 'm na een wijziging herrendert.
+  // Als functies (niet directe verwijzingen) zodat ze altijd de actuele
+  // waarde van de `let latestXData`-variabelen lezen, ook al worden die
+  // elders herwezen (bv. `latestWeightData = data` in loadWeights()).
+  const OFFLINE_TABLES = {
+    weight_measurements: { data: () => latestWeightData, render: () => renderWeightList(latestWeightData) },
+    blood_values: { data: () => latestBloodData, render: () => renderBloodList(latestBloodData) },
+    vaccinations: { data: () => latestVaxData, render: () => renderVaxList(latestVaxData) },
+    symptom_logs: { data: () => latestSymptomData, render: () => renderSymptomList(latestSymptomData) },
+    medications: { data: () => latestMedicationData, render: () => renderMedicationList(latestMedicationData) },
+    vet_visits: { data: () => latestVetVisitData, render: () => renderVetVisitList(latestVetVisitData) },
+  };
+
+  let offlineTempSeq = 0;
+  function nextTempId() {
+    // Negatief en aflopend, zodat een tijdelijke id nooit met een echte
+    // (positieve, database-toegekende) id kan botsen.
+    return -(Date.now() * 1000 + (offlineTempSeq++ % 1000));
+  }
+
+  async function updateOfflineBanner() {
+    const banner = document.getElementById("statusBanner");
+    if (banner.classList.contains("error") || banner.classList.contains("success")) return;
+    const entries = await idbGetAll("outbox");
+    if (entries.length > 0) {
+      banner.textContent = t("offlinePendingChanges").replace("{n}", entries.length);
+      banner.classList.remove("error", "success");
+      banner.classList.add("show", "offline");
+    } else {
+      banner.classList.remove("show", "offline");
+    }
+  }
+
+  async function queueOfflineMutation(table, op, { id, payload }) {
+    const cfg = OFFLINE_TABLES[table];
+    if (!cfg) return;
+
+    if (op === "insert") {
+      const rows = Array.isArray(payload) ? payload : [payload];
+      for (const row of rows) {
+        const tempId = nextTempId();
+        cfg.data().unshift({ ...row, id: tempId, _pending: true });
+        await idbPut("outbox", undefined, { table, op: "insert", tempId, payload: row, createdAt: Date.now() });
+      }
+    } else if (op === "update") {
+      if (id < 0) {
+        // Rij is zelf nog niet gesynchroniseerd: vouw de wijziging in de
+        // al-gequeuede insert i.p.v. een aparte update-entry toe te voegen.
+        const entries = await idbGetAll("outbox");
+        const insertEntry = entries.find((e) => e.table === table && e.op === "insert" && e.tempId === id);
+        if (insertEntry) {
+          insertEntry.payload = { ...insertEntry.payload, ...payload };
+          await idbPut("outbox", undefined, insertEntry);
+        }
+      } else {
+        await idbPut("outbox", undefined, { table, op: "update", realId: id, payload, createdAt: Date.now() });
+      }
+      const item = cfg.data().find((r) => r.id === id);
+      if (item) Object.assign(item, payload, { _pending: true });
+    } else if (op === "delete") {
+      if (id < 0) {
+        const entries = await idbGetAll("outbox");
+        for (const e of entries.filter((e) => e.table === table && e.tempId === id)) {
+          await idbDelete("outbox", e.id);
+        }
+      } else {
+        await idbPut("outbox", undefined, { table, op: "delete", realId: id, createdAt: Date.now() });
+      }
+      const arr = cfg.data();
+      const idx = arr.findIndex((r) => r.id === id);
+      if (idx !== -1) arr.splice(idx, 1);
+    }
+
+    cfg.render();
+    updateOfflineBanner();
+  }
+
+  // Vervangt de 19 losse `supabaseClient.from(table).insert/update/delete(...)`-
+  // aanroepen in de logboek-formulieren. Gedraagt zich online exact als een
+  // rechtstreekse Supabase-call (zelfde return-vorm `{ error }`); offline
+  // (of bij een netwerkfout) wordt de wijziging gequeued en optimistisch
+  // toegepast i.p.v. een foutmelding te tonen.
+  async function mutateTable(table, op, { id, payload } = {}) {
+    if (navigator.onLine) {
+      let result;
+      try {
+        result =
+          op === "insert"
+            ? await supabaseClient.from(table).insert(Array.isArray(payload) ? payload : [payload])
+            : op === "update"
+              ? await supabaseClient.from(table).update(payload).eq("id", id)
+              : await supabaseClient.from(table).delete().eq("id", id);
+      } catch (err) {
+        result = { error: err };
+      }
+      if (!result.error || !isNetworkError(result.error)) {
+        return { error: result.error, offline: false };
+      }
+    }
+    await queueOfflineMutation(table, op, { id, payload });
+    return { error: null, offline: true };
+  }
+
+  let flushingOutbox = false;
+  async function flushOutbox() {
+    if (flushingOutbox || !navigator.onLine || !isConfigured) return;
+    flushingOutbox = true;
+    try {
+      const entries = (await idbGetAll("outbox")).sort((a, b) => a.id - b.id);
+      const touchedTables = new Set();
+
+      for (const entry of entries) {
+        if (!navigator.onLine) break;
+
+        let result;
+        try {
+          if (entry.op === "insert") {
+            result = await supabaseClient.from(entry.table).insert([entry.payload]).select();
+          } else if (entry.op === "update") {
+            result = await supabaseClient.from(entry.table).update(entry.payload).eq("id", entry.realId);
+          } else {
+            result = await supabaseClient.from(entry.table).delete().eq("id", entry.realId);
+          }
+        } catch (err) {
+          result = { error: err };
+        }
+
+        if (result.error) {
+          if (isNetworkError(result.error)) break;
+          // Geen netwerkfout (bv. RLS/validatie): opnieuw proberen lost
+          // niets op, dus de entry wordt verwijderd i.p.v. de wachtrij
+          // voor altijd te blokkeren.
+          await idbDelete("outbox", entry.id);
+          showError(t("errSyncFailed") + ": " + result.error.message);
+          continue;
+        }
+
+        const cfg = OFFLINE_TABLES[entry.table];
+        if (cfg) {
+          const arr = cfg.data();
+          if (entry.op === "insert") {
+            const realRow = result.data && result.data[0];
+            const local = arr.find((r) => r.id === entry.tempId);
+            if (local && realRow) {
+              Object.assign(local, realRow);
+              delete local._pending;
+            }
+          } else {
+            const local = arr.find((r) => r.id === entry.realId);
+            if (local) delete local._pending;
+          }
+          touchedTables.add(entry.table);
+        }
+        await idbDelete("outbox", entry.id);
+      }
+
+      touchedTables.forEach((table) => OFFLINE_TABLES[table].render());
+      await updateOfflineBanner();
+    } finally {
+      flushingOutbox = false;
+    }
+  }
+
+  window.addEventListener("online", flushOutbox);
+  setInterval(flushOutbox, 30000);
 
   if (!isConfigured) {
     showError("Supabase is nog niet geconfigureerd: vul SUPABASE_URL en SUPABASE_ANON_KEY in bovenaan index.html.");
@@ -3451,9 +3715,9 @@
     const weight_grams = Math.round(parseFloat(document.getElementById("weightKg").value) * 1000);
     const note = document.getElementById("weightNote").value.trim() || null;
 
-    const { error } = editingWeightId
-      ? await supabaseClient.from("weight_measurements").update({ date, weight_grams, note }).eq("id", editingWeightId)
-      : await supabaseClient.from("weight_measurements").insert([{ date, weight_grams, note, pet_id: currentPetId }]);
+    const { error, offline } = editingWeightId
+      ? await mutateTable("weight_measurements", "update", { id: editingWeightId, payload: { date, weight_grams, note } })
+      : await mutateTable("weight_measurements", "insert", { payload: { date, weight_grams, note, pet_id: currentPetId } });
 
     submitBtn.disabled = false;
 
@@ -3463,7 +3727,7 @@
     }
 
     cancelWeightEdit();
-    await loadWeights();
+    if (!offline) await loadWeights();
   });
 
   async function loadWeights() {
@@ -3476,11 +3740,21 @@
       .order("date", { ascending: true });
 
     if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "weight_measurements:" + currentPetId);
+        if (cached) {
+          latestWeightData = cached;
+          renderWeightChart(cached);
+          renderWeightList(cached);
+          return;
+        }
+      }
       showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
     latestWeightData = data;
+    idbPut("cache", "weight_measurements:" + currentPetId, data);
     renderWeightChart(data);
     renderWeightList(data);
   }
@@ -3815,7 +4089,7 @@
       const color = weightStatusColor(row);
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${color};"></span>${(row.weight_grams / 1000).toFixed(1)} kg</span>
+          <span class="primary"><span class="status-dot" style="background:${color};"></span>${(row.weight_grams / 1000).toFixed(1)} kg${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
@@ -3828,12 +4102,12 @@
   }
 
   async function deleteWeight(id) {
-    const { error } = await supabaseClient.from("weight_measurements").delete().eq("id", id);
+    const { error, offline } = await mutateTable("weight_measurements", "delete", { id });
     if (error) {
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
-    await loadWeights();
+    if (!offline) await loadWeights();
   }
 
   // --- Blood values --------------------------------------------------------
@@ -4139,31 +4413,45 @@
       return;
     }
 
+    // Een "bewerking" is voor bloedwaarden altijd verwijder-de-oude-groep-
+    // en-voeg-de-nieuwe-in (er is geen echte per-marker update). Elke rij
+    // gaat los door mutateTable, zodat offline elke rij zijn eigen
+    // outbox-entry krijgt (zie plan: geen samengestelde-operatie-type nodig).
+    let opError = null;
+    let anyOffline = false;
+
     if (editingBloodDate) {
-      const { error: delError } = await supabaseClient
-        .from("blood_values")
-        .delete()
-        .eq("date", editingBloodDate)
-        .eq("pet_id", currentPetId);
-      if (delError) {
-        showError(t("errUpdateFailed") + ": " + delError.message);
-        submitBtn.disabled = false;
-        return;
+      for (const existingRow of latestBloodData.filter((r) => r.date === editingBloodDate)) {
+        const { error: delError, offline } = await mutateTable("blood_values", "delete", { id: existingRow.id });
+        if (offline) anyOffline = true;
+        if (delError) {
+          opError = delError;
+          break;
+        }
       }
     }
 
-    const { error } = await supabaseClient.from("blood_values").insert(rows);
+    if (!opError) {
+      for (const row of rows) {
+        const { error: insError, offline } = await mutateTable("blood_values", "insert", { payload: row });
+        if (offline) anyOffline = true;
+        if (insError) {
+          opError = insError;
+          break;
+        }
+      }
+    }
 
     submitBtn.disabled = false;
 
-    if (error) {
-      showError(t("errSaveFailed") + ": " + error.message);
+    if (opError) {
+      showError(t("errSaveFailed") + ": " + opError.message);
       return;
     }
 
     cancelBloodEdit();
     showSuccess(t("successBloodSaved"));
-    await loadBloodValues();
+    if (!anyOffline) await loadBloodValues();
   });
 
   async function loadBloodValues() {
@@ -4176,11 +4464,20 @@
       .order("date", { ascending: false });
 
     if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "blood_values:" + currentPetId);
+        if (cached) {
+          latestBloodData = cached;
+          populateBloodChartMarkerSelect(cached);
+          return;
+        }
+      }
       showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
     latestBloodData = data;
+    idbPut("cache", "blood_values:" + currentPetId, data);
     populateBloodChartMarkerSelect(data);
   }
 
@@ -4226,7 +4523,7 @@
 
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary">${formatDate(date)}<span style="color:var(--text-muted);font-weight:400;margin-left:6px;">${rows.length} waarde${rows.length === 1 ? "" : "n"}</span></span>
+          <span class="primary">${formatDate(date)}<span style="color:var(--text-muted);font-weight:400;margin-left:6px;">${rows.length} waarde${rows.length === 1 ? "" : "n"}</span>${pendingDotHtml(rows.find((r) => r._pending))}</span>
           <span class="secondary">${secondaryHtml}</span>
         </div>
       `;
@@ -4243,12 +4540,21 @@
   }
 
   async function deleteBloodGroup(date) {
-    const { error } = await supabaseClient.from("blood_values").delete().eq("date", date).eq("pet_id", currentPetId);
-    if (error) {
-      showError(t("errDeleteFailed") + ": " + error.message);
+    let opError = null;
+    let anyOffline = false;
+    for (const row of latestBloodData.filter((r) => r.date === date)) {
+      const { error, offline } = await mutateTable("blood_values", "delete", { id: row.id });
+      if (offline) anyOffline = true;
+      if (error) {
+        opError = error;
+        break;
+      }
+    }
+    if (opError) {
+      showError(t("errDeleteFailed") + ": " + opError.message);
       return;
     }
-    await loadBloodValues();
+    if (!anyOffline) await loadBloodValues();
   }
 
   // --- Blood result detail overview (tap a result row) --------------------
@@ -4879,9 +5185,9 @@
     const costVal = document.getElementById("vetVisitCost").value;
     const cost = costVal ? parseFloat(costVal) : null;
 
-    const { error } = editingVetVisitId
-      ? await supabaseClient.from("vet_visits").update({ date, vet_id, reason, result, note, cost }).eq("id", editingVetVisitId)
-      : await supabaseClient.from("vet_visits").insert([{ date, vet_id, reason, result, note, cost, pet_id: currentPetId }]);
+    const { error, offline } = editingVetVisitId
+      ? await mutateTable("vet_visits", "update", { id: editingVetVisitId, payload: { date, vet_id, reason, result, note, cost } })
+      : await mutateTable("vet_visits", "insert", { payload: { date, vet_id, reason, result, note, cost, pet_id: currentPetId } });
 
     submitBtn.disabled = false;
 
@@ -4892,7 +5198,7 @@
 
     cancelVetVisitEdit();
     showSuccess(t("successVetVisitSaved"));
-    await loadVetVisits();
+    if (!offline) await loadVetVisits();
   });
 
   async function loadVetVisits() {
@@ -4905,11 +5211,20 @@
       .order("date", { ascending: false });
 
     if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "vet_visits:" + currentPetId);
+        if (cached) {
+          latestVetVisitData = cached;
+          renderVetVisitList(cached);
+          return;
+        }
+      }
       showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
     latestVetVisitData = data;
+    idbPut("cache", "vet_visits:" + currentPetId, data);
     renderVetVisitList(data);
   }
 
@@ -4925,7 +5240,7 @@
       const vetName = row.vet_id ? vetNameById(row.vet_id) : null;
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary">${escapeHtml(row.reason || "Dierenartsbezoek")}</span>
+          <span class="primary">${escapeHtml(row.reason || "Dierenartsbezoek")}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)}${vetName ? " · " + escapeHtml(vetName) : ""}${row.result ? " · " + escapeHtml(row.result) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
@@ -4938,12 +5253,12 @@
   }
 
   async function deleteVetVisit(id) {
-    const { error } = await supabaseClient.from("vet_visits").delete().eq("id", id);
+    const { error, offline } = await mutateTable("vet_visits", "delete", { id });
     if (error) {
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
-    await loadVetVisits();
+    if (!offline) await loadVetVisits();
   }
 
   // --- Vaccinations ----------------------------------------------------
@@ -5080,9 +5395,9 @@
     const costVal = document.getElementById("vaxCost").value;
     const cost = costVal ? parseFloat(costVal) : null;
 
-    const { error } = editingVaxId
-      ? await supabaseClient.from("vaccinations").update({ vaccine, date, valid_until, no_repeat, note, cost }).eq("id", editingVaxId)
-      : await supabaseClient.from("vaccinations").insert([{ vaccine, date, valid_until, no_repeat, note, cost, pet_id: currentPetId }]);
+    const { error, offline } = editingVaxId
+      ? await mutateTable("vaccinations", "update", { id: editingVaxId, payload: { vaccine, date, valid_until, no_repeat, note, cost } })
+      : await mutateTable("vaccinations", "insert", { payload: { vaccine, date, valid_until, no_repeat, note, cost, pet_id: currentPetId } });
 
     submitBtn.disabled = false;
 
@@ -5093,7 +5408,7 @@
 
     cancelVaxEdit();
     showSuccess(t("successVaxSaved"));
-    await loadVaccinations();
+    if (!offline) await loadVaccinations();
   });
 
   async function loadVaccinations() {
@@ -5106,11 +5421,21 @@
       .order("date", { ascending: false });
 
     if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "vaccinations:" + currentPetId);
+        if (cached) {
+          latestVaxData = cached;
+          renderVaxList(cached);
+          renderVaxChart(cached);
+          return;
+        }
+      }
       showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
     latestVaxData = data;
+    idbPut("cache", "vaccinations:" + currentPetId, data);
     renderVaxList(data);
     renderVaxChart(data);
   }
@@ -5133,7 +5458,7 @@
       const noRepeatText = row.no_repeat ? " · " + t("vaxNoRepeatTag") : "";
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}</span>
+          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)} · ${validText}${noRepeatText}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
@@ -5264,12 +5589,12 @@
   }
 
   async function deleteVax(id) {
-    const { error } = await supabaseClient.from("vaccinations").delete().eq("id", id);
+    const { error, offline } = await mutateTable("vaccinations", "delete", { id });
     if (error) {
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
-    await loadVaccinations();
+    if (!offline) await loadVaccinations();
   }
 
   // --- Combined care reminder popup (vaccinations + medications) -----------
@@ -5605,18 +5930,23 @@
     const note = document.getElementById("symptomNote").value.trim() || null;
 
     let error;
+    let offline = false;
     if (editingSymptomId) {
-      ({ error } = await supabaseClient.from("symptom_logs").update({ symptom, date, severity, note }).eq("id", editingSymptomId));
+      ({ error, offline } = await mutateTable("symptom_logs", "update", { id: editingSymptomId, payload: { symptom, date, severity, note } }));
     } else if (endDate && endDate > date) {
       // One row per day in the range, so the timeline/frequency table need
-      // no special-casing for a "spans multiple days" entry.
-      const rows = [];
+      // no special-casing for a "spans multiple days" entry. Offline, each
+      // day becomes its own outbox entry via mutateTable.
       for (let d = date; d <= endDate; d = addDaysToDateStr(d, 1)) {
-        rows.push({ symptom, date: d, severity, note, pet_id: currentPetId });
+        const result = await mutateTable("symptom_logs", "insert", { payload: { symptom, date: d, severity, note, pet_id: currentPetId } });
+        if (result.offline) offline = true;
+        if (result.error) {
+          error = result.error;
+          break;
+        }
       }
-      ({ error } = await supabaseClient.from("symptom_logs").insert(rows));
     } else {
-      ({ error } = await supabaseClient.from("symptom_logs").insert([{ symptom, date, severity, note, pet_id: currentPetId }]));
+      ({ error, offline } = await mutateTable("symptom_logs", "insert", { payload: { symptom, date, severity, note, pet_id: currentPetId } }));
     }
 
     submitBtn.disabled = false;
@@ -5628,7 +5958,7 @@
 
     cancelSymptomEdit();
     showSuccess(t("successSymptomSaved"));
-    await loadSymptoms();
+    if (!offline) await loadSymptoms();
   });
 
   async function loadSymptoms() {
@@ -5641,11 +5971,23 @@
       .order("date", { ascending: false });
 
     if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "symptom_logs:" + currentPetId);
+        if (cached) {
+          latestSymptomData = cached;
+          updateSymptomSuggestions();
+          renderSymptomList(cached);
+          renderSymptomSummary(cached);
+          renderSymptomChart(cached);
+          return;
+        }
+      }
       showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
     latestSymptomData = data;
+    idbPut("cache", "symptom_logs:" + currentPetId, data);
     updateSymptomSuggestions();
     renderSymptomList(data);
     renderSymptomSummary(data);
@@ -5787,7 +6129,7 @@
       const color = severityColor[row.severity] || "var(--text-muted)";
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${color};"></span>${escapeHtml(row.symptom)}</span>
+          <span class="primary"><span class="status-dot" style="background:${color};"></span>${escapeHtml(row.symptom)}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
@@ -5828,12 +6170,12 @@
   }
 
   async function deleteSymptom(id) {
-    const { error } = await supabaseClient.from("symptom_logs").delete().eq("id", id);
+    const { error, offline } = await mutateTable("symptom_logs", "delete", { id });
     if (error) {
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
-    await loadSymptoms();
+    if (!offline) await loadSymptoms();
   }
 
   // --- Medicatie logboek -----------------------------------------------------
@@ -6024,9 +6366,9 @@
     const costVal = document.getElementById("medicationCost").value;
     const cost = costVal ? parseFloat(costVal) : null;
 
-    const { error } = editingMedicationId
-      ? await supabaseClient.from("medications").update({ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost }).eq("id", editingMedicationId)
-      : await supabaseClient.from("medications").insert([{ name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost, pet_id: currentPetId }]);
+    const { error, offline } = editingMedicationId
+      ? await mutateTable("medications", "update", { id: editingMedicationId, payload: { name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost } })
+      : await mutateTable("medications", "insert", { payload: { name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost, pet_id: currentPetId } });
 
     submitBtn.disabled = false;
 
@@ -6035,10 +6377,13 @@
       return;
     }
 
-    await registerMedicationInCatalog(name, purpose, brand, active_ingredient, dose);
+    // Catalogusregistratie heeft een online de-dupe-read nodig en wordt
+    // daarom bewust overgeslagen bij een offline log — zelfherstellend
+    // zodra dezelfde naam/doel-combinatie ooit weer online gelogd wordt.
+    if (!offline) await registerMedicationInCatalog(name, purpose, brand, active_ingredient, dose);
     cancelMedicationEdit();
     showSuccess(t("successMedicationSaved"));
-    await loadMedications();
+    if (!offline) await loadMedications();
   });
 
   async function loadMedications() {
@@ -6051,11 +6396,21 @@
       .order("date", { ascending: false });
 
     if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "medications:" + currentPetId);
+        if (cached) {
+          latestMedicationData = cached;
+          updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
+          renderMedicationList(cached);
+          return;
+        }
+      }
       showError(t("errLoadFailed") + ": " + error.message);
       return;
     }
 
     latestMedicationData = data;
+    idbPut("cache", "medications:" + currentPetId, data);
     updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
     renderMedicationList(data);
   }
@@ -6092,7 +6447,7 @@
 
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}</span>
+          <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)}${row.brand ? " · " + escapeHtml(row.brand) : ""}${row.dose ? " · " + escapeHtml(row.dose) : ""}${row.batch ? " · batch " + escapeHtml(row.batch) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
@@ -6106,12 +6461,12 @@
   }
 
   async function deleteMedication(id) {
-    const { error } = await supabaseClient.from("medications").delete().eq("id", id);
+    const { error, offline } = await mutateTable("medications", "delete", { id });
     if (error) {
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
-    await loadMedications();
+    if (!offline) await loadMedications();
   }
 
   // --- Dashboard -------------------------------------------------------------
@@ -7009,7 +7364,10 @@
   // screen shortcut while still "open") without a full page reload, so
   // data can go stale until we explicitly refetch here.
   document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") refreshAll(false);
+    if (document.visibilityState === "visible") {
+      refreshAll(false);
+      flushOutbox();
+    }
   });
   window.addEventListener("pageshow", () => refreshAll(false));
 
@@ -7020,6 +7378,8 @@
 
   applyIconStyle();
   applyTranslations();
+  updateOfflineBanner();
+  flushOutbox();
 
   if ("serviceWorker" in navigator) {
     window.addEventListener("load", () => {
