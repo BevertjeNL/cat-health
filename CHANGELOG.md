@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/BevertjeNL/cat-health/compare/v1.3.0...v1.4.0) (2026-08-04)
+
+
+### Features
+
+* offline-first fase 1 voor logboek-tabellen ([9ec096d](https://github.com/BevertjeNL/cat-health/commit/9ec096d743275b03ed26fab57f0b48b0e66074a5))
+
 # [1.3.0](https://github.com/BevertjeNL/cat-health/compare/v1.2.1...v1.3.0) (2026-08-04)
 
 
