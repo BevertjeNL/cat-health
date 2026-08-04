@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/BevertjeNL/cat-health/compare/v1.4.0...v1.5.0) (2026-08-04)
+
+
+### Features
+
+* app-icoon met donkere achtergrond, grotere poten en verrassend duotone kleurenschema ([2b9c12c](https://github.com/BevertjeNL/cat-health/commit/2b9c12c89959bf073fd60fff6c93f6c8715b8af6))
+
 # [1.4.0](https://github.com/BevertjeNL/cat-health/compare/v1.3.0...v1.4.0) (2026-08-04)
 
 
