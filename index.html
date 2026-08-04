@@ -58,7 +58,18 @@
     --accent-contrast: #ffffff;
     --border: #e6e2d8;
     --danger: #d9432c;
-    --radius: 12px;
+    --radius: 20px;
+    /* Liquid Glass material tokens (iOS 26) — a translucent, blurred
+       surface with a thin bright top-edge highlight, layered over the
+       existing --bg so content behind it stays legible through the glass.
+       Deliberately just tokens on top of the existing surfaces (.card,
+       .bottom-nav, .detail-sheet, .today-btn), not a structural redesign —
+       the layout/interaction patterns stay exactly as they are. */
+    --glass-bg: rgba(255, 255, 255, 0.55);
+    --glass-bg-strong: rgba(255, 255, 255, 0.72);
+    --glass-border: rgba(255, 255, 255, 0.65);
+    --glass-highlight: rgba(255, 255, 255, 0.8);
+    --glass-blur: 20px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -68,6 +79,10 @@
       --text: #f2f0e8;
       --text-muted: #a39d8f;
       --border: #3a352a;
+      --glass-bg: rgba(36, 32, 25, 0.55);
+      --glass-bg-strong: rgba(36, 32, 25, 0.74);
+      --glass-border: rgba(255, 255, 255, 0.09);
+      --glass-highlight: rgba(255, 255, 255, 0.12);
     }
   }
 
@@ -114,8 +129,8 @@
     justify-content: center;
     padding: 7px 50px 7px 16px;
     background: rgba(0, 0, 0, 0.34);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
   }
 
   .pet-title-detail {
@@ -161,10 +176,12 @@
     bottom: 0;
     z-index: 20;
     display: flex;
-    background: var(--card-bg);
-    border-top: 1px solid var(--border);
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border-top: 1px solid var(--glass-border);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
-    box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 -2px 12px rgba(0, 0, 0, 0.05);
   }
 
   .bottom-nav button {
@@ -205,17 +222,19 @@
   section.tab-panel.active { display: block; }
 
   .card {
-    background: var(--card-bg);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     border-radius: var(--radius);
-    border: 1px solid var(--border);
+    border: 1px solid var(--glass-border);
     padding: 18px;
     margin-bottom: 16px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
   }
 
   @media (prefers-color-scheme: dark) {
     .card {
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
+      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
     }
   }
 
@@ -495,8 +514,10 @@
     flex: 0 0 auto;
     padding: 0 14px;
     border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--bg);
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
     color: var(--accent);
     font-weight: 600;
     font-size: 0.85rem;
@@ -963,6 +984,12 @@
     border-radius: 10px;
     font-size: 0.9rem;
     display: none;
+    /* Error/success stay solid, semantic colors below — status feedback
+       needs to read unambiguously at a glance, so only the edges get the
+       glass treatment, not the fill. */
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
   .status-banner.show { display: block; }
@@ -997,13 +1024,18 @@
   }
 
   .detail-sheet {
-    background: var(--card-bg);
+    background: var(--glass-bg-strong);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border: 1px solid var(--glass-border);
+    border-bottom: none;
     width: 100%;
     max-width: 640px;
     max-height: 85vh;
     overflow-y: auto;
     border-radius: 20px 20px 0 0;
     padding: 18px 16px calc(18px + env(safe-area-inset-bottom));
+    box-shadow: inset 0 1px 0 var(--glass-highlight);
   }
 
   .detail-header {
