@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/BevertjeNL/cat-health/compare/v1.6.0...v1.6.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* ondoorzichtige urgentiekleuren voor entry-rijen i.p.v. rgba ([a618dc6](https://github.com/BevertjeNL/cat-health/commit/a618dc6ec3d983a71e26c90acabc67f7e353d8e3))
+
 # [1.6.0](https://github.com/BevertjeNL/cat-health/compare/v1.5.1...v1.6.0) (2026-08-05)
 
 
