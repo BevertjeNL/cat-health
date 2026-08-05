@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/BevertjeNL/cat-health/compare/v1.7.0...v1.8.0) (2026-08-05)
+
+
+### Features
+
+* dashboard-tegels verfijnen — relatieve datums, typografische hiërarchie, relevantere afwijkingen ([68aa1e7](https://github.com/BevertjeNL/cat-health/commit/68aa1e717024651fd4f5c2698c56ecac85bd3cbf))
+
 # [1.7.0](https://github.com/BevertjeNL/cat-health/compare/v1.6.1...v1.7.0) (2026-08-05)
 
 
