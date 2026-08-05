@@ -2524,10 +2524,6 @@
     vaxExpiredSince: "Verlopen sinds",
     vaxNoExpiry: "Geen vervaldatum",
     vaxNoRepeatTag: "geen vervolg nodig",
-    dayLate: "dag te laat",
-    daysLate: "dagen te laat",
-    dueToday: "Vandaag",
-    dueInLabel: "Over",
     dayUnit: "dag",
     daysUnit: "dagen",
     medNextLabel: "Volgende:",
@@ -2550,8 +2546,7 @@
     symptomTrendUp: "komt vaker voor dan normaal",
     symptomTrendDown: "komt minder vaak voor dan normaal",
     symptomTrendDetail: "keer in",
-    symptomTrendDays: "dagen · gemiddeld was",
-    symptomTrendPrevDays: "dagen · vorige periode was",
+    symptomTrendWindowUnit: "dagen",
     alertVaxExpiredSince: "is verlopen sinds",
     alertVaxExpiresIn: "verloopt over",
     alertVaxAllCurrent: "Vaccinaties zijn actueel.",
@@ -2569,6 +2564,8 @@
     costToggleRolling: "Rollend jaar",
     costToggleCalendar: "Kalenderjaar",
     dashboardVetLastVisit: "Laatste bezoek",
+    dashboardVetLastLabel: "Laatste",
+    dashboardVetPlannedLabel: "Gepland",
     vetVisitFallback: "Bezoek",
     sinceLastVetVisit: "Sinds laatste dierenartsbezoek",
     sinceLogStart: "Sinds start logboek",
@@ -2636,10 +2633,6 @@
     vaxExpiredSince: "Expired since",
     vaxNoExpiry: "No expiry date",
     vaxNoRepeatTag: "no repeat needed",
-    dayLate: "day late",
-    daysLate: "days late",
-    dueToday: "Today",
-    dueInLabel: "In",
     dayUnit: "day",
     daysUnit: "days",
     medNextLabel: "Next:",
@@ -2660,8 +2653,7 @@
     symptomTrendUp: "is occurring more often than usual",
     symptomTrendDown: "is occurring less often than usual",
     symptomTrendDetail: "times in",
-    symptomTrendDays: "days · average was",
-    symptomTrendPrevDays: "days · previous period was",
+    symptomTrendWindowUnit: "days",
     alertVaxExpiredSince: "expired on",
     alertVaxExpiresIn: "expires in",
     alertVaxAllCurrent: "Vaccinations are up to date.",
@@ -2679,6 +2671,8 @@
     costToggleRolling: "Rolling year",
     costToggleCalendar: "Calendar year",
     dashboardVetLastVisit: "Last visit",
+    dashboardVetLastLabel: "Last",
+    dashboardVetPlannedLabel: "Planned",
     vetVisitFallback: "Visit",
     sinceLastVetVisit: "Since last vet visit",
     sinceLogStart: "Since log start",
@@ -2745,10 +2739,6 @@
     vaxExpiredSince: "Abgelaufen seit",
     vaxNoExpiry: "Kein Ablaufdatum",
     vaxNoRepeatTag: "keine Wiederholung nötig",
-    dayLate: "Tag zu spät",
-    daysLate: "Tage zu spät",
-    dueToday: "Heute",
-    dueInLabel: "In",
     dayUnit: "Tag",
     daysUnit: "Tagen",
     medNextLabel: "Nächste:",
@@ -2769,8 +2759,7 @@
     symptomTrendUp: "tritt häufiger auf als normal",
     symptomTrendDown: "tritt seltener auf als normal",
     symptomTrendDetail: "mal in",
-    symptomTrendDays: "Tagen · Durchschnitt war",
-    symptomTrendPrevDays: "Tagen · vorheriger Zeitraum war",
+    symptomTrendWindowUnit: "Tage",
     alertVaxExpiredSince: "ist abgelaufen seit",
     alertVaxExpiresIn: "läuft ab in",
     alertVaxAllCurrent: "Impfungen sind aktuell.",
@@ -2788,6 +2777,8 @@
     costToggleRolling: "Rollierendes Jahr",
     costToggleCalendar: "Kalenderjahr",
     dashboardVetLastVisit: "Letzter Besuch",
+    dashboardVetLastLabel: "Letzter",
+    dashboardVetPlannedLabel: "Geplant",
     vetVisitFallback: "Besuch",
     sinceLastVetVisit: "Seit letztem Tierarztbesuch",
     sinceLogStart: "Seit Beginn des Logbuchs",
@@ -6648,8 +6639,26 @@
       .sort((a, b) => b.count - a.count);
   }
 
+  // Vet visits can now be logged with a future date ("gepland") — a planned
+  // appointment must never count as "the last visit" for these purposes
+  // (that would wipe out the symptom history filter, since nothing logged
+  // so far has a date on/after a future one). latestVetVisitData is already
+  // sorted by date descending, so the first past-or-today entry is it.
+  function lastPastVetVisit() {
+    const today = dateToISO(new Date());
+    return (latestVetVisitData || []).find((v) => v.date <= today) || null;
+  }
+
+  // Mirror of lastPastVetVisit(): the soonest upcoming (strictly future)
+  // appointment, i.e. the LAST future entry in the date-descending array.
+  function nextPlannedVetVisit() {
+    const today = dateToISO(new Date());
+    const future = (latestVetVisitData || []).filter((v) => v.date > today);
+    return future.length ? future[future.length - 1] : null;
+  }
+
   function computeSymptomSinceVetVisit() {
-    const lastVisit = (latestVetVisitData || [])[0] || null;
+    const lastVisit = lastPastVetVisit();
     const symptoms = latestSymptomData || [];
     if (!symptoms.length) return { hasData: false, lastVisit };
     const relevant = lastVisit ? symptoms.filter((s) => s.date >= lastVisit.date) : symptoms;
@@ -6746,9 +6755,8 @@
     const up = trend.direction === "up";
     const verb = up ? t("symptomTrendUp") : t("symptomTrendDown");
     const color = up ? "#ff9500" : "#34c759";
-    const daysLabel = trend.basis === "previous" ? t("symptomTrendPrevDays") : t("symptomTrendDays");
     return `<div class="dashboard-card-sub" style="color:${color}; font-weight:600; margin-top:6px;">${escapeHtml(trend.name)} ${verb}</div>
-            <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${daysLabel} ${trend.expected.toFixed(1)}x</div>`;
+            <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${t("symptomTrendWindowUnit")} · Ø ${trend.expected.toFixed(1)}x</div>`;
   }
 
   function alertVaccination() {
@@ -7042,7 +7050,8 @@
     const medS = computeMedicationSummary();
     const openMeds = [...medS.overdue, ...medS.dueSoon];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
-    const lastVetVisit = (latestVetVisitData || [])[0]; // loadVetVisits orders by date descending
+    const lastVetVisit = lastPastVetVisit();
+    const plannedVetVisit = nextPlannedVetVisit();
 
     // Every tile's border/shadow glows in whichever color the MAJORITY of
     // its elements earn (majorityColor()) — not a single worst-case item —
@@ -7115,14 +7124,8 @@
             ? openMeds
                 .map((m) => {
                   const status = dueStatusFromDate(m.next_due_date);
-                  const dueText =
-                    status.daysLeft < 0
-                      ? `${Math.abs(status.daysLeft)} ${status.daysLeft === -1 ? t("dayLate") : t("daysLate")}`
-                      : status.daysLeft === 0
-                      ? t("dueToday")
-                      : `${t("dueInLabel")} ${status.daysLeft} ${status.daysLeft === 1 ? t("dayUnit") : t("daysUnit")}`;
                   return `<div class="dashboard-card-value">${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
-                          <div class="dashboard-card-sub">${t("medNextLabel")} ${duePillHtml(status.daysLeft, dueText)}</div>`;
+                          <div class="dashboard-card-sub"><span class="due-pill" style="color:${status.color};">${formatDate(m.next_due_date)}</span></div>`;
                 })
                 .join("")
             : lastMed
@@ -7154,7 +7157,8 @@
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
-        <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")} ${symS.hasData && symS.sinceDate ? t("dashboardSymptomsTitleSince") : t("dashboardSymptomsTitleStart")}</h3>
+        <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")}</h3>
+        <div class="dashboard-card-sub">${symS.hasData && symS.sinceDate ? t("dashboardSymptomsTitleSince") : t("dashboardSymptomsTitleStart")}</div>
         ${
           !symS.hasData || symS.none
             ? `<div class="dashboard-card-empty">${t("emptySymptomsLogged")}</div>`
@@ -7168,9 +7172,13 @@
       `<div class="card dashboard-card" onclick="switchTab('vet')">
         <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
-          lastVetVisit
-            ? `<div class="dashboard-card-value">${t("dashboardVetLastVisit")}: ${formatDate(lastVetVisit.date)}</div>
-               <div class="dashboard-card-sub">${escapeHtml(lastVetVisit.reason || t("vetVisitFallback"))}</div>`
+          lastVetVisit || plannedVetVisit
+            ? `${lastVetVisit ? `<div class="dashboard-card-value">${t("dashboardVetLastLabel")}: ${formatDate(lastVetVisit.date)}</div>` : ""}
+               ${
+                 plannedVetVisit
+                   ? `<div class="dashboard-card-sub">${t("dashboardVetPlannedLabel")}: ${duePillHtml(dueStatusFromDate(plannedVetVisit.date).daysLeft, formatDate(plannedVetVisit.date))}</div>`
+                   : ""
+               }`
             : `<div class="dashboard-card-empty">${t("emptyVetVisitsLogged")}</div>`
         }
       </div>`,
