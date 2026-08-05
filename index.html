@@ -654,6 +654,34 @@
     flex-shrink: 0;
   }
 
+  /* Oude/vervangen entries (niet de actuele dosis, of expliciet uitgesloten
+     van herhaling): leesbaar maar duidelijk minder opvallend dan het
+     actuele item — puur tekstkleur/gewicht, geen achtergrondkleur. */
+  .entry-row.is-history .entry-main .primary {
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .entry-row.is-history {
+    opacity: 0.8;
+  }
+
+  /* Actuele/lopende medicatie of vaccinatie: het hele veld krijgt een
+     achtergrondtint op de urgentieschaal (rood = verlopen, oranje = binnen
+     30 dagen, groen = ruim op tijd) i.p.v. alleen een klein bolletje. */
+  .entry-row.urgency-red { background: rgba(255, 59, 48, 0.16); }
+  .entry-row.urgency-orange { background: rgba(255, 149, 0, 0.16); }
+  .entry-row.urgency-green { background: rgba(52, 199, 89, 0.14); }
+
+  @media (prefers-color-scheme: dark) {
+    .entry-row.urgency-red { background: rgba(255, 59, 48, 0.26); }
+    .entry-row.urgency-orange { background: rgba(255, 149, 0, 0.26); }
+    .entry-row.urgency-green { background: rgba(52, 199, 89, 0.22); }
+  }
+
+  .due-date-accent {
+    font-weight: 700;
+  }
+
   .entry-actions {
     position: absolute;
     top: 0;
@@ -5310,6 +5338,16 @@
     return dueStatusFromDate(v.valid_until);
   }
 
+  // Maps a dueStatusFromDate() result to the full-row background tint class
+  // for "dit is de actuele/lopende entry" rows — null (no date known) means
+  // no urgency signal, so the row stays untinted.
+  function urgencyRowClass(daysLeft) {
+    if (daysLeft == null) return "";
+    if (daysLeft < 0) return "urgency-red";
+    if (daysLeft <= 30) return "urgency-orange";
+    return "urgency-green";
+  }
+
   // Only the most recent entry per name matters for "what needs action now"
   // — an old entry that's since been renewed/redosed shouldn't trigger a
   // false "verlopen" alert just because it's still sitting in the history.
@@ -5448,17 +5486,31 @@
       return;
     }
 
+    // "Actueel" = de winnende rij per vaccinnaam (zelfde regel als de
+    // dashboard-samenvatting), maar dan berekend zonder de van-herhaling-
+    // uitgesloten rijen mee te laten dingen — die zijn altijd grijs, nooit
+    // "actueel", ongeacht hun datum.
+    const currentIds = new Set(bestVaxStatusByVaccine(data.filter((r) => !r.no_repeat)).map((r) => r.id));
+
     data.forEach((row) => {
+      const isCurrent = !row.no_repeat && currentIds.has(row.id);
       const status = vaccinationStatus(row);
+      // Kleuraccent op de datum alleen bij de actuele, niet-uitgesloten rij
+      // — een oude/vervangen of van-herhaling-uitgesloten rij toont de datum
+      // gewoon in de gedempte tekstkleur van de rest van de regel.
       const validText = row.valid_until
-        ? status.daysLeft < 0
-          ? `${t("vaxExpiredSince")} ${formatDate(row.valid_until)}`
-          : `${t("vaxValidUntil")} ${formatDate(row.valid_until)}`
+        ? `${status.daysLeft < 0 ? t("vaxExpiredSince") : t("vaxValidUntil")} ${
+            isCurrent
+              ? `<span class="due-date-accent" style="color:${status.color};">${formatDate(row.valid_until)}</span>`
+              : formatDate(row.valid_until)
+          }`
         : t("vaxNoExpiry");
       const noRepeatText = row.no_repeat ? " · " + t("vaxNoRepeatTag") : "";
+      const rowClass = isCurrent ? urgencyRowClass(status.daysLeft) : "is-history";
+      const dotHtml = isCurrent ? "" : `<span class="status-dot" style="background:var(--text-muted);"></span>`;
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${status.color};"></span>${escapeHtml(row.vaccine)}${pendingDotHtml(row)}</span>
+          <span class="primary">${dotHtml}${escapeHtml(row.vaccine)}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)} · ${validText}${noRepeatText}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
@@ -5466,6 +5518,7 @@
         { label: "Verwijder", onClick: () => deleteVax(row.id) },
         { label: "Bewerk", className: "edit-action", onClick: () => editVax(row) },
       ]);
+      if (rowClass) li.querySelector(".entry-row").classList.add(rowClass);
       vaxList.appendChild(li);
     });
   }
@@ -6430,24 +6483,26 @@
 
     data.forEach((row) => {
       const isLatest = latestIds.has(row.id);
-      let dotColor = "var(--text-muted)";
+      let dotHtml = `<span class="status-dot" style="background:var(--text-muted);"></span>`;
       let dueText = null;
+      let rowClass = isLatest ? "" : "is-history";
 
       if (isLatest) {
         const status = dueStatusFromDate(row.next_due_date);
-        dotColor = status.color;
-        dueText = row.next_due_date
-          ? status.daysLeft < 0
-            ? `Volgende dosis was ${formatDate(row.next_due_date)}`
-            : `Volgende dosis ${formatDate(row.next_due_date)}`
-          : "Geen vervolgdosis gepland";
+        if (row.next_due_date) {
+          rowClass = urgencyRowClass(status.daysLeft);
+          dotHtml = "";
+          dueText = `Volgende: <span class="due-date-accent" style="color:${status.color};">${formatDate(row.next_due_date)}</span>`;
+        } else {
+          dueText = "Geen vervolgdosis gepland";
+        }
       } else if (row.next_due_date) {
         dueText = `Toen gepland: ${formatDate(row.next_due_date)}`;
       }
 
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary"><span class="status-dot" style="background:${dotColor};"></span>${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}${pendingDotHtml(row)}</span>
+          <span class="primary">${dotHtml}${escapeHtml(row.name)}${purposeTagHtml(row.purpose)}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)}${row.brand ? " · " + escapeHtml(row.brand) : ""}${row.dose ? " · " + escapeHtml(row.dose) : ""}${row.batch ? " · batch " + escapeHtml(row.batch) : ""}${dueText ? " · " + dueText : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
@@ -6456,6 +6511,7 @@
         { label: "Dupliceer", className: "edit-action", onClick: () => duplicateMedication(row) },
         { label: "Bewerk", className: "edit-action", onClick: () => editMedication(row) },
       ]);
+      if (rowClass) li.querySelector(".entry-row").classList.add(rowClass);
       medicationList.appendChild(li);
     });
   }
