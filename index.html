@@ -661,21 +661,22 @@
     color: var(--text-muted);
     font-weight: 500;
   }
-  .entry-row.is-history {
-    opacity: 0.8;
-  }
 
   /* Actuele/lopende medicatie of vaccinatie: het hele veld krijgt een
      achtergrondtint op de urgentieschaal (rood = verlopen, oranje = binnen
-     30 dagen, groen = ruim op tijd) i.p.v. alleen een klein bolletje. */
-  .entry-row.urgency-red { background: rgba(255, 59, 48, 0.16); }
-  .entry-row.urgency-orange { background: rgba(255, 149, 0, 0.16); }
-  .entry-row.urgency-green { background: rgba(52, 199, 89, 0.14); }
+     30 dagen, groen = ruim op tijd) i.p.v. alleen een klein bolletje.
+     Ondoorzichtige (niet rgba-)kleuren zijn hier bewust: .entry-row ligt
+     boven de altijd-aanwezige .entry-actions-swipeknoppen en moet die
+     volledig afdekken zolang de rij niet geveegd is — een transparante
+     tint liet die knoppen (en hun tekst) doorschemeren op elke rij. */
+  .entry-row.urgency-red { background: #ffe0de; }
+  .entry-row.urgency-orange { background: #ffeed6; }
+  .entry-row.urgency-green { background: #e3f7e8; }
 
   @media (prefers-color-scheme: dark) {
-    .entry-row.urgency-red { background: rgba(255, 59, 48, 0.26); }
-    .entry-row.urgency-orange { background: rgba(255, 149, 0, 0.26); }
-    .entry-row.urgency-green { background: rgba(52, 199, 89, 0.22); }
+    .entry-row.urgency-red { background: #5d271f; }
+    .entry-row.urgency-orange { background: #5d3e13; }
+    .entry-row.urgency-green { background: #284527; }
   }
 
   .due-date-accent {
