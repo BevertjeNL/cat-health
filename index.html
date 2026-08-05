@@ -5602,7 +5602,7 @@
   // helpful nudge instead of a nag, per the "geen achtergrond-pushmeldingen,
   // wel een pop-up bij openen" decision.
   function maybeShowCareReminders() {
-    const dueVax = bestVaxStatusByVaccine(latestVaxData || [])
+    const dueVax = bestVaxStatusByVaccine(activeVaccineData(latestVaxData || []))
       .map((row) => ({ kind: "vaccinatie", name: row.vaccine, dueDate: row.valid_until, status: dueStatusFromDate(row.valid_until) }))
       .filter((x) => x.dueDate && x.status.daysLeft <= 30);
 
