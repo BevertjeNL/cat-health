@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/BevertjeNL/cat-health/compare/v1.6.1...v1.7.0) (2026-08-05)
+
+
+### Features
+
+* dashboard-tegels compacter en geplande dierenartsbezoeken ([04afd29](https://github.com/BevertjeNL/cat-health/commit/04afd29606af06ba15261bb261fd2710472903dc))
+
 ## [1.6.1](https://github.com/BevertjeNL/cat-health/compare/v1.6.0...v1.6.1) (2026-08-05)
 
 
