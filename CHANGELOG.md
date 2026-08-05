@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/BevertjeNL/cat-health/compare/v1.5.1...v1.6.0) (2026-08-05)
+
+
+### Features
+
+* visuele urgentie-hiërarchie voor medicatie- en vaccinatielijsten ([24d7dbc](https://github.com/BevertjeNL/cat-health/commit/24d7dbc9ec81a22d4f9df0bce130f6ef6a45741c))
+
 ## [1.5.1](https://github.com/BevertjeNL/cat-health/compare/v1.5.0...v1.5.1) (2026-08-05)
 
 
