@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/BevertjeNL/cat-health/compare/v1.5.0...v1.5.1) (2026-08-05)
+
+
+### Bug Fixes
+
+* startup-pop-up toont geen van-herhaling-uitgesloten vaccinaties meer ([3e19524](https://github.com/BevertjeNL/cat-health/commit/3e195246d8c8abd6bd0ce32092e92b30d66c9fbd))
+
 # [1.5.0](https://github.com/BevertjeNL/cat-health/compare/v1.4.0...v1.5.0) (2026-08-04)
 
 
