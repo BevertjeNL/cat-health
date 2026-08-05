@@ -2524,6 +2524,10 @@
     vaxExpiredSince: "Verlopen sinds",
     vaxNoExpiry: "Geen vervaldatum",
     vaxNoRepeatTag: "geen vervolg nodig",
+    dayLate: "dag te laat",
+    daysLate: "dagen te laat",
+    dueToday: "Vandaag",
+    dueInLabel: "Over",
     dayUnit: "dag",
     daysUnit: "dagen",
     medNextLabel: "Volgende:",
@@ -2536,6 +2540,7 @@
     emptyVets: "Nog geen dierenartsen toegevoegd",
     emptyVetContactDetails: "Geen contactgegevens",
     emptySymptomsLogged: "Nog geen afwijkingen gelogd",
+    emptySymptomsRecent: "Geen recente of ernstige afwijkingen",
     emptyCostsRegistered: "Nog geen kosten geregistreerd",
     emptyWeightRegistered: "Nog geen gewichtsmetingen geregistreerd.",
     emptyPrevWeight: "Nog geen vorige meting om mee te vergelijken",
@@ -2633,6 +2638,10 @@
     vaxExpiredSince: "Expired since",
     vaxNoExpiry: "No expiry date",
     vaxNoRepeatTag: "no repeat needed",
+    dayLate: "day late",
+    daysLate: "days late",
+    dueToday: "Today",
+    dueInLabel: "In",
     dayUnit: "day",
     daysUnit: "days",
     medNextLabel: "Next:",
@@ -2643,6 +2652,7 @@
     emptyBloodResults: "No results yet",
     emptyVetVisitsLogged: "No visits logged yet",
     emptySymptomsLogged: "No symptoms logged yet",
+    emptySymptomsRecent: "No recent or severe symptoms",
     emptyCostsRegistered: "No costs recorded yet",
     emptyWeightRegistered: "No weight measurements recorded yet.",
     emptyPrevWeight: "No previous measurement to compare with yet",
@@ -2739,6 +2749,10 @@
     vaxExpiredSince: "Abgelaufen seit",
     vaxNoExpiry: "Kein Ablaufdatum",
     vaxNoRepeatTag: "keine Wiederholung nötig",
+    dayLate: "Tag zu spät",
+    daysLate: "Tage zu spät",
+    dueToday: "Heute",
+    dueInLabel: "In",
     dayUnit: "Tag",
     daysUnit: "Tagen",
     medNextLabel: "Nächste:",
@@ -2749,6 +2763,7 @@
     emptyBloodResults: "Noch keine Ergebnisse",
     emptyVetVisitsLogged: "Noch keine Besuche protokolliert",
     emptySymptomsLogged: "Noch keine Symptome protokolliert",
+    emptySymptomsRecent: "Keine aktuellen oder schweren Symptome",
     emptyCostsRegistered: "Noch keine Kosten erfasst",
     emptyWeightRegistered: "Noch keine Gewichtsmessungen erfasst.",
     emptyPrevWeight: "Noch keine vorherige Messung zum Vergleich",
@@ -5340,6 +5355,19 @@
     return "urgency-green";
   }
 
+  // "Over 14 dagen" / "Vandaag" / "3 dagen te laat" — a relative read is
+  // faster to scan on the dashboard than a bare date, and doesn't force a
+  // full calendar-date string into a narrow phone-width tile.
+  function formatDueRelative(daysLeft) {
+    if (daysLeft == null) return "";
+    if (daysLeft < 0) {
+      const n = Math.abs(daysLeft);
+      return `${n} ${n === 1 ? t("dayLate") : t("daysLate")}`;
+    }
+    if (daysLeft === 0) return t("dueToday");
+    return `${t("dueInLabel")} ${daysLeft} ${daysLeft === 1 ? t("dayUnit") : t("daysUnit")}`;
+  }
+
   // Only the most recent entry per name matters for "what needs action now"
   // — an old entry that's since been renewed/redosed shouldn't trigger a
   // false "verlopen" alert just because it's still sitting in the history.
@@ -6759,6 +6787,30 @@
             <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${t("symptomTrendWindowUnit")} · Ø ${trend.expected.toFixed(1)}x</div>`;
   }
 
+  // The dashboard tile has room for a glance, not a full log — an afwijking
+  // logged once, mild, weeks ago and never repeated isn't "actueel" just
+  // because no vet visit has happened since. Only genuinely current
+  // (recent) or still-notable (severe, regardless of age) entries earn a
+  // spot here; everything else stays out until the user opens the tab.
+  const SEVERITY_RANK = { ernstig: 3, matig: 2, licht: 1 };
+  function computeDashboardSymptomHighlights(symS) {
+    if (!symS.hasData || symS.none) return [];
+    const today = dateToISO(new Date());
+    const windowStart = addDaysToDateStr(today, -14);
+    const notable = symS.relevant.filter((r) => r.date >= windowStart || r.severity === "ernstig");
+    const grouped = {};
+    notable.forEach((r) => {
+      if (!grouped[r.symptom]) grouped[r.symptom] = { symptom: r.symptom, count: 0, maxSeverity: r.severity || "licht" };
+      grouped[r.symptom].count++;
+      if ((SEVERITY_RANK[r.severity] || 0) > (SEVERITY_RANK[grouped[r.symptom].maxSeverity] || 0)) {
+        grouped[r.symptom].maxSeverity = r.severity;
+      }
+    });
+    return Object.values(grouped)
+      .sort((a, b) => (SEVERITY_RANK[b.maxSeverity] || 0) - (SEVERITY_RANK[a.maxSeverity] || 0) || b.count - a.count)
+      .slice(0, 3);
+  }
+
   function alertVaccination() {
     const s = computeVaccinationSummary();
     if (!s || !s.next) return null;
@@ -7047,6 +7099,7 @@
     const bloodS = computeBloodSummary();
     const symS = computeSymptomSinceVetVisit();
     const symptomTrend = computeSymptomTrend();
+    const symptomHighlights = computeDashboardSymptomHighlights(symS);
     const medS = computeMedicationSummary();
     const openMeds = [...medS.overdue, ...medS.dueSoon];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
@@ -7125,7 +7178,7 @@
                 .map((m) => {
                   const status = dueStatusFromDate(m.next_due_date);
                   return `<div class="dashboard-card-value">${escapeHtml(m.name)}${purposeTagHtml(m.purpose)}</div>
-                          <div class="dashboard-card-sub"><span class="due-pill" style="color:${status.color};">${formatDate(m.next_due_date)}</span></div>`;
+                          <div class="dashboard-card-sub"><span class="due-pill" style="color:${status.color};">${formatDueRelative(status.daysLeft)}</span></div>`;
                 })
                 .join("")
             : lastMed
@@ -7158,22 +7211,23 @@
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
         <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")}</h3>
-        <div class="dashboard-card-sub">${symS.hasData && symS.sinceDate ? t("dashboardSymptomsTitleSince") : t("dashboardSymptomsTitleStart")}</div>
+        <div class="dashboard-card-sub" style="margin-top:-6px;">${symS.hasData && symS.sinceDate ? t("dashboardSymptomsTitleSince") : t("dashboardSymptomsTitleStart")}</div>
         ${
           !symS.hasData || symS.none
             ? `<div class="dashboard-card-empty">${t("emptySymptomsLogged")}</div>`
-            : `<div class="dashboard-card-sub">${symS.byName
-                .slice(0, 3)
-                .map((x) => `${escapeHtml(x.symptom)} ${x.count}x`)
-                .join("<br>")}</div>
-               ${symptomTrendHtml(symptomTrend)}`
+            : symptomHighlights.length
+              ? `${symptomHighlights
+                  .map((h) => `<div class="dashboard-card-value" style="color:${SYMPTOM_SEVERITY_COLOR[h.maxSeverity]};">${escapeHtml(h.symptom)} ${h.count}x</div>`)
+                  .join("")}
+                 ${symptomTrendHtml(symptomTrend)}`
+              : `<div class="dashboard-card-empty">${t("emptySymptomsRecent")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
         <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
           lastVetVisit || plannedVetVisit
-            ? `${lastVetVisit ? `<div class="dashboard-card-value">${t("dashboardVetLastLabel")}: ${formatDate(lastVetVisit.date)}</div>` : ""}
+            ? `${lastVetVisit ? `<div class="dashboard-card-sub">${t("dashboardVetLastLabel")}: ${formatDate(lastVetVisit.date)}</div>` : ""}
                ${
                  plannedVetVisit
                    ? `<div class="dashboard-card-sub">${t("dashboardVetPlannedLabel")}: ${duePillHtml(dueStatusFromDate(plannedVetVisit.date).daysLeft, formatDate(plannedVetVisit.date))}</div>`
