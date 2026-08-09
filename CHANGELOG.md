@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/BevertjeNL/cat-health/compare/v1.9.0...v1.9.1) (2026-08-09)
+
+
+### Bug Fixes
+
+* voeding-per-dag alleen berekenen over afgesloten aankopen ([8eb83ea](https://github.com/BevertjeNL/cat-health/commit/8eb83ea93811e33ee0696e5fa902017d6acfd1e2))
+
 # [1.9.0](https://github.com/BevertjeNL/cat-health/compare/v1.8.0...v1.9.0) (2026-08-09)
 
 
