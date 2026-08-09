@@ -1904,6 +1904,73 @@
     </div>
   </section>
 
+  <section id="tabFood" class="tab-panel">
+    <div class="card">
+      <div class="collapsible-header" id="foodFormHeader" onclick="toggleFoodForm()">
+        <h2 id="foodFormTitle">+ Nieuwe voeding</h2>
+        <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+      </div>
+      <div class="collapsible-body" id="foodFormBody" style="display:none;">
+        <form class="entry-form" id="foodForm">
+          <div>
+            <label for="foodName" data-i18n="fieldFoodName">Product</label>
+            <input type="text" id="foodName" list="foodNameSuggestions" placeholder="bijv. Royal Canin Sensitive" required />
+            <datalist id="foodNameSuggestions"></datalist>
+            <p class="hint-text" style="margin-top:6px;">Eerder ingevoerde producten (en hun type/winkel) verschijnen hier automatisch weer als suggestie.</p>
+          </div>
+          <div>
+            <label for="foodType" data-i18n="fieldFoodType">Type voer</label>
+            <select id="foodType" required>
+              <option value="droog" data-i18n="foodTypeDry">Droog voer</option>
+              <option value="nat" data-i18n="foodTypeWet">Nat voer</option>
+            </select>
+          </div>
+          <div class="row">
+            <div>
+              <label for="foodAmount" data-i18n="fieldFoodAmount">Hoeveelheid</label>
+              <input type="number" id="foodAmount" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 400" required />
+            </div>
+            <div>
+              <label for="foodUnit" data-i18n="fieldFoodUnit">Eenheid</label>
+              <select id="foodUnit">
+                <option value="gram" data-i18n="unitGram">gram</option>
+                <option value="kilogram" data-i18n="unitKilogram">kilogram</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label for="foodShop" data-i18n="fieldFoodShopOptional">Winkel (optioneel)</label>
+            <input type="text" id="foodShop" list="foodShopSuggestions" placeholder="bijv. Jumbo, Zooplus" />
+            <datalist id="foodShopSuggestions"></datalist>
+          </div>
+          <div>
+            <label for="foodDate" data-i18n="fieldDate">Datum</label>
+            <div class="date-field">
+              <input type="date" id="foodDate" required />
+              <button type="button" class="today-btn" data-target="foodDate" data-i18n="btnToday">Vandaag</button>
+            </div>
+          </div>
+          <div>
+            <label for="foodNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
+            <input type="text" id="foodNote" placeholder="bijv. aanbieding" />
+          </div>
+          <div>
+            <label for="foodCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
+            <input type="number" id="foodCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 25.00" />
+          </div>
+          <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
+          <button type="button" class="today-btn" id="foodCancelEditBtn" style="display:none;" onclick="cancelFoodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+        </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n="headingOverview">Overzicht</h2>
+      <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <ul class="entry-list" id="foodList"></ul>
+    </div>
+  </section>
+
   <section id="tabProfile" class="tab-panel">
     <div class="card">
       <h2><span id="profileHeading">🐾 Bewerk huisdier</span> <button type="button" class="info-btn" onclick="toggleInfoTip('profileIntroTip')" aria-label="Meer info">i</button></h2>
@@ -2053,6 +2120,7 @@
   <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon" data-icon-key="vet">🩺</span><span data-i18n="navVet">Arts</span></button>
   <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span data-i18n="navSymptoms">Afwijking</span></button>
   <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon" data-icon-key="medication">💊</span><span data-i18n="navMedication">Medicatie</span></button>
+  <button id="tabBtnFood" onclick="switchTab('food')"><span class="bottom-nav-icon" data-icon-key="food">🍽️</span><span data-i18n="navFood">Voeding</span></button>
 </nav>
 
 </div>
@@ -2135,6 +2203,7 @@
     <button type="button" class="pet-menu-item" onclick="quickAdd('blood')"><span data-icon-key="blood">🩸</span> Bloedwaarden</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('vetvisit')"><span data-icon-key="vet">🩺</span> Dierenartsbezoek</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('symptoms')"><span data-icon-key="symptoms">🩹</span> Afwijking</button>
+    <button type="button" class="pet-menu-item" onclick="quickAdd('food')"><span data-icon-key="food">🍽️</span> Voeding</button>
   </div>
 </div>
 
@@ -2296,6 +2365,7 @@
     vet: "🩺",
     symptoms: "🩹",
     medication: "💊",
+    food: "🍽️",
     cost: "💰",
   };
 
@@ -2315,6 +2385,8 @@
     // A coin/wallet, not the money-bag emoji's shape — keeps the mono set's
     // line-icon language (rect + stroke), matching the other glyphs here.
     cost: '<rect x="3" y="7" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 10.3h18" stroke="currentColor" stroke-width="2"/><circle cx="16.3" cy="14.3" r="1.3" fill="currentColor"/>',
+    // A simple food bowl, matching the other glyphs' rect/stroke language.
+    food: '<ellipse cx="12" cy="15" rx="8.5" ry="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3.5 15v2a8.5 4 0 0 0 17 0v-2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 8.5c0-2 1.3-3.5 3-3.5s3 1.5 3 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
   };
 
   function iconHtml(key) {
@@ -2354,6 +2426,16 @@
       navVet: "Vet",
       navSymptoms: "Symptoms",
       navMedication: "Medication",
+      navFood: "Food",
+      fieldFoodName: "Product",
+      fieldFoodType: "Food type",
+      foodTypeDry: "Dry food",
+      foodTypeWet: "Wet food",
+      fieldFoodAmount: "Amount",
+      fieldFoodUnit: "Unit",
+      unitGram: "gram",
+      unitKilogram: "kilogram",
+      fieldFoodShopOptional: "Shop (optional)",
       fieldDate: "Date",
       fieldDateGiven: "Date given",
       fieldNoteOptional: "Note (optional)",
@@ -2428,6 +2510,16 @@
       navVet: "Tierarzt",
       navSymptoms: "Symptome",
       navMedication: "Medikamente",
+      navFood: "Futter",
+      fieldFoodName: "Produkt",
+      fieldFoodType: "Futterart",
+      foodTypeDry: "Trockenfutter",
+      foodTypeWet: "Nassfutter",
+      fieldFoodAmount: "Menge",
+      fieldFoodUnit: "Einheit",
+      unitGram: "Gramm",
+      unitKilogram: "Kilogramm",
+      fieldFoodShopOptional: "Geschäft (optional)",
       fieldDate: "Datum",
       fieldDateGiven: "Datum verabreicht",
       fieldNoteOptional: "Notiz (optional)",
@@ -2496,6 +2588,7 @@
     dashboardWeightLastMeasured: "Laatste meting",
     dashboardVax: "Vaccinaties",
     dashboardMedication: "Medicatie",
+    dashboardFood: "Voeding",
     dashboardBlood: "Bloedwaarden",
     dashboardSymptoms: "Afwijkingen",
     dashboardSymptomsTitleSince: "(sinds laatste dierenartsbezoek)",
@@ -2533,6 +2626,9 @@
     medNextLabel: "Volgende:",
     emptyVax: "Nog geen vaccinaties",
     emptyMedicationLogged: "Nog geen medicatie gelogd",
+    emptyFoodLogged: "Nog geen voeding gelogd",
+    foodPerDaySub: "gem. sinds {date}",
+    perDaySuffix: "/dag",
     emptyWeightMeasurements: "Nog geen metingen",
     emptyBloodExam: "Nog geen bloedonderzoek",
     emptyBloodResults: "Nog geen resultaten",
@@ -2600,6 +2696,7 @@
     successVetSaved: "Dierenarts opgeslagen ✓",
     successSymptomSaved: "Afwijking opgeslagen ✓",
     successMedicationSaved: "Medicatie opgeslagen ✓",
+    successFoodSaved: "Voeding opgeslagen ✓",
     successProfileSaved: "Profiel opgeslagen ✓",
     successPetArchived: "is gearchiveerd ✓",
   };
@@ -2612,6 +2709,7 @@
     dashboardWeightLastMeasured: "Last measured",
     dashboardVax: "Vaccinations",
     dashboardMedication: "Medication",
+    dashboardFood: "Food",
     dashboardBlood: "Blood values",
     dashboardSymptoms: "Symptoms",
     dashboardVet: "Vet",
@@ -2647,6 +2745,9 @@
     medNextLabel: "Next:",
     emptyVax: "No vaccinations yet",
     emptyMedicationLogged: "No medication logged yet",
+    emptyFoodLogged: "No food logged yet",
+    foodPerDaySub: "avg. since {date}",
+    perDaySuffix: "/day",
     emptyWeightMeasurements: "No measurements yet",
     emptyBloodExam: "No blood tests yet",
     emptyBloodResults: "No results yet",
@@ -2711,6 +2812,7 @@
     successVetVisitSaved: "Visit saved ✓",
     successSymptomSaved: "Symptom saved ✓",
     successMedicationSaved: "Medication saved ✓",
+    successFoodSaved: "Food saved ✓",
     successProfileSaved: "Profile saved ✓",
     successPetArchived: "has been archived ✓",
   };
@@ -2723,6 +2825,7 @@
     dashboardWeightLastMeasured: "Zuletzt gemessen",
     dashboardVax: "Impfungen",
     dashboardMedication: "Medikamente",
+    dashboardFood: "Futter",
     dashboardBlood: "Blutwerte",
     dashboardSymptoms: "Symptome",
     dashboardVet: "Tierarzt",
@@ -2758,6 +2861,9 @@
     medNextLabel: "Nächste:",
     emptyVax: "Noch keine Impfungen",
     emptyMedicationLogged: "Noch keine Medikamente protokolliert",
+    emptyFoodLogged: "Noch kein Futter protokolliert",
+    foodPerDaySub: "Ø seit {date}",
+    perDaySuffix: "/Tag",
     emptyWeightMeasurements: "Noch keine Messungen",
     emptyBloodExam: "Noch keine Blutuntersuchung",
     emptyBloodResults: "Noch keine Ergebnisse",
@@ -2822,6 +2928,7 @@
     successVetVisitSaved: "Besuch gespeichert ✓",
     successSymptomSaved: "Symptom gespeichert ✓",
     successMedicationSaved: "Medikament gespeichert ✓",
+    successFoodSaved: "Futter gespeichert ✓",
     successProfileSaved: "Profil gespeichert ✓",
     successPetArchived: "wurde archiviert ✓",
   };
@@ -3252,6 +3359,7 @@
     document.getElementById("tabVet").classList.toggle("active", tab === "vet");
     document.getElementById("tabSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabMedication").classList.toggle("active", tab === "medication");
+    document.getElementById("tabFood").classList.toggle("active", tab === "food");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
     document.getElementById("tabSettings").classList.toggle("active", tab === "settings");
     document.getElementById("tabBtnDashboard").classList.toggle("active", tab === "dashboard");
@@ -3261,6 +3369,7 @@
     document.getElementById("tabBtnVet").classList.toggle("active", tab === "vet");
     document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
     document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
+    document.getElementById("tabBtnFood").classList.toggle("active", tab === "food");
     if (tab === "dashboard") renderDashboard();
     // Belt-and-suspenders against the "neutral color until refresh" bug:
     // even with catProfile guaranteed correct by the time refreshAll()
@@ -3373,6 +3482,7 @@
     symptom_logs: { data: () => latestSymptomData, render: () => renderSymptomList(latestSymptomData) },
     medications: { data: () => latestMedicationData, render: () => renderMedicationList(latestMedicationData) },
     vet_visits: { data: () => latestVetVisitData, render: () => renderVetVisitList(latestVetVisitData) },
+    food_purchases: { data: () => latestFoodData, render: () => renderFoodList(latestFoodData) },
   };
 
   let offlineTempSeq = 0;
@@ -6545,6 +6655,251 @@
     if (!offline) await loadMedications();
   }
 
+  // --- Voeding -----------------------------------------------------------
+  const foodForm = document.getElementById("foodForm");
+  const foodList = document.getElementById("foodList");
+  let editingFoodId = null;
+  let latestFoodData = [];
+  // Same "database as a byproduct of logging" idea as medicationCatalog:
+  // every unique naam+type+winkel combo gets remembered automatically, so
+  // a repeat purchase is a couple of taps instead of retyping everything.
+  let foodCatalog = [];
+
+  document.getElementById("foodDate").valueAsDate = new Date();
+
+  function toggleFoodForm(forceOpen) {
+    const header = document.getElementById("foodFormHeader");
+    const body = document.getElementById("foodFormBody");
+    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
+    body.style.display = open ? "" : "none";
+    header.classList.toggle("open", open);
+    if (!editingFoodId) {
+      document.getElementById("foodFormTitle").textContent = open ? "Nieuwe voeding" : "+ Nieuwe voeding";
+    }
+  }
+
+  function openFoodForm() {
+    toggleFoodForm(true);
+  }
+
+  function updateFoodNameSuggestions() {
+    const names = [...new Set([...foodCatalog.map((c) => c.name), ...latestFoodData.map((r) => r.name)])];
+    document.getElementById("foodNameSuggestions").innerHTML = names.map((n) => `<option value="${escapeHtml(n)}"></option>`).join("");
+  }
+
+  // Winkels van dit product staan bovenaan, gevolgd door alle ooit gebruikte
+  // winkels — zo blijft een nieuw product bij een bekende winkel ook één
+  // keer typen, niet per se per product opnieuw.
+  function updateFoodShopSuggestions(name) {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    const matchShops = foodCatalog.filter((c) => norm(c.name) === norm(name)).map((c) => c.shop);
+    const allShops = foodCatalog.map((c) => c.shop);
+    const shops = [...new Set([...matchShops, ...allShops].filter(Boolean))];
+    document.getElementById("foodShopSuggestions").innerHTML = shops.map((s) => `<option value="${escapeHtml(s)}"></option>`).join("");
+  }
+
+  // food_type is een <select>, geen tekstveld met datalist — dus in plaats
+  // van een suggestie wordt de waarde direct gezet zodra het getypte
+  // productnaam eenduidig één type in de catalogus heeft.
+  function autofillFoodType(name) {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    const types = [...new Set(foodCatalog.filter((c) => norm(c.name) === norm(name)).map((c) => c.food_type))];
+    if (types.length === 1) document.getElementById("foodType").value = types[0];
+  }
+
+  document.getElementById("foodName").addEventListener("input", (e) => {
+    updateFoodShopSuggestions(e.target.value);
+    autofillFoodType(e.target.value);
+  });
+
+  async function loadFoodCatalog() {
+    if (!isConfigured || !currentPetId) return;
+    const { data, error } = await supabaseClient.from("food_catalog").select("*").eq("pet_id", currentPetId);
+    if (error) return;
+    foodCatalog = data;
+    updateFoodNameSuggestions();
+    updateFoodShopSuggestions(document.getElementById("foodName").value);
+  }
+
+  async function registerFoodInCatalog(name, food_type, shop) {
+    const norm = (s) => (s || "").trim().toLowerCase();
+    const exists = foodCatalog.some((c) => norm(c.name) === norm(name) && norm(c.food_type) === norm(food_type) && norm(c.shop) === norm(shop));
+    if (exists) return;
+    const { error } = await supabaseClient.from("food_catalog").insert([{ name, food_type, shop: shop || null, pet_id: currentPetId }]);
+    if (!error) await loadFoodCatalog();
+  }
+
+  function editFood(row) {
+    editingFoodId = row.id;
+    document.getElementById("foodName").value = row.name;
+    document.getElementById("foodType").value = row.food_type;
+    document.getElementById("foodAmount").value = row.amount_grams;
+    document.getElementById("foodUnit").value = "gram";
+    document.getElementById("foodShop").value = row.shop || "";
+    document.getElementById("foodDate").value = row.date;
+    document.getElementById("foodNote").value = row.note || "";
+    document.getElementById("foodCost").value = row.cost ?? "";
+    updateFoodShopSuggestions(row.name);
+    document.getElementById("foodFormTitle").textContent = "Voeding bewerken";
+    setI18nText(foodForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
+    document.getElementById("foodCancelEditBtn").style.display = "";
+    openFoodForm();
+    switchTab("food");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  // Zelfde idee als duplicateMedication(): vooraf invullen met hetzelfde
+  // product/type/winkel, maar een nieuwe (huidige) datum en lege kosten,
+  // want die golden voor de vorige aankoop.
+  function duplicateFood(row) {
+    editingFoodId = null;
+    document.getElementById("foodName").value = row.name;
+    document.getElementById("foodType").value = row.food_type;
+    document.getElementById("foodAmount").value = row.amount_grams;
+    document.getElementById("foodUnit").value = "gram";
+    document.getElementById("foodShop").value = row.shop || "";
+    document.getElementById("foodDate").valueAsDate = new Date();
+    document.getElementById("foodNote").value = "";
+    document.getElementById("foodCost").value = "";
+    setI18nText(foodForm.querySelector("button.submit"), "btnSave", "Opslaan");
+    document.getElementById("foodCancelEditBtn").style.display = "none";
+    updateFoodShopSuggestions(row.name);
+    openFoodForm();
+    document.getElementById("foodFormTitle").textContent = "Nieuwe voeding (op basis van vorige)";
+    switchTab("food");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelFoodEdit() {
+    editingFoodId = null;
+    foodForm.reset();
+    document.getElementById("foodDate").valueAsDate = new Date();
+    document.getElementById("foodFormTitle").textContent = "+ Nieuwe voeding";
+    setI18nText(foodForm.querySelector("button.submit"), "btnSave", "Opslaan");
+    document.getElementById("foodCancelEditBtn").style.display = "none";
+    toggleFoodForm(false);
+  }
+
+  foodForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!isConfigured) return;
+
+    const submitBtn = foodForm.querySelector("button.submit");
+    submitBtn.disabled = true;
+
+    const name = document.getElementById("foodName").value.trim();
+    const food_type = document.getElementById("foodType").value;
+    const amountVal = parseFloat(document.getElementById("foodAmount").value);
+    const unit = document.getElementById("foodUnit").value;
+    const amount_grams = unit === "kilogram" ? amountVal * 1000 : amountVal;
+    const shop = document.getElementById("foodShop").value.trim() || null;
+    const date = document.getElementById("foodDate").value;
+    const note = document.getElementById("foodNote").value.trim() || null;
+    const costVal = document.getElementById("foodCost").value;
+    const cost = costVal ? parseFloat(costVal) : null;
+
+    const { error, offline } = editingFoodId
+      ? await mutateTable("food_purchases", "update", { id: editingFoodId, payload: { name, food_type, amount_grams, shop, date, note, cost } })
+      : await mutateTable("food_purchases", "insert", { payload: { name, food_type, amount_grams, shop, date, note, cost, pet_id: currentPetId } });
+
+    submitBtn.disabled = false;
+
+    if (error) {
+      showError(t("errSaveFailed") + ": " + error.message);
+      return;
+    }
+
+    // Zelfde reden als bij medicatie: catalogusregistratie heeft een online
+    // de-dupe-read nodig en wordt daarom overgeslagen bij een offline log.
+    if (!offline) await registerFoodInCatalog(name, food_type, shop);
+    cancelFoodEdit();
+    showSuccess(t("successFoodSaved"));
+    if (!offline) await loadFoodPurchases();
+  });
+
+  async function loadFoodPurchases() {
+    if (!isConfigured || !currentPetId) return;
+
+    const { data, error } = await supabaseClient
+      .from("food_purchases")
+      .select("*")
+      .eq("pet_id", currentPetId)
+      .order("date", { ascending: false });
+
+    if (error) {
+      if (isNetworkError(error)) {
+        const cached = await idbGet("cache", "food_purchases:" + currentPetId);
+        if (cached) {
+          latestFoodData = cached;
+          renderFoodList(cached);
+          return;
+        }
+      }
+      showError(t("errLoadFailed") + ": " + error.message);
+      return;
+    }
+
+    latestFoodData = data;
+    idbPut("cache", "food_purchases:" + currentPetId, data);
+    updateFoodNameSuggestions();
+    renderFoodList(data);
+  }
+
+  function foodAmountText(amountGrams) {
+    const kg = amountGrams / 1000;
+    return kg >= 1 ? kg.toFixed(2).replace(/\.?0+$/, "") + " kg" : Math.round(amountGrams) + " g";
+  }
+
+  function renderFoodList(data) {
+    foodList.innerHTML = "";
+
+    if (data.length === 0) {
+      foodList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptyFoodLogged") + '</li>';
+      return;
+    }
+
+    data.forEach((row) => {
+      const typeLabel = row.food_type === "nat" ? t("foodTypeWet") : t("foodTypeDry");
+      const innerHtml = `
+        <div class="entry-main">
+          <span class="primary">${escapeHtml(row.name)}${pendingDotHtml(row)}</span>
+          <span class="secondary">${formatDate(row.date)} · ${typeLabel} · ${foodAmountText(row.amount_grams)}${row.shop ? " · " + escapeHtml(row.shop) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
+        </div>
+      `;
+      const li = createSwipeableListItem(innerHtml, [
+        { label: "Verwijder", onClick: () => deleteFood(row.id) },
+        { label: "Dupliceer", className: "edit-action", onClick: () => duplicateFood(row) },
+        { label: "Bewerk", className: "edit-action", onClick: () => editFood(row) },
+      ]);
+      foodList.appendChild(li);
+    });
+  }
+
+  async function deleteFood(id) {
+    const { error, offline } = await mutateTable("food_purchases", "delete", { id });
+    if (error) {
+      showError(t("errDeleteFailed") + ": " + error.message);
+      return;
+    }
+    if (!offline) await loadFoodPurchases();
+  }
+
+  // Er is geen consumptielog, alleen aankopen — dus de "gram per dag"-schatting
+  // op het dashboard neemt aan dat wat gekocht is ook (over tijd) opgegeten
+  // wordt: totaal aantal gram gedeeld door het aantal dagen sinds de eerste
+  // registratie. Met te weinig data (< 2 dagen span) is dat gemiddelde te
+  // onbetrouwbaar om te tonen.
+  function computeFoodDailySummary() {
+    const rows = (latestFoodData || []).filter((r) => r.amount_grams);
+    if (!rows.length) return null;
+    const dates = rows.map((r) => r.date).sort();
+    const firstDate = dates[0];
+    const today = dateToISO(new Date());
+    const days = Math.max(1, Math.round((new Date(today) - new Date(firstDate)) / 86400000));
+    const totalGrams = rows.reduce((sum, r) => sum + r.amount_grams, 0);
+    return { perDay: totalGrams / days, days, firstDate };
+  }
+
   // --- Dashboard -------------------------------------------------------------
   // Every summary/alert below reads only data already stored elsewhere in the
   // app (weight/vaccinations/medications/blood/symptoms) — no new medical
@@ -7008,6 +7363,7 @@
     (latestVetVisitData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
     (latestMedicationData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
     (latestVaxData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
+    (latestFoodData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
     return rows;
   }
 
@@ -7105,6 +7461,7 @@
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
     const lastVetVisit = lastPastVetVisit();
     const plannedVetVisit = nextPlannedVetVisit();
+    const foodS = computeFoodDailySummary();
 
     // Every tile's border/shadow glows in whichever color the MAJORITY of
     // its elements earn (majorityColor()) — not a single worst-case item —
@@ -7223,6 +7580,15 @@
               : `<div class="dashboard-card-empty">${t("emptySymptomsRecent")}</div>`
         }
       </div>`,
+      `<div class="card dashboard-card" onclick="switchTab('food')">
+        <h3>${iconHtml("food")} ${t("dashboardFood")}</h3>
+        ${
+          foodS
+            ? `<div class="dashboard-card-value">${foodAmountText(foodS.perDay)}${t("perDaySuffix")}</div>
+               <div class="dashboard-card-sub">${t("foodPerDaySub").replace("{date}", formatDate(foodS.firstDate))}</div>`
+            : `<div class="dashboard-card-empty">${t("emptyFoodLogged")}</div>`
+        }
+      </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
         <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
@@ -7276,6 +7642,7 @@
     else if (tab === "blood") openBloodForm();
     else if (tab === "vetvisit") openVetVisitForm();
     else if (tab === "symptoms") openSymptomForm();
+    else if (tab === "food") openFoodForm();
   }
 
   // --- Profile ---------------------------------------------------------
@@ -7451,6 +7818,8 @@
       loadSymptoms(),
       loadMedications(),
       loadMedicationCatalog(),
+      loadFoodPurchases(),
+      loadFoodCatalog(),
       loadVetVisits(),
       loadVets(),
       loadProfile(),
