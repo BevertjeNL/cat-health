@@ -2627,7 +2627,8 @@
     emptyVax: "Nog geen vaccinaties",
     emptyMedicationLogged: "Nog geen medicatie gelogd",
     emptyFoodLogged: "Nog geen voeding gelogd",
-    foodPerDaySub: "gem. sinds {date}",
+    foodPerDayNeedMore: "Nog te weinig aankopen voor een schatting — log de volgende aankoop zodra deze zak op is",
+    foodPerDaySub: "gem. verbruik {from} – {to}",
     perDaySuffix: "/dag",
     emptyWeightMeasurements: "Nog geen metingen",
     emptyBloodExam: "Nog geen bloedonderzoek",
@@ -2746,7 +2747,8 @@
     emptyVax: "No vaccinations yet",
     emptyMedicationLogged: "No medication logged yet",
     emptyFoodLogged: "No food logged yet",
-    foodPerDaySub: "avg. since {date}",
+    foodPerDayNeedMore: "Not enough purchases yet for an estimate — log the next purchase once this bag runs out",
+    foodPerDaySub: "avg. usage {from} – {to}",
     perDaySuffix: "/day",
     emptyWeightMeasurements: "No measurements yet",
     emptyBloodExam: "No blood tests yet",
@@ -2862,7 +2864,8 @@
     emptyVax: "Noch keine Impfungen",
     emptyMedicationLogged: "Noch keine Medikamente protokolliert",
     emptyFoodLogged: "Noch kein Futter protokolliert",
-    foodPerDaySub: "Ø seit {date}",
+    foodPerDayNeedMore: "Noch zu wenige Käufe für eine Schätzung — nächsten Kauf protokollieren, sobald dieser Beutel leer ist",
+    foodPerDaySub: "Ø Verbrauch {from} – {to}",
     perDaySuffix: "/Tag",
     emptyWeightMeasurements: "Noch keine Messungen",
     emptyBloodExam: "Noch keine Blutuntersuchung",
@@ -6884,20 +6887,25 @@
     if (!offline) await loadFoodPurchases();
   }
 
-  // Er is geen consumptielog, alleen aankopen — dus de "gram per dag"-schatting
-  // op het dashboard neemt aan dat wat gekocht is ook (over tijd) opgegeten
-  // wordt: totaal aantal gram gedeeld door het aantal dagen sinds de eerste
-  // registratie. Met te weinig data (< 2 dagen span) is dat gemiddelde te
-  // onbetrouwbaar om te tonen.
+  // Er is geen consumptielog, alleen aankopen — dus een "gram per dag" kan
+  // alleen worden afgeleid uit hoe lang een AFGESLOTEN aankoop heeft
+  // standgehouden tot de volgende. De nieuwste aankoop telt daarom bewust
+  // niet mee: die zak is nog in gebruik, dus we weten nog niet hoe lang hij
+  // meegaat. Pas zodra er een volgende aankoop bijkomt, schuift dat interval
+  // mee en telt de oude nieuwste aankoop alsnog mee in de teller.
   function computeFoodDailySummary() {
-    const rows = (latestFoodData || []).filter((r) => r.amount_grams);
-    if (!rows.length) return null;
-    const dates = rows.map((r) => r.date).sort();
-    const firstDate = dates[0];
-    const today = dateToISO(new Date());
-    const days = Math.max(1, Math.round((new Date(today) - new Date(firstDate)) / 86400000));
-    const totalGrams = rows.reduce((sum, r) => sum + r.amount_grams, 0);
-    return { perDay: totalGrams / days, days, firstDate };
+    const rows = (latestFoodData || [])
+      .filter((r) => r.amount_grams)
+      .slice()
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+    if (rows.length < 2) return null; // nog geen enkel afgesloten interval
+    const closed = rows.slice(0, -1);
+    const consumedGrams = closed.reduce((sum, r) => sum + r.amount_grams, 0);
+    const firstDate = rows[0].date;
+    const lastDate = rows[rows.length - 1].date;
+    const days = Math.round((new Date(lastDate) - new Date(firstDate)) / 86400000);
+    if (days < 1) return null; // meerdere aankopen op dezelfde dag, geen periode om uit af te leiden
+    return { perDay: consumedGrams / days, days, firstDate, lastDate };
   }
 
   // --- Dashboard -------------------------------------------------------------
@@ -7585,8 +7593,10 @@
         ${
           foodS
             ? `<div class="dashboard-card-value">${foodAmountText(foodS.perDay)}${t("perDaySuffix")}</div>
-               <div class="dashboard-card-sub">${t("foodPerDaySub").replace("{date}", formatDate(foodS.firstDate))}</div>`
-            : `<div class="dashboard-card-empty">${t("emptyFoodLogged")}</div>`
+               <div class="dashboard-card-sub">${t("foodPerDaySub").replace("{from}", formatDate(foodS.firstDate)).replace("{to}", formatDate(foodS.lastDate))}</div>`
+            : (latestFoodData || []).length
+              ? `<div class="dashboard-card-empty">${t("foodPerDayNeedMore")}</div>`
+              : `<div class="dashboard-card-empty">${t("emptyFoodLogged")}</div>`
         }
       </div>`,
       `<div class="card dashboard-card" onclick="switchTab('vet')">
