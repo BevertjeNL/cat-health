@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/BevertjeNL/cat-health/compare/v1.8.0...v1.9.0) (2026-08-09)
+
+
+### Features
+
+* voeding-logboek toevoegen met herbruikbare producten en winkels ([b4dad38](https://github.com/BevertjeNL/cat-health/commit/b4dad3816ca813c5a0f6e8748f94aaf5cc6823cd))
+
 # [1.8.0](https://github.com/BevertjeNL/cat-health/compare/v1.7.0...v1.8.0) (2026-08-05)
 
 
