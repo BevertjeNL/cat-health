@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/BevertjeNL/cat-health/compare/v1.10.0...v1.11.0) (2026-08-09)
+
+
+### Features
+
+* verbruiksgrafiek op Voeding-tab + rollend-jaar-venster gelijktrekken ([737308d](https://github.com/BevertjeNL/cat-health/commit/737308de09eb478d2c362b9765aa29d688cf3482))
+
 # [1.10.0](https://github.com/BevertjeNL/cat-health/compare/v1.9.1...v1.10.0) (2026-08-09)
 
 
