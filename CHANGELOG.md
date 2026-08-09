@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/BevertjeNL/cat-health/compare/v1.9.1...v1.10.0) (2026-08-09)
+
+
+### Features
+
+* rollend-jaar/kalenderjaar-toggle en trendpijl voor voeding-per-dag ([17b7a46](https://github.com/BevertjeNL/cat-health/commit/17b7a462f36fb71bba51d73699820849c228f4a0))
+
 ## [1.9.1](https://github.com/BevertjeNL/cat-health/compare/v1.9.0...v1.9.1) (2026-08-09)
 
 
