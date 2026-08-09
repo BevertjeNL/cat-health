@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/BevertjeNL/cat-health/compare/v1.11.0...v1.12.0) (2026-08-09)
+
+
+### Features
+
+* voedingsaankoop kunnen uitsluiten van gram/dag-statistiek ([1e2f4e2](https://github.com/BevertjeNL/cat-health/commit/1e2f4e2f3d35833f4638e2fdd6794c5a20b843bd))
+
 # [1.11.0](https://github.com/BevertjeNL/cat-health/compare/v1.10.0...v1.11.0) (2026-08-09)
 
 
