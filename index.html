@@ -1967,6 +1967,9 @@
             <label for="foodCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
             <input type="number" id="foodCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 25.00" />
           </div>
+          <div class="checkbox-field">
+            <label for="foodExcludeFromStats"><input type="checkbox" id="foodExcludeFromStats" /> <span data-i18n="fieldFoodExcludeFromStats">Niet meetellen voor gram/dag-verbruik (kosten tellen wel mee)</span></label>
+          </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
           <button type="button" class="today-btn" id="foodCancelEditBtn" style="display:none;" onclick="cancelFoodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
@@ -2447,6 +2450,7 @@
       fieldFoodShopOptional: "Shop (optional)",
       headingFoodChart: "Usage per day",
       emptyFoodChart: "Not enough purchases yet for a chart — at least 2 purchases needed.",
+      fieldFoodExcludeFromStats: "Don't count towards g/day usage (cost still counts)",
       fieldDate: "Date",
       fieldDateGiven: "Date given",
       fieldNoteOptional: "Note (optional)",
@@ -2533,6 +2537,7 @@
       fieldFoodShopOptional: "Geschäft (optional)",
       headingFoodChart: "Verbrauch pro Tag",
       emptyFoodChart: "Noch zu wenige Käufe für eine Grafik — mindestens 2 Käufe nötig.",
+      fieldFoodExcludeFromStats: "Nicht mitzählen für g/Tag-Verbrauch (Kosten zählen weiterhin mit)",
       fieldDate: "Datum",
       fieldDateGiven: "Datum verabreicht",
       fieldNoteOptional: "Notiz (optional)",
@@ -2642,6 +2647,7 @@
     emptyFoodLogged: "Nog geen voeding gelogd",
     foodPerDayNeedMore: "Nog te weinig aankopen voor een schatting — log de volgende aankoop zodra deze zak op is",
     foodChartCaption: "Elke stap toont het gemiddelde verbruik tussen twee opeenvolgende aankopen (hoeveelheid gedeeld door het aantal dagen ertussen). De lijn stopt bij de nieuwste aankoop — die zak is nog in gebruik, dus het verbruik daarna is nog onbekend.",
+    foodExcludedTag: "buiten statistiek",
     perDaySuffix: "/dag",
     emptyWeightMeasurements: "Nog geen metingen",
     emptyBloodExam: "Nog geen bloedonderzoek",
@@ -2762,6 +2768,7 @@
     emptyFoodLogged: "No food logged yet",
     foodPerDayNeedMore: "Not enough purchases yet for an estimate — log the next purchase once this bag runs out",
     foodChartCaption: "Each step shows the average usage between two consecutive purchases (amount divided by the number of days between them). The line stops at the most recent purchase — that bag is still in use, so the usage after it isn't known yet.",
+    foodExcludedTag: "excluded from stats",
     perDaySuffix: "/day",
     emptyWeightMeasurements: "No measurements yet",
     emptyBloodExam: "No blood tests yet",
@@ -2879,6 +2886,7 @@
     emptyFoodLogged: "Noch kein Futter protokolliert",
     foodPerDayNeedMore: "Noch zu wenige Käufe für eine Schätzung — nächsten Kauf protokollieren, sobald dieser Beutel leer ist",
     foodChartCaption: "Jede Stufe zeigt den durchschnittlichen Verbrauch zwischen zwei aufeinanderfolgenden Käufen (Menge geteilt durch die Anzahl Tage dazwischen). Die Linie endet beim letzten Kauf — dieser Beutel ist noch in Gebrauch, der Verbrauch danach ist noch unbekannt.",
+    foodExcludedTag: "außerhalb Statistik",
     perDaySuffix: "/Tag",
     emptyWeightMeasurements: "Noch keine Messungen",
     emptyBloodExam: "Noch keine Blutuntersuchung",
@@ -6763,6 +6771,7 @@
     document.getElementById("foodDate").value = row.date;
     document.getElementById("foodNote").value = row.note || "";
     document.getElementById("foodCost").value = row.cost ?? "";
+    document.getElementById("foodExcludeFromStats").checked = !!row.exclude_from_stats;
     updateFoodShopSuggestions(row.name);
     document.getElementById("foodFormTitle").textContent = "Voeding bewerken";
     setI18nText(foodForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
@@ -6785,6 +6794,7 @@
     document.getElementById("foodDate").valueAsDate = new Date();
     document.getElementById("foodNote").value = "";
     document.getElementById("foodCost").value = "";
+    document.getElementById("foodExcludeFromStats").checked = false;
     setI18nText(foodForm.querySelector("button.submit"), "btnSave", "Opslaan");
     document.getElementById("foodCancelEditBtn").style.display = "none";
     updateFoodShopSuggestions(row.name);
@@ -6821,10 +6831,11 @@
     const note = document.getElementById("foodNote").value.trim() || null;
     const costVal = document.getElementById("foodCost").value;
     const cost = costVal ? parseFloat(costVal) : null;
+    const exclude_from_stats = document.getElementById("foodExcludeFromStats").checked;
 
     const { error, offline } = editingFoodId
-      ? await mutateTable("food_purchases", "update", { id: editingFoodId, payload: { name, food_type, amount_grams, shop, date, note, cost } })
-      : await mutateTable("food_purchases", "insert", { payload: { name, food_type, amount_grams, shop, date, note, cost, pet_id: currentPetId } });
+      ? await mutateTable("food_purchases", "update", { id: editingFoodId, payload: { name, food_type, amount_grams, shop, date, note, cost, exclude_from_stats } })
+      : await mutateTable("food_purchases", "insert", { payload: { name, food_type, amount_grams, shop, date, note, cost, exclude_from_stats, pet_id: currentPetId } });
 
     submitBtn.disabled = false;
 
@@ -6886,7 +6897,7 @@
   // laatste aankoopdatum in plaats van door te trekken naar vandaag.
   function foodChartSeries() {
     const rows = (latestFoodData || [])
-      .filter((r) => r.amount_grams)
+      .filter((r) => r.amount_grams && !r.exclude_from_stats)
       .slice()
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
 
@@ -7002,9 +7013,10 @@
 
     data.forEach((row) => {
       const typeLabel = row.food_type === "nat" ? t("foodTypeWet") : t("foodTypeDry");
+      const excludedTag = row.exclude_from_stats ? `<span class="purpose-tag">${t("foodExcludedTag")}</span>` : "";
       const innerHtml = `
         <div class="entry-main">
-          <span class="primary">${escapeHtml(row.name)}${pendingDotHtml(row)}</span>
+          <span class="primary">${escapeHtml(row.name)}${excludedTag}${pendingDotHtml(row)}</span>
           <span class="secondary">${formatDate(row.date)} · ${typeLabel} · ${foodAmountText(row.amount_grams)}${row.shop ? " · " + escapeHtml(row.shop) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}${row.cost != null ? " · " + formatEuro(row.cost) : ""}</span>
         </div>
       `;
@@ -7036,9 +7048,11 @@
   // gekozen periode heeft standgehouden tot de volgende aankoop in die
   // periode. De nieuwste aankoop binnen de periode telt daarom bewust niet
   // mee: die zak is (was, voor een afgelopen periode) nog in gebruik.
+  // Aankopen met exclude_from_stats worden hier volledig genegeerd — ze
+  // tellen alleen mee in collectCostRows(), niet in deze snelheidsberekening.
   function foodRateInRange(start, end) {
     const rows = (latestFoodData || [])
-      .filter((r) => r.amount_grams && r.date >= start && r.date <= end)
+      .filter((r) => r.amount_grams && !r.exclude_from_stats && r.date >= start && r.date <= end)
       .slice()
       .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     if (rows.length < 2) return null; // geen afgesloten interval binnen deze periode
