@@ -1906,6 +1906,15 @@
 
   <section id="tabFood" class="tab-panel">
     <div class="card">
+      <h2 data-i18n="headingFoodChart">Verbruik per dag</h2>
+      <p class="hint-text" id="foodChartEmpty" data-i18n="emptyFoodChart">Nog te weinig aankopen voor een grafiek — minimaal 2 aankopen nodig.</p>
+      <div class="chart-wrap" id="foodChartWrap" style="display:none;">
+        <canvas id="foodChart"></canvas>
+      </div>
+      <p class="hint-text" id="foodChartCaption" style="display:none;margin-top:6px;"></p>
+    </div>
+
+    <div class="card">
       <div class="collapsible-header" id="foodFormHeader" onclick="toggleFoodForm()">
         <h2 id="foodFormTitle">+ Nieuwe voeding</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
@@ -2436,6 +2445,8 @@
       unitGram: "gram",
       unitKilogram: "kilogram",
       fieldFoodShopOptional: "Shop (optional)",
+      headingFoodChart: "Usage per day",
+      emptyFoodChart: "Not enough purchases yet for a chart — at least 2 purchases needed.",
       fieldDate: "Date",
       fieldDateGiven: "Date given",
       fieldNoteOptional: "Note (optional)",
@@ -2520,6 +2531,8 @@
       unitGram: "Gramm",
       unitKilogram: "Kilogramm",
       fieldFoodShopOptional: "Geschäft (optional)",
+      headingFoodChart: "Verbrauch pro Tag",
+      emptyFoodChart: "Noch zu wenige Käufe für eine Grafik — mindestens 2 Käufe nötig.",
       fieldDate: "Datum",
       fieldDateGiven: "Datum verabreicht",
       fieldNoteOptional: "Notiz (optional)",
@@ -2628,6 +2641,7 @@
     emptyMedicationLogged: "Nog geen medicatie gelogd",
     emptyFoodLogged: "Nog geen voeding gelogd",
     foodPerDayNeedMore: "Nog te weinig aankopen voor een schatting — log de volgende aankoop zodra deze zak op is",
+    foodChartCaption: "Elke stap toont het gemiddelde verbruik tussen twee opeenvolgende aankopen (hoeveelheid gedeeld door het aantal dagen ertussen). De lijn stopt bij de nieuwste aankoop — die zak is nog in gebruik, dus het verbruik daarna is nog onbekend.",
     perDaySuffix: "/dag",
     emptyWeightMeasurements: "Nog geen metingen",
     emptyBloodExam: "Nog geen bloedonderzoek",
@@ -2747,6 +2761,7 @@
     emptyMedicationLogged: "No medication logged yet",
     emptyFoodLogged: "No food logged yet",
     foodPerDayNeedMore: "Not enough purchases yet for an estimate — log the next purchase once this bag runs out",
+    foodChartCaption: "Each step shows the average usage between two consecutive purchases (amount divided by the number of days between them). The line stops at the most recent purchase — that bag is still in use, so the usage after it isn't known yet.",
     perDaySuffix: "/day",
     emptyWeightMeasurements: "No measurements yet",
     emptyBloodExam: "No blood tests yet",
@@ -2863,6 +2878,7 @@
     emptyMedicationLogged: "Noch keine Medikamente protokolliert",
     emptyFoodLogged: "Noch kein Futter protokolliert",
     foodPerDayNeedMore: "Noch zu wenige Käufe für eine Schätzung — nächsten Kauf protokollieren, sobald dieser Beutel leer ist",
+    foodChartCaption: "Jede Stufe zeigt den durchschnittlichen Verbrauch zwischen zwei aufeinanderfolgenden Käufen (Menge geteilt durch die Anzahl Tage dazwischen). Die Linie endet beim letzten Kauf — dieser Beutel ist noch in Gebrauch, der Verbrauch danach ist noch unbekannt.",
     perDaySuffix: "/Tag",
     emptyWeightMeasurements: "Noch keine Messungen",
     emptyBloodExam: "Noch keine Blutuntersuchung",
@@ -3379,6 +3395,7 @@
     // regardless of what the canvas looked like while hidden.
     if (tab === "weight" && weightChart) renderWeightChart(latestWeightData);
     if (tab === "symptoms" && symptomChart) renderSymptomChart(latestSymptomData);
+    if (tab === "food" && foodChart) renderFoodChart(latestFoodData);
   }
 
   function showError(message) {
@@ -3482,7 +3499,13 @@
     symptom_logs: { data: () => latestSymptomData, render: () => renderSymptomList(latestSymptomData) },
     medications: { data: () => latestMedicationData, render: () => renderMedicationList(latestMedicationData) },
     vet_visits: { data: () => latestVetVisitData, render: () => renderVetVisitList(latestVetVisitData) },
-    food_purchases: { data: () => latestFoodData, render: () => renderFoodList(latestFoodData) },
+    food_purchases: {
+      data: () => latestFoodData,
+      render: () => {
+        renderFoodList(latestFoodData);
+        renderFoodChart(latestFoodData);
+      },
+    },
   };
 
   let offlineTempSeq = 0;
@@ -6660,6 +6683,7 @@
   const foodList = document.getElementById("foodList");
   let editingFoodId = null;
   let latestFoodData = [];
+  let foodChart;
   // Same "database as a byproduct of logging" idea as medicationCatalog:
   // every unique naam+type+winkel combo gets remembered automatically, so
   // a repeat purchase is a couple of taps instead of retyping everything.
@@ -6832,6 +6856,7 @@
         if (cached) {
           latestFoodData = cached;
           renderFoodList(cached);
+          renderFoodChart(cached);
           return;
         }
       }
@@ -6843,11 +6868,128 @@
     idbPut("cache", "food_purchases:" + currentPetId, data);
     updateFoodNameSuggestions();
     renderFoodList(data);
+    renderFoodChart(data);
   }
 
   function foodAmountText(amountGrams) {
     const kg = amountGrams / 1000;
     return kg >= 1 ? kg.toFixed(2).replace(/\.?0+$/, "") + " kg" : Math.round(amountGrams) + " g";
+  }
+
+  // Bouwt een stapfunctie (gram/dag over tijd) volgens dezelfde AFGESLOTEN-
+  // interval-aanname als de dashboardtegel: de hoeveelheid van een aankoop
+  // wordt geacht verbruikt te zijn in de periode TOT de volgende aankoop, dus
+  // het gemiddelde over dat interval is exact aankoopHoeveelheid / aantalDagen
+  // — geen schatting, een wiskundig sluitende definitie van een gemiddelde
+  // snelheid. Het interval na de nieuwste aankoop is nog open (die zak is
+  // nog in gebruik) en levert dus bewust geen punt op; de lijn stopt bij de
+  // laatste aankoopdatum in plaats van door te trekken naar vandaag.
+  function foodChartSeries() {
+    const rows = (latestFoodData || [])
+      .filter((r) => r.amount_grams)
+      .slice()
+      .sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+    // Aankopen op dezelfde dag worden samengevoegd tot één gebeurtenis — een
+    // snelheid is niet te definiëren over een interval van 0 dagen.
+    const merged = [];
+    rows.forEach((r) => {
+      const last = merged[merged.length - 1];
+      if (last && last.date === r.date) last.amount_grams += r.amount_grams;
+      else merged.push({ date: r.date, amount_grams: r.amount_grams });
+    });
+    if (merged.length < 2) return [];
+
+    const points = [];
+    for (let i = 0; i < merged.length - 1; i++) {
+      const days = Math.round((new Date(merged[i + 1].date) - new Date(merged[i].date)) / 86400000);
+      points.push({ x: merged[i].date, y: merged[i].amount_grams / days });
+    }
+    // Sluit de laatste stap af op dezelfde hoogte, zodat de lijn horizontaal
+    // doorloopt tot de nieuwste aankoopdatum en daar stopt (geen punt voor
+    // het nog-open interval erna).
+    points.push({ x: merged[merged.length - 1].date, y: points[points.length - 1].y });
+    return points;
+  }
+
+  function renderFoodChart(data) {
+    const emptyEl = document.getElementById("foodChartEmpty");
+    const wrapEl = document.getElementById("foodChartWrap");
+    const captionEl = document.getElementById("foodChartCaption");
+    const points = foodChartSeries();
+
+    if (!points.length) {
+      emptyEl.style.display = "";
+      wrapEl.style.display = "none";
+      captionEl.style.display = "none";
+      return;
+    }
+    emptyEl.style.display = "none";
+    wrapEl.style.display = "";
+    captionEl.style.display = "";
+    captionEl.textContent = t("foodChartCaption");
+
+    const xRange = computeTimelineXRange(points.map((p) => p.x));
+
+    if (foodChart) {
+      foodChart.data.datasets[0].data = points;
+      foodChart.options.scales.x.min = xRange.min;
+      foodChart.options.scales.x.max = xRange.max;
+      foodChart.update();
+      return;
+    }
+
+    foodChart = new Chart(document.getElementById("foodChart"), {
+      type: "line",
+      data: {
+        datasets: [
+          {
+            label: "g/dag",
+            data: points,
+            stepped: "after",
+            borderColor: "#ff9500",
+            backgroundColor: "rgba(255, 149, 0, 0.15)",
+            borderWidth: 2,
+            fill: true,
+            pointRadius: 3,
+            pointBackgroundColor: "#ff9500",
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 1,
+            pointHoverRadius: 5,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        layout: { padding: { top: 8, right: 8, left: 6, bottom: 6 } },
+        scales: {
+          x: {
+            type: "time",
+            min: xRange.min,
+            max: xRange.max,
+            time: {
+              tooltipFormat: "dd-MM-yyyy",
+              minUnit: "day",
+              displayFormats: { day: "d MMM", week: "d MMM", month: "MMM yyyy", quarter: "QQQ yyyy", year: "yyyy" },
+            },
+            grid: { display: false },
+          },
+          y: {
+            title: { display: true, text: "g/dag" },
+            min: 0,
+          },
+        },
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (item) => Math.round(item.parsed.y) + " g/dag",
+            },
+          },
+        },
+      },
+    });
   }
 
   function renderFoodList(data) {
@@ -6916,11 +7058,7 @@
       prevEnd = `${year - 1}-12-31`;
       periodLabel = String(year);
     } else {
-      const today = dateToISO(new Date());
-      start = addDaysToDateStr(today, -365);
-      end = today;
-      prevStart = addDaysToDateStr(start, -365);
-      prevEnd = addDaysToDateStr(start, -1);
+      ({ start, end, prevStart, prevEnd } = rollingPeriodRange());
       periodLabel = t("costPeriodRolling");
     }
     return {
@@ -7441,6 +7579,24 @@
     return `<span class="due-pill" style="border-color:${color}; color:${color};">${text}</span>`;
   }
 
+  // Gedeeld door de Kosten- en Voeding-tegel: het "rollend jaar" venster
+  // (vandaag t/m 364 dagen terug, beide inclusief) beslaat exact 365 dagen.
+  // Met "365 dagen terug t/m vandaag" zou het huidige venster 366 dagen
+  // beslaan tegen 365 voor het vorige venster (start - 365 t/m start - 1) —
+  // die asymmetrie maakte de "t.o.v. vorig jaar"-vergelijking net niet
+  // eerlijk. Nu zijn beide vensters altijd precies even lang.
+  function rollingPeriodRange() {
+    const today = dateToISO(new Date());
+    const start = addDaysToDateStr(today, -364);
+    const end = today;
+    return {
+      start,
+      end,
+      prevStart: addDaysToDateStr(start, -365),
+      prevEnd: addDaysToDateStr(start, -1),
+    };
+  }
+
   // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
   let costViewMode = "rolling"; // "rolling" | "calendar"
   let costViewYear = new Date().getFullYear();
@@ -7469,11 +7625,7 @@
       prevEnd = `${year - 1}-12-31`;
       periodLabel = String(year);
     } else {
-      const today = dateToISO(new Date());
-      start = addDaysToDateStr(today, -365);
-      end = today;
-      prevStart = addDaysToDateStr(start, -365);
-      prevEnd = addDaysToDateStr(start, -1);
+      ({ start, end, prevStart, prevEnd } = rollingPeriodRange());
       periodLabel = t("costPeriodRolling");
     }
     return {
