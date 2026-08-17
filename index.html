@@ -553,6 +553,16 @@
   .mode-toggle {
     display: flex;
     gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  /* Sub-nav for the grouped "Meer" bottom-nav tab: 4 short labels don't fit
+     comfortably in one flex row (see .mode-toggle) so they wrap to 2x2. */
+  .subnav-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
   }
 
   .mode-btn {
@@ -1553,6 +1563,11 @@
   </section>
 
   <section id="tabBlood" class="tab-panel">
+    <div class="mode-toggle medisch-subnav">
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="blood" onclick="switchTab('blood')" data-i18n="navBlood">Bloed</button>
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="vax" onclick="switchTab('vax')" data-i18n="navVax">Vaccins</button>
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="vet" onclick="switchTab('vet')" data-i18n="navVet">Arts</button>
+    </div>
     <div class="card">
       <div class="collapsible-header" id="bloodFormHeader" onclick="toggleBloodForm()">
         <h2 id="bloodFormTitle">+ Nieuwe bloeduitslag</h2>
@@ -1614,6 +1629,11 @@
   </section>
 
   <section id="tabVet" class="tab-panel">
+    <div class="mode-toggle medisch-subnav">
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="blood" onclick="switchTab('blood')" data-i18n="navBlood">Bloed</button>
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="vax" onclick="switchTab('vax')" data-i18n="navVax">Vaccins</button>
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="vet" onclick="switchTab('vet')" data-i18n="navVet">Arts</button>
+    </div>
     <div class="card">
       <div class="collapsible-header" id="vetFormHeader" onclick="openVetFormForAdd()">
         <h2 id="vetFormTitle">+ Nieuwe dierenarts</h2>
@@ -1710,6 +1730,11 @@
   </section>
 
   <section id="tabVax" class="tab-panel">
+    <div class="mode-toggle medisch-subnav">
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="blood" onclick="switchTab('blood')" data-i18n="navBlood">Bloed</button>
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="vax" onclick="switchTab('vax')" data-i18n="navVax">Vaccins</button>
+      <button type="button" class="mode-btn medisch-subnav-btn" data-tab="vet" onclick="switchTab('vet')" data-i18n="navVet">Arts</button>
+    </div>
     <div class="card">
       <div class="collapsible-header" id="vaxFormHeader" onclick="toggleVaxForm()">
         <h2 id="vaxFormTitle">+ Nieuwe vaccinatie</h2>
@@ -1776,6 +1801,12 @@
   </section>
 
   <section id="tabSymptoms" class="tab-panel">
+    <div class="subnav-grid meer-subnav">
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="symptoms" onclick="switchTab('symptoms')" data-i18n="navSymptoms">Afwijking</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="medication" onclick="switchTab('medication')" data-i18n="navMedication">Medicatie</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="profile" onclick="switchTab('profile')">Profiel</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="settings" onclick="switchTab('settings')">Instellingen</button>
+    </div>
     <div class="card">
       <div class="collapsible-header" id="symptomFormHeader" onclick="toggleSymptomForm()">
         <h2 id="symptomFormTitle">+ Nieuwe afwijking</h2>
@@ -1845,6 +1876,12 @@
   </section>
 
   <section id="tabMedication" class="tab-panel">
+    <div class="subnav-grid meer-subnav">
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="symptoms" onclick="switchTab('symptoms')" data-i18n="navSymptoms">Afwijking</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="medication" onclick="switchTab('medication')" data-i18n="navMedication">Medicatie</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="profile" onclick="switchTab('profile')">Profiel</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="settings" onclick="switchTab('settings')">Instellingen</button>
+    </div>
     <div class="card">
       <div class="collapsible-header" id="medicationFormHeader" onclick="toggleMedicationForm()">
         <h2 id="medicationFormTitle">+ Nieuwe medicatie</h2>
@@ -2004,6 +2041,12 @@
   </section>
 
   <section id="tabProfile" class="tab-panel">
+    <div class="subnav-grid meer-subnav">
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="symptoms" onclick="switchTab('symptoms')" data-i18n="navSymptoms">Afwijking</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="medication" onclick="switchTab('medication')" data-i18n="navMedication">Medicatie</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="profile" onclick="switchTab('profile')">Profiel</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="settings" onclick="switchTab('settings')">Instellingen</button>
+    </div>
     <div class="card">
       <h2><span id="profileHeading">🐾 Bewerk huisdier</span> <button type="button" class="info-btn" onclick="toggleInfoTip('profileIntroTip')" aria-label="Meer info">i</button></h2>
       <p class="hint-text info-tip hidden" id="profileIntroTip">
@@ -2108,6 +2151,12 @@
   </section>
 
   <section id="tabSettings" class="tab-panel">
+    <div class="subnav-grid meer-subnav">
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="symptoms" onclick="switchTab('symptoms')" data-i18n="navSymptoms">Afwijking</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="medication" onclick="switchTab('medication')" data-i18n="navMedication">Medicatie</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="profile" onclick="switchTab('profile')">Profiel</button>
+      <button type="button" class="mode-btn meer-subnav-btn" data-tab="settings" onclick="switchTab('settings')">Instellingen</button>
+    </div>
     <div class="card">
       <h2 data-i18n="headingAccount">Account</h2>
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
@@ -2144,15 +2193,17 @@
   </section>
 </main>
 
+<!-- 5 primary groups instead of 8 separate tabs — Bloed/Vaccins/Arts share
+     the "Medisch" tab (sub-nav pills at the top of each of those panels),
+     Afwijking/Medicatie/Profiel/Instellingen share "Meer". switchTab()
+     still accepts every original tab name unchanged, so this only touches
+     which bottom-nav button lights up and which sub-nav pill is active. -->
 <nav class="bottom-nav">
   <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon" data-icon-key="dashboard">🏠</span><span data-i18n="navStart">Start</span></button>
   <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon" data-icon-key="weight">⚖️</span><span data-i18n="navWeight">Gewicht</span></button>
-  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon" data-icon-key="blood">🩸</span><span data-i18n="navBlood">Bloed</span></button>
-  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon" data-icon-key="vax">💉</span><span data-i18n="navVax">Vaccins</span></button>
-  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon" data-icon-key="vet">🩺</span><span data-i18n="navVet">Arts</span></button>
-  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span data-i18n="navSymptoms">Afwijking</span></button>
-  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon" data-icon-key="medication">💊</span><span data-i18n="navMedication">Medicatie</span></button>
+  <button id="tabBtnMedisch" onclick="switchTab('blood')"><span class="bottom-nav-icon" data-icon-key="blood">🩸</span><span data-i18n="navMedisch">Medisch</span></button>
   <button id="tabBtnFood" onclick="switchTab('food')"><span class="bottom-nav-icon" data-icon-key="food">🍽️</span><span data-i18n="navFood">Voeding</span></button>
+  <button id="tabBtnMeer" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span data-i18n="navMeer">Meer</span></button>
 </nav>
 
 </div>
@@ -2459,6 +2510,8 @@
       navSymptoms: "Symptoms",
       navMedication: "Medication",
       navFood: "Food",
+      navMedisch: "Medical",
+      navMeer: "More",
       fieldFoodName: "Product",
       fieldFoodType: "Food type",
       foodTypeDry: "Dry food",
@@ -2546,6 +2599,8 @@
       navSymptoms: "Symptome",
       navMedication: "Medikamente",
       navFood: "Futter",
+      navMedisch: "Medizinisch",
+      navMeer: "Mehr",
       fieldFoodName: "Produkt",
       fieldFoodType: "Futterart",
       foodTypeDry: "Trockenfutter",
@@ -3407,12 +3462,18 @@
     document.getElementById("tabSettings").classList.toggle("active", tab === "settings");
     document.getElementById("tabBtnDashboard").classList.toggle("active", tab === "dashboard");
     document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
-    document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
-    document.getElementById("tabBtnVax").classList.toggle("active", tab === "vax");
-    document.getElementById("tabBtnVet").classList.toggle("active", tab === "vet");
-    document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
-    document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
     document.getElementById("tabBtnFood").classList.toggle("active", tab === "food");
+    // "Medisch" (Bloed/Vaccins/Arts) and "Meer" (Afwijking/Medicatie/Profiel/
+    // Instellingen) are grouped under one bottom-nav button each — the
+    // group button lights up for any of its member tabs, and the matching
+    // sub-nav pill (duplicated at the top of each member panel) shows which
+    // one is active.
+    const medischTabs = ["blood", "vax", "vet"];
+    const meerTabs = ["symptoms", "medication", "profile", "settings"];
+    document.getElementById("tabBtnMedisch").classList.toggle("active", medischTabs.includes(tab));
+    document.getElementById("tabBtnMeer").classList.toggle("active", meerTabs.includes(tab));
+    document.querySelectorAll(".medisch-subnav-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
+    document.querySelectorAll(".meer-subnav-btn").forEach((btn) => btn.classList.toggle("active", btn.dataset.tab === tab));
     if (tab === "dashboard") renderDashboard();
     // Belt-and-suspenders against the "neutral color until refresh" bug:
     // even with catProfile guaranteed correct by the time refreshAll()
