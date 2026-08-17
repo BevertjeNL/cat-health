@@ -232,20 +232,23 @@
   section.tab-panel { display: none; }
   section.tab-panel.active { display: block; }
 
+  /* Solid, not glass: with several cards stacked per screen (dashboard,
+     blood tab) a translucent blurred fill on every one of them stacked up
+     into a hazy, low-contrast look. The glass treatment stays reserved for
+     navigation/overlay chrome (header, bottom-nav, detail-sheet) — see the
+     --glass-* token comment above. */
   .card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    background: var(--card-bg);
     border-radius: var(--radius);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--border);
     padding: 18px;
     margin-bottom: 16px;
-    box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 16px rgba(0, 0, 0, 0.03);
   }
 
   @media (prefers-color-scheme: dark) {
     .card {
-      box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2), 0 4px 16px rgba(0, 0, 0, 0.15);
     }
   }
 
@@ -532,11 +535,9 @@
   .btn-secondary {
     flex: 0 0 auto;
     padding: 0 14px;
-    border-radius: 10px;
-    border: 1px solid var(--glass-border);
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
-    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--card-bg);
     color: var(--accent);
     font-weight: 600;
     font-size: 0.85rem;
@@ -2332,7 +2333,7 @@
     subtitleEl.textContent = authMode === "login" ? "Log in om verder te gaan." : "Maak een account aan.";
     submitEl.textContent = authMode === "login" ? "Inloggen" : "Registreren";
     switchEl.textContent = authMode === "login" ? "Nog geen account? Registreren" : "Al een account? Inloggen";
-    document.getElementById("authError").style.display = "none";
+    document.getElementById("authError").classList.add("hidden");
     applyTranslations();
   }
 
@@ -2342,7 +2343,7 @@
     const password = document.getElementById("authPassword").value;
     const errEl = document.getElementById("authError");
     const btn = document.getElementById("authSubmitBtn");
-    errEl.style.display = "none";
+    errEl.classList.add("hidden");
     btn.disabled = true;
 
     const { error } =
@@ -2354,14 +2355,14 @@
 
     if (error) {
       errEl.textContent = error.message;
-      errEl.style.display = "";
+      errEl.classList.remove("hidden");
       return;
     }
 
     if (authMode === "signup") {
       errEl.style.color = "var(--accent)";
       errEl.textContent = "Account aangemaakt. Als e-mailbevestiging vereist is, check je inbox — anders ben je al ingelogd.";
-      errEl.style.display = "";
+      errEl.classList.remove("hidden");
     }
   });
 
@@ -3053,13 +3054,13 @@
   }
 
   function showAuthScreen() {
-    document.getElementById("authScreen").style.display = "";
-    document.getElementById("appContent").style.display = "none";
+    document.getElementById("authScreen").classList.remove("hidden");
+    document.getElementById("appContent").classList.add("hidden");
   }
 
   function showAppContent() {
-    document.getElementById("authScreen").style.display = "none";
-    document.getElementById("appContent").style.display = "";
+    document.getElementById("authScreen").classList.add("hidden");
+    document.getElementById("appContent").classList.remove("hidden");
   }
 
   supabaseClient?.auth.onAuthStateChange((event, session) => {
@@ -3295,7 +3296,7 @@
     document.getElementById("archivePetConfirmInput").value = "";
     document.getElementById("archivePetConfirmBtn").disabled = true;
     document.getElementById("archivePetStep1").style.display = "";
-    document.getElementById("archivePetStep2").style.display = "none";
+    document.getElementById("archivePetStep2").classList.add("hidden");
     document.getElementById("archivePetOverlay").classList.add("show");
     pushNavEntry();
   }
@@ -3307,7 +3308,7 @@
 
   function showArchivePetStep2() {
     document.getElementById("archivePetStep1").style.display = "none";
-    document.getElementById("archivePetStep2").style.display = "";
+    document.getElementById("archivePetStep2").classList.remove("hidden");
     document.getElementById("archivePetConfirmInput").focus();
   }
 
@@ -3882,7 +3883,7 @@
     document.getElementById("weightNote").value = row.note || "";
     document.getElementById("weightFormTitle").textContent = "Meting bewerken";
     setI18nText(weightForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("weightCancelEditBtn").style.display = "";
+    document.getElementById("weightCancelEditBtn").classList.remove("hidden");
     openWeightForm();
     switchTab("weight");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -3894,7 +3895,7 @@
     document.getElementById("weightDate").valueAsDate = new Date();
     document.getElementById("weightFormTitle").textContent = "+ Nieuwe meting";
     setI18nText(weightForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("weightCancelEditBtn").style.display = "none";
+    document.getElementById("weightCancelEditBtn").classList.add("hidden");
     toggleWeightForm(false);
   }
 
@@ -4224,13 +4225,13 @@
     const captionEl = document.getElementById("weightZoneCaption");
     if (hasManualWeightTarget(catProfile)) {
       captionEl.textContent = `Dit is de ingestelde streefzone voor ${catProfile.name || "je huisdier"}: ${catProfile.target_min_kg}–${catProfile.target_max_kg} kg.`;
-      captionEl.style.display = "";
+      captionEl.classList.remove("hidden");
     } else if (computeAdultBase(catProfile) != null) {
       captionEl.textContent =
         "Dit is een automatische inschatting van de streefzone op basis van het profiel (geslacht en energieniveau) — geen medisch advies. Vul een eigen streefgewicht in voor een nauwkeurigere zone.";
-      captionEl.style.display = "";
+      captionEl.classList.remove("hidden");
     } else {
-      captionEl.style.display = "none";
+      captionEl.classList.add("hidden");
     }
   }
 
@@ -4474,7 +4475,7 @@
 
   function toggleExtendedMode(forceOpen) {
     extendedOpen = forceOpen !== undefined ? forceOpen : !extendedOpen;
-    document.getElementById("bloodFieldsExtra").style.display = extendedOpen ? "" : "none";
+    document.getElementById("bloodFieldsExtra").classList.toggle("hidden", !extendedOpen);
     document.getElementById("expandModeBtn").textContent = extendedOpen
       ? "− Alleen hoofdwaarden tonen"
       : "+ Uitgebreid onderzoek";
@@ -4572,7 +4573,7 @@
     document.getElementById("bloodNote").value = rows.find((r) => r.note)?.note || "";
     document.getElementById("bloodFormTitle").textContent = "Bloeduitslag bewerken — " + formatDate(date);
     setI18nText(bloodForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("bloodCancelEditBtn").style.display = "";
+    document.getElementById("bloodCancelEditBtn").classList.remove("hidden");
     openBloodForm();
     switchTab("blood");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -4586,7 +4587,7 @@
     document.getElementById("ocrStatus").textContent = "Herkende waarden worden automatisch in de velden hieronder ingevuld.";
     document.getElementById("bloodFormTitle").textContent = "+ Nieuwe bloeduitslag";
     setI18nText(bloodForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("bloodCancelEditBtn").style.display = "none";
+    document.getElementById("bloodCancelEditBtn").classList.add("hidden");
     toggleBloodForm(false);
   }
 
@@ -5142,7 +5143,7 @@
       editingVetId = null;
       vetForm.reset();
       setI18nText(vetForm.querySelector("button.submit"), "btnSave", "Opslaan");
-      document.getElementById("vetCancelEditBtn").style.display = "none";
+      document.getElementById("vetCancelEditBtn").classList.add("hidden");
     }
     toggleVetForm();
   }
@@ -5158,7 +5159,7 @@
     document.getElementById("vetIsPrimary").checked = !!row.is_primary;
     document.getElementById("vetFormTitle").textContent = "Dierenarts bewerken";
     setI18nText(vetForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("vetCancelEditBtn").style.display = "";
+    document.getElementById("vetCancelEditBtn").classList.remove("hidden");
     toggleVetForm(true);
     switchTab("vet");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5169,7 +5170,7 @@
     vetForm.reset();
     document.getElementById("vetFormTitle").textContent = "+ Nieuwe dierenarts";
     setI18nText(vetForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("vetCancelEditBtn").style.display = "none";
+    document.getElementById("vetCancelEditBtn").classList.add("hidden");
     toggleVetForm(false);
   }
 
@@ -5346,7 +5347,7 @@
     document.getElementById("vetVisitCost").value = row.cost ?? "";
     document.getElementById("vetVisitFormTitle").textContent = "Bezoek bewerken";
     setI18nText(vetVisitForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("vetVisitCancelEditBtn").style.display = "";
+    document.getElementById("vetVisitCancelEditBtn").classList.remove("hidden");
     openVetVisitForm();
     switchTab("vet");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5359,7 +5360,7 @@
     document.getElementById("vetVisitVetId").value = "";
     document.getElementById("vetVisitFormTitle").textContent = "+ Nieuw dierenartsbezoek";
     setI18nText(vetVisitForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("vetVisitCancelEditBtn").style.display = "none";
+    document.getElementById("vetVisitCancelEditBtn").classList.add("hidden");
     toggleVetVisitForm(false);
   }
 
@@ -5580,7 +5581,7 @@
     document.getElementById("vaxCost").value = row.cost ?? "";
     document.getElementById("vaxFormTitle").textContent = "Vaccinatie bewerken";
     setI18nText(vaxForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("vaxCancelEditBtn").style.display = "";
+    document.getElementById("vaxCancelEditBtn").classList.remove("hidden");
     openVaxForm();
     switchTab("vax");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -5593,7 +5594,7 @@
     document.getElementById("vaxDate").valueAsDate = new Date();
     document.getElementById("vaxFormTitle").textContent = "+ Nieuwe vaccinatie";
     setI18nText(vaxForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("vaxCancelEditBtn").style.display = "none";
+    document.getElementById("vaxCancelEditBtn").classList.add("hidden");
     toggleVaxForm(false);
   }
 
@@ -5738,11 +5739,11 @@
 
     if (!data.length) {
       emptyEl.style.display = "";
-      wrapEl.style.display = "none";
+      wrapEl.classList.add("hidden");
       return;
     }
     emptyEl.style.display = "none";
-    wrapEl.style.display = "";
+    wrapEl.classList.remove("hidden");
 
     const names = [...new Set(data.map((r) => r.vaccine))];
     wrapEl.style.height = Math.max(160, 60 + names.length * 46) + "px";
@@ -6110,7 +6111,7 @@
     document.getElementById("symptomNote").value = row.note || "";
     document.getElementById("symptomFormTitle").textContent = "Afwijking bewerken";
     setI18nText(symptomForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("symptomCancelEditBtn").style.display = "";
+    document.getElementById("symptomCancelEditBtn").classList.remove("hidden");
     // A single existing entry maps to one row — the multi-dag range option
     // only makes sense when creating fresh entries, not editing one.
     document.getElementById("symptomEndDateRow").style.display = "none";
@@ -6129,7 +6130,7 @@
     document.getElementById("symptomSeverity").value = row.severity || "";
     document.getElementById("symptomNote").value = row.note || "";
     setI18nText(symptomForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("symptomCancelEditBtn").style.display = "none";
+    document.getElementById("symptomCancelEditBtn").classList.add("hidden");
     document.getElementById("symptomEndDateRow").style.display = "";
     openSymptomForm();
     document.getElementById("symptomFormTitle").textContent = "Nieuwe afwijking (op basis van vorige)";
@@ -6143,7 +6144,7 @@
     document.getElementById("symptomDate").valueAsDate = new Date();
     document.getElementById("symptomFormTitle").textContent = "+ Nieuwe afwijking";
     setI18nText(symptomForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("symptomCancelEditBtn").style.display = "none";
+    document.getElementById("symptomCancelEditBtn").classList.add("hidden");
     document.getElementById("symptomEndDateRow").style.display = "";
     toggleSymptomForm(false);
   }
@@ -6237,11 +6238,11 @@
 
     if (!data.length) {
       emptyEl.style.display = "";
-      wrapEl.style.display = "none";
+      wrapEl.classList.add("hidden");
       return;
     }
     emptyEl.style.display = "none";
-    wrapEl.style.display = "";
+    wrapEl.classList.remove("hidden");
 
     const freq = {};
     data.forEach((r) => (freq[r.symptom] = (freq[r.symptom] || 0) + 1));
@@ -6380,7 +6381,7 @@
 
     if (data.length === 0) {
       emptyEl.style.display = "";
-      tableEl.style.display = "none";
+      tableEl.classList.add("hidden");
       return;
     }
 
@@ -6398,7 +6399,7 @@
       .join("");
 
     emptyEl.style.display = "none";
-    tableEl.style.display = "";
+    tableEl.classList.remove("hidden");
   }
 
   async function deleteSymptom(id) {
@@ -6536,7 +6537,7 @@
     updateMedicationDetailSuggestions(row.name);
     document.getElementById("medicationFormTitle").textContent = "Medicatie bewerken";
     setI18nText(medicationForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("medicationCancelEditBtn").style.display = "";
+    document.getElementById("medicationCancelEditBtn").classList.remove("hidden");
     openMedicationForm();
     switchTab("medication");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -6558,7 +6559,7 @@
     document.getElementById("medicationNote").value = row.note || "";
     document.getElementById("medicationCost").value = "";
     setI18nText(medicationForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("medicationCancelEditBtn").style.display = "none";
+    document.getElementById("medicationCancelEditBtn").classList.add("hidden");
     updateMedicationNameSuggestions(row.purpose || "");
     openMedicationForm();
     // Must run after openMedicationForm(): toggleMedicationForm() resets the
@@ -6575,7 +6576,7 @@
     document.getElementById("medicationDate").valueAsDate = new Date();
     document.getElementById("medicationFormTitle").textContent = "+ Nieuwe medicatie";
     setI18nText(medicationForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("medicationCancelEditBtn").style.display = "none";
+    document.getElementById("medicationCancelEditBtn").classList.add("hidden");
     toggleMedicationForm(false);
   }
 
@@ -6793,7 +6794,7 @@
     updateFoodShopSuggestions(row.name);
     document.getElementById("foodFormTitle").textContent = "Voeding bewerken";
     setI18nText(foodForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
-    document.getElementById("foodCancelEditBtn").style.display = "";
+    document.getElementById("foodCancelEditBtn").classList.remove("hidden");
     openFoodForm();
     switchTab("food");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -6814,7 +6815,7 @@
     document.getElementById("foodCost").value = "";
     document.getElementById("foodExcludeFromStats").checked = false;
     setI18nText(foodForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("foodCancelEditBtn").style.display = "none";
+    document.getElementById("foodCancelEditBtn").classList.add("hidden");
     updateFoodShopSuggestions(row.name);
     openFoodForm();
     document.getElementById("foodFormTitle").textContent = "Nieuwe voeding (op basis van vorige)";
@@ -6828,7 +6829,7 @@
     document.getElementById("foodDate").valueAsDate = new Date();
     document.getElementById("foodFormTitle").textContent = "+ Nieuwe voeding";
     setI18nText(foodForm.querySelector("button.submit"), "btnSave", "Opslaan");
-    document.getElementById("foodCancelEditBtn").style.display = "none";
+    document.getElementById("foodCancelEditBtn").classList.add("hidden");
     toggleFoodForm(false);
   }
 
@@ -6949,12 +6950,12 @@
 
     if (!points.length) {
       emptyEl.style.display = "";
-      wrapEl.style.display = "none";
+      wrapEl.classList.add("hidden");
       captionEl.style.display = "none";
       return;
     }
     emptyEl.style.display = "none";
-    wrapEl.style.display = "";
+    wrapEl.classList.remove("hidden");
     captionEl.style.display = "";
     captionEl.textContent = t("foodChartCaption");
 
@@ -7921,7 +7922,7 @@
 
   function onProfileSpeciesChange() {
     const species = document.getElementById("catSpecies").value;
-    document.getElementById("catBreedRow").style.display = species === "kat" ? "none" : "";
+    document.getElementById("catBreedRow").classList.toggle("hidden", species === "kat");
     document.getElementById("catBreedLabel").textContent =
       species === "hond" ? "Ras (optioneel)" : "Wat voor dier? (optioneel)";
     document.getElementById("catBreed").placeholder =
@@ -7958,11 +7959,11 @@
     if (dataUrl) {
       preview.style.backgroundImage = `url("${dataUrl}")`;
       preview.textContent = "";
-      removeBtn.style.display = "";
+      removeBtn.classList.remove("hidden");
     } else {
       preview.style.backgroundImage = "";
       preview.textContent = "🐾";
-      removeBtn.style.display = "none";
+      removeBtn.classList.add("hidden");
     }
   }
 
