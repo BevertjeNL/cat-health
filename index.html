@@ -257,6 +257,14 @@
     letter-spacing: 0.03em;
   }
 
+  /* The dashboard's "Actueel" card is the primary thing to look at on that
+     screen — a slightly larger, non-muted title gives it visual priority
+     over the other cards instead of all titles reading as equally loud. */
+  .card-primary h2 {
+    font-size: 1.15rem;
+    color: var(--text);
+  }
+
   .collapsible-header {
     display: flex;
     justify-content: space-between;
@@ -1481,7 +1489,7 @@
 
 <main>
   <section id="tabDashboard" class="tab-panel active">
-    <div class="card" id="dashboardActueelCard">
+    <div class="card card-primary" id="dashboardActueelCard">
       <h2 data-i18n-js="dashboardActueel">Actueel</h2>
       <div id="dashboardAlerts"></div>
     </div>
@@ -2148,7 +2156,7 @@
 
 </div>
 
-<div class="detail-overlay" id="petMenuOverlay" onclick="if (event.target === this) closePetMenu();">
+<!-- Huisdier-wisselmenu (kies actief huisdier / nieuw huisdier / archief) --><div class="detail-overlay" id="petMenuOverlay" onclick="if (event.target === this) closePetMenu();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Huisdieren</h2>
@@ -2160,7 +2168,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="archivedPetsOverlay" onclick="if (event.target === this) closeArchivedPetsMenu();">
+<!-- Lijst met gearchiveerde huisdieren, met optie tot herstellen --><div class="detail-overlay" id="archivedPetsOverlay" onclick="if (event.target === this) closeArchivedPetsMenu();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Gearchiveerde huisdieren</h2>
@@ -2170,7 +2178,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="archivePetOverlay" onclick="if (event.target === this) closeArchivePetConfirm();">
+<!-- Bevestiging huisdier archiveren (2 stappen: waarschuwing, dan naam-typen ter bevestiging) --><div class="detail-overlay" id="archivePetOverlay" onclick="if (event.target === this) closeArchivePetConfirm();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Huisdier archiveren</h2>
@@ -2190,7 +2198,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="addPetOverlay" onclick="if (event.target === this) closeAddPetForm();">
+<!-- Formulier voor het toevoegen van een nieuw huisdier --><div class="detail-overlay" id="addPetOverlay" onclick="if (event.target === this) closeAddPetForm();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Nieuw huisdier</h2>
@@ -2214,7 +2222,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="quickAddOverlay" onclick="if (event.target === this) closeQuickAddMenu();">
+<!-- Snelmenu vanaf het dashboard: kies welk type gegeven je wilt toevoegen --><div class="detail-overlay" id="quickAddOverlay" onclick="if (event.target === this) closeQuickAddMenu();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Gegeven toevoegen</h2>
@@ -2230,7 +2238,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="bloodDetailOverlay" onclick="if (event.target === this) closeBloodDetail();">
+<!-- Detailweergave van één bloedwaarde-meting, met bewerkknop --><div class="detail-overlay" id="bloodDetailOverlay" onclick="if (event.target === this) closeBloodDetail();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="bloodDetailDate"></h2>
@@ -2241,7 +2249,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="careReminderOverlay" onclick="if (event.target === this) closeCareReminder();">
+<!-- Popup met een enkele zorg-herinnering (bv. vaccinatie/medicatie bijna verlopen) --><div class="detail-overlay" id="careReminderOverlay" onclick="if (event.target === this) closeCareReminder();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>💉 Zorg-herinnering</h2>
@@ -2252,7 +2260,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="vetDetailOverlay" onclick="if (event.target === this) closeVetDetail();">
+<!-- Detailweergave van één dierenarts-contact, met bewerkknop --><div class="detail-overlay" id="vetDetailOverlay" onclick="if (event.target === this) closeVetDetail();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="vetDetailName"></h2>
@@ -2263,7 +2271,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="printOverviewOverlay" onclick="if (event.target === this) closePrintOverview();">
+<!-- Deelbaar/printbaar overzicht van het huisdierdossier (JPEG-export) --><div class="detail-overlay" id="printOverviewOverlay" onclick="if (event.target === this) closePrintOverview();">
   <div class="detail-sheet">
     <div class="detail-header print-hide">
       <h2 data-i18n="headingShareOverview">Overzicht delen</h2>
