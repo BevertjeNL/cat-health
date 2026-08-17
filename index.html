@@ -58,13 +58,19 @@
     --accent-contrast: #ffffff;
     --border: #e6e2d8;
     --danger: #d9432c;
+    --warning: #f59e0b;
+    --radius-sm: 10px;
     --radius: 20px;
+    --radius-lg: 22px;
+    --urgency-red-bg: #ffe0de;
+    --urgency-orange-bg: #ffeed6;
+    --urgency-green-bg: #e3f7e8;
     /* Liquid Glass material tokens (iOS 26) — a translucent, blurred
        surface with a thin bright top-edge highlight, layered over the
        existing --bg so content behind it stays legible through the glass.
-       Deliberately just tokens on top of the existing surfaces (.card,
-       .bottom-nav, .detail-sheet, .today-btn), not a structural redesign —
-       the layout/interaction patterns stay exactly as they are. */
+       Reserved for navigation/overlay chrome (header, bottom-nav,
+       detail-sheet) — .card and .btn-secondary use a solid --card-bg
+       instead so stacked cards don't blur into each other. */
     --glass-bg: rgba(255, 255, 255, 0.55);
     --glass-bg-strong: rgba(255, 255, 255, 0.72);
     --glass-border: rgba(255, 255, 255, 0.65);
@@ -79,6 +85,9 @@
       --text: #f2f0e8;
       --text-muted: #a39d8f;
       --border: #3a352a;
+      --urgency-red-bg: #5d271f;
+      --urgency-orange-bg: #5d3e13;
+      --urgency-green-bg: #284527;
       --glass-bg: rgba(36, 32, 25, 0.55);
       --glass-bg-strong: rgba(36, 32, 25, 0.74);
       --glass-border: rgba(255, 255, 255, 0.09);
@@ -87,6 +96,8 @@
   }
 
   * { box-sizing: border-box; }
+
+  .hidden { display: none; }
 
   html, body {
     margin: 0;
@@ -305,7 +316,7 @@
   }
 
   .watch-badge {
-    background: #f59e0b;
+    background: var(--warning);
     color: #1c1c1e;
     font-size: 0.7rem;
     font-weight: 700;
@@ -327,7 +338,7 @@
   }
 
   .marker-field-row.marker-watched {
-    border-left-color: #f59e0b;
+    border-left-color: var(--warning);
     background: rgba(245, 158, 11, 0.07);
     border-radius: 6px;
   }
@@ -365,7 +376,7 @@
   }
 
   .watch-star.active {
-    color: #f59e0b;
+    color: var(--warning);
   }
 
   .marker-input-wrap {
@@ -510,7 +521,7 @@
     min-width: 0;
   }
 
-  .today-btn {
+  .btn-secondary {
     flex: 0 0 auto;
     padding: 0 14px;
     border-radius: 10px;
@@ -525,7 +536,7 @@
     min-height: 44px;
   }
 
-  .today-btn:active {
+  .btn-secondary:active {
     background: var(--accent);
     color: var(--accent-contrast);
   }
@@ -1111,7 +1122,7 @@
   }
 
   .detail-row.watched {
-    border-left-color: #f59e0b;
+    border-left-color: var(--warning);
     background: rgba(245, 158, 11, 0.07);
     border-radius: 6px;
   }
@@ -1419,7 +1430,7 @@
 </head>
 <body>
 
-<div id="authScreen" style="display:none;">
+<div id="authScreen" class="hidden">
   <div class="card">
     <h1 data-i18n="authTitle">🐾 Huisdiergezondheid</h1>
     <p class="hint-text" id="authSubtitle" data-i18n="authSubtitle">Log in om verder te gaan.</p>
@@ -1432,14 +1443,14 @@
         <label for="authPassword" data-i18n="authPasswordLabel">Wachtwoord</label>
         <input type="password" id="authPassword" autocomplete="current-password" required />
       </div>
-      <p class="auth-error" id="authError" style="display:none;"></p>
+      <p class="auth-error hidden" id="authError"></p>
       <button class="submit" type="submit" id="authSubmitBtn" data-i18n="authSubmitLogin">Inloggen</button>
     </form>
     <button type="button" class="auth-switch-link" id="authSwitchBtn" onclick="toggleAuthMode()" data-i18n="authSwitchToRegister">Nog geen account? Registreren</button>
   </div>
 </div>
 
-<div id="appContent" style="display:none;">
+<div id="appContent" class="hidden">
 
 <header id="appHeader">
   <div class="header-bar">
@@ -1486,13 +1497,13 @@
         <h2 id="weightFormTitle">+ Nieuwe meting</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="weightFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="weightFormBody">
         <form class="entry-form" id="weightForm">
           <div>
             <label for="weightDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="weightDate" required />
-              <button type="button" class="today-btn" data-target="weightDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="weightDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
@@ -1504,7 +1515,7 @@
             <input type="text" id="weightNote" placeholder="bijv. na het eten" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="weightCancelEditBtn" style="display:none;" onclick="cancelWeightEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="weightCancelEditBtn" onclick="cancelWeightEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1518,10 +1529,10 @@
       <div class="chart-wrap">
         <canvas id="weightChart"></canvas>
       </div>
-      <p class="hint-text" id="weightZoneCaption" style="display:none;"></p>
+      <p class="hint-text hidden" id="weightZoneCaption"></p>
       <p class="hint-text" style="margin-top:6px;">
         Knijp of scroll om in/uit te zoomen, sleep om te verschuiven.
-        <button type="button" class="today-btn" style="display:inline;padding:2px 10px;margin-left:6px;" onclick="weightChart && renderWeightChart(latestWeightData)">Toon alles</button>
+        <button type="button" class="btn-secondary" style="display:inline;padding:2px 10px;margin-left:6px;" onclick="weightChart && renderWeightChart(latestWeightData)">Toon alles</button>
       </p>
     </div>
 
@@ -1538,19 +1549,19 @@
         <h2 id="bloodFormTitle">+ Nieuwe bloeduitslag</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="bloodFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="bloodFormBody">
         <form class="entry-form" id="bloodForm">
           <div>
             <label for="bloodDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="bloodDate" required />
-              <button type="button" class="today-btn" data-target="bloodDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="bloodDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
 
           <div>
-            <input type="file" id="bloodFileInput" accept="image/*,application/pdf" style="display:none;" />
-            <button type="button" class="today-btn" style="width:100%;padding:12px;" onclick="document.getElementById('bloodFileInput').click()">📄 Uit foto/pdf overnemen</button>
+            <input type="file" id="bloodFileInput" accept="image/*,application/pdf" class="hidden" />
+            <button type="button" class="btn-secondary" style="width:100%;padding:12px;" onclick="document.getElementById('bloodFileInput').click()">📄 Uit foto/pdf overnemen</button>
             <p class="hint-text" id="ocrStatus" style="margin-top:6px;">Herkende waarden worden automatisch in de velden hieronder ingevuld.</p>
           </div>
 
@@ -1558,7 +1569,7 @@
 
           <button type="button" class="mode-btn" id="expandModeBtn" style="width:100%;" onclick="toggleExtendedMode()">+ Uitgebreid onderzoek</button>
 
-          <div id="bloodFieldsExtra" style="display:none;"></div>
+          <div id="bloodFieldsExtra" class="hidden"></div>
 
           <div>
             <label>Overige markers (optioneel)</label>
@@ -1571,7 +1582,7 @@
             <input type="text" id="bloodNote" placeholder="bijv. nuchter geprikt" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="bloodCancelEditBtn" style="display:none;" onclick="cancelBloodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="bloodCancelEditBtn" onclick="cancelBloodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1599,7 +1610,7 @@
         <h2 id="vetFormTitle">+ Nieuwe dierenarts</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="vetFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="vetFormBody">
         <form class="entry-form" id="vetForm">
           <div>
             <label for="vetName" data-i18n="fieldVetName">Naam / praktijk</label>
@@ -1629,7 +1640,7 @@
             <label for="vetIsPrimary"><input type="checkbox" id="vetIsPrimary" /> <span data-i18n="fieldVetIsPrimary">Hoofddierenarts</span></label>
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="vetCancelEditBtn" style="display:none;" onclick="cancelVetEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="vetCancelEditBtn" onclick="cancelVetEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1645,13 +1656,13 @@
         <h2 id="vetVisitFormTitle">+ Nieuw dierenartsbezoek</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="vetVisitFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="vetVisitFormBody">
         <form class="entry-form" id="vetVisitForm">
           <div>
             <label for="vetVisitDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="vetVisitDate" required />
-              <button type="button" class="today-btn" data-target="vetVisitDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="vetVisitDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
@@ -1677,7 +1688,7 @@
             <input type="number" id="vetVisitCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 45.00" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="vetVisitCancelEditBtn" style="display:none;" onclick="cancelVetVisitEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="vetVisitCancelEditBtn" onclick="cancelVetVisitEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1695,7 +1706,7 @@
         <h2 id="vaxFormTitle">+ Nieuwe vaccinatie</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="vaxFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="vaxFormBody">
         <form class="entry-form" id="vaxForm">
           <div>
             <label for="vaxName">Vaccin</label>
@@ -1711,15 +1722,15 @@
             <label for="vaxDate" data-i18n="fieldDateGiven">Datum gegeven</label>
             <div class="date-field">
               <input type="date" id="vaxDate" required />
-              <button type="button" class="today-btn" data-target="vaxDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="vaxDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
             <label for="vaxValidUntil">Geldig tot</label>
             <div class="date-field">
               <input type="date" id="vaxValidUntil" />
-              <button type="button" class="today-btn" onclick="setVaxValidUntil(1)">+1 jaar</button>
-              <button type="button" class="today-btn" onclick="setVaxValidUntil(3)">+3 jaar</button>
+              <button type="button" class="btn-secondary" onclick="setVaxValidUntil(1)">+1 jaar</button>
+              <button type="button" class="btn-secondary" onclick="setVaxValidUntil(3)">+3 jaar</button>
             </div>
             <p class="hint-text" style="margin-top:6px;">Vul zelf in, of gebruik een snelknop om automatisch te berekenen vanaf de datum hierboven.</p>
           </div>
@@ -1735,7 +1746,7 @@
             <input type="number" id="vaxCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 35.00" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="vaxCancelEditBtn" style="display:none;" onclick="cancelVaxEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="vaxCancelEditBtn" onclick="cancelVaxEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1743,7 +1754,7 @@
     <div class="card">
       <h2 data-i18n="headingTimeline">Tijdlijn</h2>
       <p class="hint-text" id="vaxChartEmpty" style="margin-bottom:8px;" data-i18n-js="emptyVaxChart">Nog geen vaccinaties om een tijdlijn te tonen.</p>
-      <div class="chart-wrap" id="vaxChartWrap" style="display:none;">
+      <div class="chart-wrap hidden" id="vaxChartWrap">
         <canvas id="vaxChart"></canvas>
       </div>
     </div>
@@ -1761,7 +1772,7 @@
         <h2 id="symptomFormTitle">+ Nieuwe afwijking</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="symptomFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="symptomFormBody">
         <form class="entry-form" id="symptomForm">
           <div>
             <label for="symptomName" data-i18n="fieldSymptomName">Afwijking</label>
@@ -1772,7 +1783,7 @@
             <label for="symptomDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="symptomDate" required />
-              <button type="button" class="today-btn" data-target="symptomDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="symptomDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div id="symptomEndDateRow">
@@ -1793,7 +1804,7 @@
             <input type="text" id="symptomNote" placeholder="bijv. na het eten, 2x vandaag" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="symptomCancelEditBtn" style="display:none;" onclick="cancelSymptomEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="symptomCancelEditBtn" onclick="cancelSymptomEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1801,7 +1812,7 @@
     <div class="card">
       <h2 data-i18n="headingTimeline">Tijdlijn</h2>
       <p class="hint-text" id="symptomChartEmpty" style="margin-bottom:8px;" data-i18n-js="emptySymptomChart">Nog geen afwijkingen om een tijdlijn te tonen.</p>
-      <div class="chart-wrap" id="symptomChartWrap" style="display:none;">
+      <div class="chart-wrap hidden" id="symptomChartWrap">
         <canvas id="symptomChart"></canvas>
       </div>
     </div>
@@ -1809,7 +1820,7 @@
     <div class="card">
       <h2>Vaakst voorkomend</h2>
       <p class="hint-text" id="symptomSummaryEmpty" style="margin-bottom:10px;" data-i18n-js="emptySymptomsLogged">Nog geen afwijkingen gelogd.</p>
-      <table class="summary-table" id="symptomSummaryTable" style="display:none;">
+      <table class="summary-table hidden" id="symptomSummaryTable">
         <thead>
           <tr><th>Afwijking</th><th>Aantal</th><th>Laatst</th></tr>
         </thead>
@@ -1830,7 +1841,7 @@
         <h2 id="medicationFormTitle">+ Nieuwe medicatie</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="medicationFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="medicationFormBody">
         <form class="entry-form" id="medicationForm">
           <div>
             <label for="medicationPurpose" data-i18n="fieldPurposeOptional">Doel (optioneel)</label>
@@ -1859,7 +1870,7 @@
             <label for="medicationDate" data-i18n="fieldDateGiven">Datum gegeven</label>
             <div class="date-field">
               <input type="date" id="medicationDate" required />
-              <button type="button" class="today-btn" data-target="medicationDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="medicationDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div class="row">
@@ -1878,8 +1889,8 @@
             <label for="medicationNextDue" data-i18n="fieldNextDoseOptional">Volgende dosis (optioneel)</label>
             <div class="date-field">
               <input type="date" id="medicationNextDue" />
-              <button type="button" class="today-btn" onclick="setMedicationNextDue(1, 'month')">+1 maand</button>
-              <button type="button" class="today-btn" onclick="setMedicationNextDue(3, 'month')">+3 maanden</button>
+              <button type="button" class="btn-secondary" onclick="setMedicationNextDue(1, 'month')">+1 maand</button>
+              <button type="button" class="btn-secondary" onclick="setMedicationNextDue(3, 'month')">+3 maanden</button>
             </div>
             <p class="hint-text" style="margin-top:6px;">Bijv. elke 3 maanden voor Bravecto — je krijgt dan tijdig een herinnering.</p>
           </div>
@@ -1892,7 +1903,7 @@
             <input type="number" id="medicationCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 15.00" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="medicationCancelEditBtn" style="display:none;" onclick="cancelMedicationEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="medicationCancelEditBtn" onclick="cancelMedicationEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1908,7 +1919,7 @@
     <div class="card">
       <h2 data-i18n="headingFoodChart">Verbruik per dag</h2>
       <p class="hint-text" id="foodChartEmpty" data-i18n="emptyFoodChart">Nog te weinig aankopen voor een grafiek — minimaal 2 aankopen nodig.</p>
-      <div class="chart-wrap" id="foodChartWrap" style="display:none;">
+      <div class="chart-wrap hidden" id="foodChartWrap">
         <canvas id="foodChart"></canvas>
       </div>
       <p class="hint-text" id="foodChartCaption" style="display:none;margin-top:6px;"></p>
@@ -1919,7 +1930,7 @@
         <h2 id="foodFormTitle">+ Nieuwe voeding</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
-      <div class="collapsible-body" id="foodFormBody" style="display:none;">
+      <div class="collapsible-body hidden" id="foodFormBody">
         <form class="entry-form" id="foodForm">
           <div>
             <label for="foodName" data-i18n="fieldFoodName">Product</label>
@@ -1956,7 +1967,7 @@
             <label for="foodDate" data-i18n="fieldDate">Datum</label>
             <div class="date-field">
               <input type="date" id="foodDate" required />
-              <button type="button" class="today-btn" data-target="foodDate" data-i18n="btnToday">Vandaag</button>
+              <button type="button" class="btn-secondary" data-target="foodDate" data-i18n="btnToday">Vandaag</button>
             </div>
           </div>
           <div>
@@ -1971,7 +1982,7 @@
             <label for="foodExcludeFromStats"><input type="checkbox" id="foodExcludeFromStats" /> <span data-i18n="fieldFoodExcludeFromStats">Niet meetellen voor gram/dag-verbruik (kosten tellen wel mee)</span></label>
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
-          <button type="button" class="today-btn" id="foodCancelEditBtn" style="display:none;" onclick="cancelFoodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
+          <button type="button" class="btn-secondary hidden" id="foodCancelEditBtn" onclick="cancelFoodEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
         </form>
       </div>
     </div>
@@ -1986,7 +1997,7 @@
   <section id="tabProfile" class="tab-panel">
     <div class="card">
       <h2><span id="profileHeading">🐾 Bewerk huisdier</span> <button type="button" class="info-btn" onclick="toggleInfoTip('profileIntroTip')" aria-label="Meer info">i</button></h2>
-      <p class="hint-text info-tip" id="profileIntroTip" style="display:none;">
+      <p class="hint-text info-tip hidden" id="profileIntroTip">
         Hoe meer we van je huisgenoot weten, hoe beter we het ideale gewicht kunnen inschatten.
         Dit bewerkt het huisdier dat nu bovenin geselecteerd is — voor een extra huisdier open je
         het huisdier-menu bovenaan en kies je "+ Nieuw huisdier toevoegen".
@@ -1994,9 +2005,9 @@
       <div class="photo-upload-row">
         <div class="photo-preview" id="photoPreview">🐾</div>
         <div class="photo-upload-actions">
-          <input type="file" id="petPhotoInput" accept="image/*" style="display:none;" />
-          <button type="button" class="today-btn" onclick="document.getElementById('petPhotoInput').click()">Foto kiezen</button>
-          <button type="button" class="today-btn" id="removePhotoBtn" style="display:none;" onclick="removePetPhoto()">Verwijderen</button>
+          <input type="file" id="petPhotoInput" accept="image/*" class="hidden" />
+          <button type="button" class="btn-secondary" onclick="document.getElementById('petPhotoInput').click()">Foto kiezen</button>
+          <button type="button" class="btn-secondary hidden" id="removePhotoBtn" onclick="removePetPhoto()">Verwijderen</button>
         </div>
       </div>
       <form class="entry-form" id="profileForm">
@@ -2014,7 +2025,7 @@
             </select>
           </div>
         </div>
-        <div id="catBreedRow" style="display:none;">
+        <div id="catBreedRow" class="hidden">
           <label for="catBreed" id="catBreedLabel" data-i18n="fieldBreedOptional">Ras (optioneel)</label>
           <input type="text" id="catBreed" placeholder="bijv. Labrador Retriever" />
         </div>
@@ -2061,7 +2072,7 @@
             <input type="number" id="catTargetMax" inputmode="decimal" step="0.1" placeholder="auto" />
           </div>
         </div>
-        <p class="hint-text info-tip" id="targetWeightHint" style="display:none;">
+        <p class="hint-text info-tip hidden" id="targetWeightHint">
           Vul beide velden in om een streefzone bij de gewichtsgrafiek te tonen. Laat ze leeg als je
           (nog) geen streefgewicht hebt afgesproken — dan toont de grafiek alleen het verloop, zonder kleuroordeel.
         </p>
@@ -2069,7 +2080,7 @@
         <div>
           <label for="catWeightReminderDays">Herinner bij geen meting na (dagen) <button type="button" class="info-btn" onclick="toggleInfoTip('weightReminderDaysHint')" aria-label="Meer info">i</button></label>
           <input type="number" id="catWeightReminderDays" inputmode="numeric" min="1" step="1" placeholder="30" />
-          <p class="hint-text info-tip" id="weightReminderDaysHint" style="display:none;">
+          <p class="hint-text info-tip hidden" id="weightReminderDaysHint">
             Standaard 30 dagen. Dit is alleen een zelf ingestelde herinnering, geen medisch advies.
           </p>
         </div>
@@ -2083,7 +2094,7 @@
         Archiveren verbergt dit huisdier uit het dashboard. Alle gegevens blijven bewaard en je kunt
         het huisdier later terugzetten via "Gearchiveerde huisdieren" in het huisdier-menu.
       </p>
-      <button type="button" class="today-btn" style="width:100%;" onclick="openArchivePetConfirm()">Archiveer dit huisdier</button>
+      <button type="button" class="btn-secondary" style="width:100%;" onclick="openArchivePetConfirm()">Archiveer dit huisdier</button>
     </div>
   </section>
 
@@ -2091,15 +2102,15 @@
     <div class="card">
       <h2 data-i18n="headingAccount">Account</h2>
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
-      <button type="button" class="today-btn" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
-      <button type="button" class="today-btn" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
+      <button type="button" class="btn-secondary" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
+      <button type="button" class="btn-secondary" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
       <p class="hint-text" id="appVersionText" style="margin-top:10px; text-align:center;"></p>
     </div>
 
     <div class="card">
       <h2 data-i18n="headingShareOverview">Overzicht delen</h2>
       <p class="hint-text" style="margin-bottom:12px;" data-i18n="hintShareOverview">Een beknopt overzicht met de actuele gegevens — handig om te printen of als PDF te sturen naar bijvoorbeeld een oppas.</p>
-      <button type="button" class="today-btn" style="width:100%;" onclick="openPrintOverview()" data-i18n="btnOpenOverview">Overzicht openen</button>
+      <button type="button" class="btn-secondary" style="width:100%;" onclick="openPrintOverview()" data-i18n="btnOpenOverview">Overzicht openen</button>
     </div>
 
     <div class="card">
@@ -2141,7 +2152,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Huisdieren</h2>
-      <button type="button" class="today-btn" onclick="closePetMenu()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closePetMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="petMenuList"></div>
     <button type="button" class="pet-menu-item" style="justify-content:center;color:var(--accent);font-weight:700;" onclick="openAddPetForm()">+ Nieuw huisdier toevoegen</button>
@@ -2153,7 +2164,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Gearchiveerde huisdieren</h2>
-      <button type="button" class="today-btn" onclick="closeArchivedPetsMenu()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closeArchivedPetsMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="archivedPetsList"></div>
   </div>
@@ -2163,13 +2174,13 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Huisdier archiveren</h2>
-      <button type="button" class="today-btn" onclick="closeArchivePetConfirm()" data-i18n="btnCancel">Annuleren</button>
+      <button type="button" class="btn-secondary" onclick="closeArchivePetConfirm()" data-i18n="btnCancel">Annuleren</button>
     </div>
     <div id="archivePetStep1">
       <p class="hint-text" id="archivePetWarning" style="margin-bottom:14px;"></p>
       <button type="button" class="submit" style="width:100%;" onclick="showArchivePetStep2()">Ja, ik wil dit huisdier archiveren</button>
     </div>
-    <div id="archivePetStep2" style="display:none;">
+    <div id="archivePetStep2" class="hidden">
       <p class="hint-text" style="margin-bottom:12px;">
         Weet je het zeker? Typ de naam <strong id="archivePetNameHint"></strong> hieronder ter bevestiging.
       </p>
@@ -2183,7 +2194,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Nieuw huisdier</h2>
-      <button type="button" class="today-btn" onclick="closeAddPetForm()" data-i18n="btnCancel">Annuleren</button>
+      <button type="button" class="btn-secondary" onclick="closeAddPetForm()" data-i18n="btnCancel">Annuleren</button>
     </div>
     <form class="entry-form" id="addPetForm">
       <div>
@@ -2207,7 +2218,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>Gegeven toevoegen</h2>
-      <button type="button" class="today-btn" onclick="closeQuickAddMenu()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closeQuickAddMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <button type="button" class="pet-menu-item" onclick="quickAdd('weight')"><span data-icon-key="weight">⚖️</span> Gewicht</button>
     <button type="button" class="pet-menu-item" onclick="quickAdd('vax')"><span data-icon-key="vax">💉</span> Vaccinatie</button>
@@ -2223,7 +2234,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="bloodDetailDate"></h2>
-      <button type="button" class="today-btn" onclick="closeBloodDetail()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closeBloodDetail()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="bloodDetailBody"></div>
     <button type="button" class="submit" id="bloodDetailEditBtn" style="width:100%;margin-top:14px;">Bewerken</button>
@@ -2234,7 +2245,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2>💉 Zorg-herinnering</h2>
-      <button type="button" class="today-btn" onclick="closeCareReminder()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closeCareReminder()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="careReminderBody"></div>
     <button type="button" class="submit" style="width:100%;margin-top:14px;" onclick="closeCareReminder()">Begrepen</button>
@@ -2245,7 +2256,7 @@
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="vetDetailName"></h2>
-      <button type="button" class="today-btn" onclick="closeVetDetail()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closeVetDetail()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="vetDetailBody"></div>
     <button type="button" class="submit" id="vetDetailEditBtn" style="width:100%;margin-top:14px;">Bewerken</button>
@@ -2256,7 +2267,7 @@
   <div class="detail-sheet">
     <div class="detail-header print-hide">
       <h2 data-i18n="headingShareOverview">Overzicht delen</h2>
-      <button type="button" class="today-btn" onclick="closePrintOverview()" data-i18n="btnClose">Sluiten</button>
+      <button type="button" class="btn-secondary" onclick="closePrintOverview()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="printSectionToggles" class="checkbox-field print-hide" style="display:flex; flex-wrap:wrap; gap:10px 16px; margin-bottom:14px;">
       <label><input type="checkbox" value="weight" checked onchange="renderPrintOverviewContent()" /> <span data-i18n="dashboardWeight">Actueel gewicht</span></label>
@@ -2267,7 +2278,7 @@
     </div>
     <div class="print-hide" style="display:flex; gap:8px; margin-bottom:14px;">
       <button type="button" class="submit" style="flex:1;" onclick="window.print()" data-i18n="btnPrintOverview">Printen / opslaan als PDF</button>
-      <button type="button" class="today-btn" style="flex:1;" onclick="sharePrintOverviewAsJpeg()" data-i18n="btnShareJpeg">Deel als JPEG</button>
+      <button type="button" class="btn-secondary" style="flex:1;" onclick="sharePrintOverviewAsJpeg()" data-i18n="btnShareJpeg">Deel als JPEG</button>
     </div>
     <div id="printOverviewContent" class="print-overview"></div>
   </div>
@@ -3014,8 +3025,7 @@
   // of always taking up a full line — click it to reveal, click again (or
   // tap elsewhere and reopen) to hide.
   function toggleInfoTip(id) {
-    const el = document.getElementById(id);
-    el.style.display = el.style.display === "none" ? "" : "none";
+    document.getElementById(id).classList.toggle("hidden");
   }
 
   function applyIconStyle() {
@@ -3242,7 +3252,7 @@
             (p) => `
         <div class="pet-menu-item" style="justify-content:space-between;">
           <span>${speciesIconHtml(p.species)} ${escapeHtml(p.name)}</span>
-          <button type="button" class="today-btn" onclick="restorePet(${p.id})">Herstel</button>
+          <button type="button" class="btn-secondary" onclick="restorePet(${p.id})">Herstel</button>
         </div>
       `
           )
@@ -3695,7 +3705,7 @@
     return "€ " + amount.toFixed(2).replace(".", ",");
   }
 
-  document.querySelectorAll(".today-btn").forEach((btn) => {
+  document.querySelectorAll(".btn-secondary").forEach((btn) => {
     if (!btn.dataset.target) return;
     btn.addEventListener("click", () => {
       document.getElementById(btn.dataset.target).valueAsDate = new Date();
@@ -3845,8 +3855,8 @@
   function toggleWeightForm(forceOpen) {
     const header = document.getElementById("weightFormHeader");
     const body = document.getElementById("weightFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingWeightId) {
       document.getElementById("weightFormTitle").textContent = open ? "Nieuwe meting" : "+ Nieuwe meting";
@@ -4226,7 +4236,7 @@
         Herinner na
         <input type="number" id="inlineReminderDaysInput" min="1" step="1" value="${current}" />
         dagen zonder meting
-        <button type="button" class="today-btn" style="padding:2px 12px;" onclick="saveWeightReminderDaysInline()" data-i18n="btnSave">Opslaan</button>
+        <button type="button" class="btn-secondary" style="padding:2px 12px;" onclick="saveWeightReminderDaysInline()" data-i18n="btnSave">Opslaan</button>
       </span>
     `;
     document.getElementById("inlineReminderDaysInput").focus();
@@ -4534,8 +4544,8 @@
   function toggleBloodForm(forceOpen) {
     const header = document.getElementById("bloodFormHeader");
     const body = document.getElementById("bloodFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingBloodDate) {
       document.getElementById("bloodFormTitle").textContent = open ? "Nieuwe bloeduitslag" : "+ Nieuwe bloeduitslag";
@@ -5105,8 +5115,8 @@
   function toggleVetForm(forceOpen) {
     const header = document.getElementById("vetFormHeader");
     const body = document.getElementById("vetFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingVetId) {
       document.getElementById("vetFormTitle").textContent = open ? "Nieuwe dierenarts" : "+ Nieuwe dierenarts";
@@ -5119,7 +5129,7 @@
   // the old one instead of inserting. The header now calls this instead of
   // toggleVetForm() directly, so opening for "add" always starts clean.
   function openVetFormForAdd() {
-    const willOpen = document.getElementById("vetFormBody").style.display === "none";
+    const willOpen = document.getElementById("vetFormBody").classList.contains("hidden");
     if (willOpen) {
       editingVetId = null;
       vetForm.reset();
@@ -5306,8 +5316,8 @@
   function toggleVetVisitForm(forceOpen) {
     const header = document.getElementById("vetVisitFormHeader");
     const body = document.getElementById("vetVisitFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingVetVisitId) {
       document.getElementById("vetVisitFormTitle").textContent = open ? "Nieuw dierenartsbezoek" : "+ Nieuw dierenartsbezoek";
@@ -5448,8 +5458,8 @@
   function toggleVaxForm(forceOpen) {
     const header = document.getElementById("vaxFormHeader");
     const body = document.getElementById("vaxFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingVaxId) {
       document.getElementById("vaxFormTitle").textContent = open ? "Nieuwe vaccinatie" : "+ Nieuwe vaccinatie";
@@ -6066,8 +6076,8 @@
   function toggleSymptomForm(forceOpen) {
     const header = document.getElementById("symptomFormHeader");
     const body = document.getElementById("symptomFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingSymptomId) {
       document.getElementById("symptomFormTitle").textContent = open ? "Nieuwe afwijking" : "+ Nieuwe afwijking";
@@ -6407,8 +6417,8 @@
   function toggleMedicationForm(forceOpen) {
     const header = document.getElementById("medicationFormHeader");
     const body = document.getElementById("medicationFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingMedicationId) {
       document.getElementById("medicationFormTitle").textContent = open ? "Nieuwe medicatie" : "+ Nieuwe medicatie";
@@ -6702,8 +6712,8 @@
   function toggleFoodForm(forceOpen) {
     const header = document.getElementById("foodFormHeader");
     const body = document.getElementById("foodFormBody");
-    const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
-    body.style.display = open ? "" : "none";
+    const open = forceOpen !== undefined ? forceOpen : body.classList.contains("hidden");
+    body.classList.toggle("hidden", !open);
     header.classList.toggle("open", open);
     if (!editingFoodId) {
       document.getElementById("foodFormTitle").textContent = open ? "Nieuwe voeding" : "+ Nieuwe voeding";
