@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/BevertjeNL/cat-health/compare/v1.12.0...v1.13.0) (2026-08-18)
+
+
+### Features
+
+* vereenvoudig navigatie en verbeter toegankelijkheid ([77300cc](https://github.com/BevertjeNL/cat-health/commit/77300cc8d06f4f4f0ee2eafe9339eb09e2789bf0))
+
 # [1.12.0](https://github.com/BevertjeNL/cat-health/compare/v1.11.0...v1.12.0) (2026-08-09)
 
 
