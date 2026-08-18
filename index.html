@@ -3,8 +3,8 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>Kattengezondheid</title>
-<meta name="description" content="Volg het gewicht en de bloedwaarden van je kat" />
+<title>Huisdiergezondheid</title>
+<meta name="description" content="Houd de gezondheid, zorgmomenten en medische gegevens van je huisdier overzichtelijk bij" />
 
 <!--
   script-src/style-src need 'unsafe-inline': the app relies throughout on
@@ -36,7 +36,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Kat Health" />
+<meta name="apple-mobile-web-app-title" content="Huisdierzorg" />
 
 <script src="https://unpkg.com/@supabase/supabase-js@2.111.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
@@ -155,8 +155,8 @@
     background: rgba(255, 255, 255, 0.95);
     color: var(--accent);
     border: none;
-    width: 34px;
-    height: 34px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -212,6 +212,14 @@
     color: var(--accent);
   }
 
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  [role="button"]:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   main {
     max-width: 640px;
     margin: 0 auto;
@@ -257,6 +265,10 @@
 
   .collapsible-header h2 {
     margin: 0;
+  }
+
+  .collapsible-header:focus-visible {
+    border-radius: 8px;
   }
 
   .collapsible-header .chevron {
@@ -561,6 +573,7 @@
     color: var(--accent-contrast);
     font-size: 1rem;
     font-weight: 600;
+    min-height: 44px;
   }
 
   button.submit:disabled {
@@ -783,7 +796,8 @@
     color: var(--accent);
     font-weight: 600;
     font-size: inherit;
-    padding: 0;
+    min-height: 44px;
+    padding: 8px 4px;
     text-decoration: underline;
   }
 
@@ -1213,7 +1227,8 @@
     letter-spacing: -0.01em;
     color: #fff;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
-    padding: 4px 8px;
+    min-height: 44px;
+    padding: 8px;
   }
 
   .pet-switch-btn .caret {
@@ -1466,7 +1481,7 @@
   </div>
 </header>
 
-<div id="statusBanner" class="status-banner"></div>
+<div id="statusBanner" class="status-banner" role="status" aria-live="polite" aria-atomic="true"></div>
 
 <main>
   <section id="tabDashboard" class="tab-panel active">
@@ -1482,7 +1497,7 @@
 
   <section id="tabWeight" class="tab-panel">
     <div class="card">
-      <div class="collapsible-header" id="weightFormHeader" onclick="toggleWeightForm()">
+      <div class="collapsible-header" id="weightFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="weightFormBody" onclick="toggleWeightForm()" onkeydown="activateCollapsible(event, toggleWeightForm)">
         <h2 id="weightFormTitle">+ Nieuwe meting</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -1534,7 +1549,7 @@
 
   <section id="tabBlood" class="tab-panel">
     <div class="card">
-      <div class="collapsible-header" id="bloodFormHeader" onclick="toggleBloodForm()">
+      <div class="collapsible-header" id="bloodFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="bloodFormBody" onclick="toggleBloodForm()" onkeydown="activateCollapsible(event, toggleBloodForm)">
         <h2 id="bloodFormTitle">+ Nieuwe bloeduitslag</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -1595,7 +1610,7 @@
 
   <section id="tabVet" class="tab-panel">
     <div class="card">
-      <div class="collapsible-header" id="vetFormHeader" onclick="openVetFormForAdd()">
+      <div class="collapsible-header" id="vetFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="vetFormBody" onclick="openVetFormForAdd()" onkeydown="activateCollapsible(event, openVetFormForAdd)">
         <h2 id="vetFormTitle">+ Nieuwe dierenarts</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -1641,7 +1656,7 @@
     </div>
 
     <div class="card">
-      <div class="collapsible-header" id="vetVisitFormHeader" onclick="toggleVetVisitForm()">
+      <div class="collapsible-header" id="vetVisitFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="vetVisitFormBody" onclick="toggleVetVisitForm()" onkeydown="activateCollapsible(event, toggleVetVisitForm)">
         <h2 id="vetVisitFormTitle">+ Nieuw dierenartsbezoek</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -1691,7 +1706,7 @@
 
   <section id="tabVax" class="tab-panel">
     <div class="card">
-      <div class="collapsible-header" id="vaxFormHeader" onclick="toggleVaxForm()">
+      <div class="collapsible-header" id="vaxFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="vaxFormBody" onclick="toggleVaxForm()" onkeydown="activateCollapsible(event, toggleVaxForm)">
         <h2 id="vaxFormTitle">+ Nieuwe vaccinatie</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -1757,7 +1772,7 @@
 
   <section id="tabSymptoms" class="tab-panel">
     <div class="card">
-      <div class="collapsible-header" id="symptomFormHeader" onclick="toggleSymptomForm()">
+      <div class="collapsible-header" id="symptomFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="symptomFormBody" onclick="toggleSymptomForm()" onkeydown="activateCollapsible(event, toggleSymptomForm)">
         <h2 id="symptomFormTitle">+ Nieuwe afwijking</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -1826,7 +1841,7 @@
 
   <section id="tabMedication" class="tab-panel">
     <div class="card">
-      <div class="collapsible-header" id="medicationFormHeader" onclick="toggleMedicationForm()">
+      <div class="collapsible-header" id="medicationFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="medicationFormBody" onclick="toggleMedicationForm()" onkeydown="activateCollapsible(event, toggleMedicationForm)">
         <h2 id="medicationFormTitle">+ Nieuwe medicatie</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -2124,23 +2139,30 @@
   </section>
 </main>
 
-<nav class="bottom-nav">
-  <button id="tabBtnDashboard" class="active" onclick="switchTab('dashboard')"><span class="bottom-nav-icon" data-icon-key="dashboard">🏠</span><span data-i18n="navStart">Start</span></button>
-  <button id="tabBtnWeight" onclick="switchTab('weight')"><span class="bottom-nav-icon" data-icon-key="weight">⚖️</span><span data-i18n="navWeight">Gewicht</span></button>
-  <button id="tabBtnBlood" onclick="switchTab('blood')"><span class="bottom-nav-icon" data-icon-key="blood">🩸</span><span data-i18n="navBlood">Bloed</span></button>
-  <button id="tabBtnVax" onclick="switchTab('vax')"><span class="bottom-nav-icon" data-icon-key="vax">💉</span><span data-i18n="navVax">Vaccins</span></button>
-  <button id="tabBtnVet" onclick="switchTab('vet')"><span class="bottom-nav-icon" data-icon-key="vet">🩺</span><span data-i18n="navVet">Arts</span></button>
-  <button id="tabBtnSymptoms" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span data-i18n="navSymptoms">Afwijking</span></button>
-  <button id="tabBtnMedication" onclick="switchTab('medication')"><span class="bottom-nav-icon" data-icon-key="medication">💊</span><span data-i18n="navMedication">Medicatie</span></button>
-  <button id="tabBtnFood" onclick="switchTab('food')"><span class="bottom-nav-icon" data-icon-key="food">🍽️</span><span data-i18n="navFood">Voeding</span></button>
+<nav class="bottom-nav" aria-label="Hoofdnavigatie" data-i18n-aria="ariaMainNav">
+  <button id="tabBtnDashboard" class="active" aria-current="page" onclick="switchTab('dashboard')"><span class="bottom-nav-icon" data-icon-key="dashboard">🏠</span><span data-i18n="navStart">Start</span></button>
+  <button id="tabBtnMeasurements" aria-haspopup="dialog" aria-expanded="false" onclick="openNavMenu('measurements')"><span class="bottom-nav-icon" data-icon-key="weight">⚖️</span><span data-i18n="navMeasurements">Metingen</span></button>
+  <button id="tabBtnCare" aria-haspopup="dialog" aria-expanded="false" onclick="openNavMenu('care')"><span class="bottom-nav-icon" data-icon-key="vax">💉</span><span data-i18n="navCare">Zorg</span></button>
+  <button id="tabBtnLogbook" onclick="switchTab('symptoms')"><span class="bottom-nav-icon" data-icon-key="symptoms">🩹</span><span data-i18n="navLogbook">Logboek</span></button>
+  <button id="tabBtnMore" aria-haspopup="dialog" aria-expanded="false" onclick="openNavMenu('more')"><span class="bottom-nav-icon" data-icon-key="more">•••</span><span data-i18n="navMore">Meer</span></button>
 </nav>
 
 </div>
 
-<div class="detail-overlay" id="petMenuOverlay" onclick="if (event.target === this) closePetMenu();">
+<div class="detail-overlay" id="navMenuOverlay" role="dialog" aria-modal="true" aria-labelledby="navMenuTitle" onclick="if (event.target === this) closeNavMenu();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>Huisdieren</h2>
+      <h2 id="navMenuTitle"></h2>
+      <button type="button" class="today-btn" onclick="closeNavMenu()" data-i18n="btnClose">Sluiten</button>
+    </div>
+    <div id="navMenuList"></div>
+  </div>
+</div>
+
+<div class="detail-overlay" id="petMenuOverlay" role="dialog" aria-modal="true" aria-labelledby="petMenuTitle" onclick="if (event.target === this) closePetMenu();">
+  <div class="detail-sheet">
+    <div class="detail-header">
+      <h2 id="petMenuTitle">Huisdieren</h2>
       <button type="button" class="today-btn" onclick="closePetMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="petMenuList"></div>
@@ -2149,20 +2171,20 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="archivedPetsOverlay" onclick="if (event.target === this) closeArchivedPetsMenu();">
+<div class="detail-overlay" id="archivedPetsOverlay" role="dialog" aria-modal="true" aria-labelledby="archivedPetsTitle" onclick="if (event.target === this) closeArchivedPetsMenu();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>Gearchiveerde huisdieren</h2>
+      <h2 id="archivedPetsTitle">Gearchiveerde huisdieren</h2>
       <button type="button" class="today-btn" onclick="closeArchivedPetsMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="archivedPetsList"></div>
   </div>
 </div>
 
-<div class="detail-overlay" id="archivePetOverlay" onclick="if (event.target === this) closeArchivePetConfirm();">
+<div class="detail-overlay" id="archivePetOverlay" role="dialog" aria-modal="true" aria-labelledby="archivePetTitle" onclick="if (event.target === this) closeArchivePetConfirm();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>Huisdier archiveren</h2>
+      <h2 id="archivePetTitle">Huisdier archiveren</h2>
       <button type="button" class="today-btn" onclick="closeArchivePetConfirm()" data-i18n="btnCancel">Annuleren</button>
     </div>
     <div id="archivePetStep1">
@@ -2179,10 +2201,10 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="addPetOverlay" onclick="if (event.target === this) closeAddPetForm();">
+<div class="detail-overlay" id="addPetOverlay" role="dialog" aria-modal="true" aria-labelledby="addPetTitle" onclick="if (event.target === this) closeAddPetForm();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>Nieuw huisdier</h2>
+      <h2 id="addPetTitle">Nieuw huisdier</h2>
       <button type="button" class="today-btn" onclick="closeAddPetForm()" data-i18n="btnCancel">Annuleren</button>
     </div>
     <form class="entry-form" id="addPetForm">
@@ -2203,10 +2225,10 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="quickAddOverlay" onclick="if (event.target === this) closeQuickAddMenu();">
+<div class="detail-overlay" id="quickAddOverlay" role="dialog" aria-modal="true" aria-labelledby="quickAddTitle" onclick="if (event.target === this) closeQuickAddMenu();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>Gegeven toevoegen</h2>
+      <h2 id="quickAddTitle">Gegeven toevoegen</h2>
       <button type="button" class="today-btn" onclick="closeQuickAddMenu()" data-i18n="btnClose">Sluiten</button>
     </div>
     <button type="button" class="pet-menu-item" onclick="quickAdd('weight')"><span data-icon-key="weight">⚖️</span> Gewicht</button>
@@ -2219,7 +2241,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="bloodDetailOverlay" onclick="if (event.target === this) closeBloodDetail();">
+<div class="detail-overlay" id="bloodDetailOverlay" role="dialog" aria-modal="true" aria-labelledby="bloodDetailDate" onclick="if (event.target === this) closeBloodDetail();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="bloodDetailDate"></h2>
@@ -2230,10 +2252,10 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="careReminderOverlay" onclick="if (event.target === this) closeCareReminder();">
+<div class="detail-overlay" id="careReminderOverlay" role="dialog" aria-modal="true" aria-labelledby="careReminderTitle" onclick="if (event.target === this) closeCareReminder();">
   <div class="detail-sheet">
     <div class="detail-header">
-      <h2>💉 Zorg-herinnering</h2>
+      <h2 id="careReminderTitle">💉 Zorg-herinnering</h2>
       <button type="button" class="today-btn" onclick="closeCareReminder()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="careReminderBody"></div>
@@ -2241,7 +2263,7 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="vetDetailOverlay" onclick="if (event.target === this) closeVetDetail();">
+<div class="detail-overlay" id="vetDetailOverlay" role="dialog" aria-modal="true" aria-labelledby="vetDetailName" onclick="if (event.target === this) closeVetDetail();">
   <div class="detail-sheet">
     <div class="detail-header">
       <h2 id="vetDetailName"></h2>
@@ -2252,10 +2274,10 @@
   </div>
 </div>
 
-<div class="detail-overlay" id="printOverviewOverlay" onclick="if (event.target === this) closePrintOverview();">
+<div class="detail-overlay" id="printOverviewOverlay" role="dialog" aria-modal="true" aria-labelledby="printOverviewTitle" onclick="if (event.target === this) closePrintOverview();">
   <div class="detail-sheet">
     <div class="detail-header print-hide">
-      <h2 data-i18n="headingShareOverview">Overzicht delen</h2>
+      <h2 id="printOverviewTitle" data-i18n="headingShareOverview">Overzicht delen</h2>
       <button type="button" class="today-btn" onclick="closePrintOverview()" data-i18n="btnClose">Sluiten</button>
     </div>
     <div id="printSectionToggles" class="checkbox-field print-hide" style="display:flex; flex-wrap:wrap; gap:10px 16px; margin-bottom:14px;">
@@ -2379,6 +2401,7 @@
     medication: "💊",
     food: "🍽️",
     cost: "💰",
+    more: "•••",
   };
 
   const ICON_SVG_BODY = {
@@ -2399,6 +2422,7 @@
     cost: '<rect x="3" y="7" width="18" height="12" rx="2.5" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3 10.3h18" stroke="currentColor" stroke-width="2"/><circle cx="16.3" cy="14.3" r="1.3" fill="currentColor"/>',
     // A simple food bowl, matching the other glyphs' rect/stroke language.
     food: '<ellipse cx="12" cy="15" rx="8.5" ry="4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M3.5 15v2a8.5 4 0 0 0 17 0v-2" stroke="currentColor" stroke-width="2" fill="none"/><path d="M9 8.5c0-2 1.3-3.5 3-3.5s3 1.5 3 3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+    more: '<circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/>',
   };
 
   function iconHtml(key) {
@@ -2430,8 +2454,13 @@
       authSwitchToLogin: "Already have an account? Log in",
       ariaProfile: "Settings",
       ariaEditProfile: "Profile",
+      ariaMainNav: "Main navigation",
       btnRefreshData: "Refresh data",
       navStart: "Start",
+      navMeasurements: "Measurements",
+      navCare: "Care",
+      navLogbook: "Logbook",
+      navMore: "More",
       navWeight: "Weight",
       navBlood: "Blood",
       navVax: "Vaccines",
@@ -2517,8 +2546,13 @@
       authSwitchToLogin: "Schon ein Konto? Anmelden",
       ariaProfile: "Einstellungen",
       ariaEditProfile: "Profil",
+      ariaMainNav: "Hauptnavigation",
       btnRefreshData: "Daten aktualisieren",
       navStart: "Start",
+      navMeasurements: "Messungen",
+      navCare: "Vorsorge",
+      navLogbook: "Logbuch",
+      navMore: "Mehr",
       navWeight: "Gewicht",
       navBlood: "Blut",
       navVax: "Impfungen",
@@ -2598,6 +2632,21 @@
   // no DOM element to cache an "original Dutch" value from — so nl IS
   // stored here explicitly, unlike the HTML-driven dictionary above.
   const I18N_NL = {
+    navMeasurements: "Metingen",
+    navCare: "Zorg",
+    navLogbook: "Logboek",
+    navMore: "Meer",
+    menuMeasurementsTitle: "Metingen",
+    menuCareTitle: "Zorg",
+    menuMoreTitle: "Meer",
+    menuWeight: "Gewicht",
+    menuBlood: "Bloedwaarden",
+    menuVaccinations: "Vaccinaties",
+    menuMedication: "Medicatie",
+    menuFood: "Voeding",
+    menuVeterinarian: "Dierenarts",
+    menuProfile: "Huisdierprofiel",
+    menuSettings: "Instellingen",
     headingVets: "Dierenartsen",
     optionVetUnknown: "Onbekend / geen",
     dashboardActueel: "Actueel",
@@ -2721,6 +2770,21 @@
     successPetArchived: "is gearchiveerd ✓",
   };
   const I18N_EN = {
+    navMeasurements: "Measurements",
+    navCare: "Care",
+    navLogbook: "Logbook",
+    navMore: "More",
+    menuMeasurementsTitle: "Measurements",
+    menuCareTitle: "Care",
+    menuMoreTitle: "More",
+    menuWeight: "Weight",
+    menuBlood: "Blood values",
+    menuVaccinations: "Vaccinations",
+    menuMedication: "Medication",
+    menuFood: "Food",
+    menuVeterinarian: "Veterinarian",
+    menuProfile: "Pet profile",
+    menuSettings: "Settings",
     headingVets: "Veterinarians",
     optionVetUnknown: "Unknown / none",
     dashboardActueel: "Current",
@@ -2839,6 +2903,21 @@
     successPetArchived: "has been archived ✓",
   };
   const I18N_DE = {
+    navMeasurements: "Messungen",
+    navCare: "Vorsorge",
+    navLogbook: "Logbuch",
+    navMore: "Mehr",
+    menuMeasurementsTitle: "Messungen",
+    menuCareTitle: "Vorsorge",
+    menuMoreTitle: "Mehr",
+    menuWeight: "Gewicht",
+    menuBlood: "Blutwerte",
+    menuVaccinations: "Impfungen",
+    menuMedication: "Medikamente",
+    menuFood: "Futter",
+    menuVeterinarian: "Tierarzt",
+    menuProfile: "Tierprofil",
+    menuSettings: "Einstellungen",
     headingVets: "Tierärzte",
     optionVetUnknown: "Unbekannt / keiner",
     dashboardActueel: "Aktuell",
@@ -3043,6 +3122,69 @@
     document.getElementById("authScreen").style.display = "none";
     document.getElementById("appContent").style.display = "";
   }
+
+  function activateCollapsible(event, toggleFn) {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    toggleFn();
+  }
+
+  // Give every bottom sheet proper keyboard behavior without duplicating
+  // focus-management code in each open/close function.
+  const overlayReturnFocus = new WeakMap();
+  const overlayObserver = new MutationObserver((mutations) => {
+    mutations.forEach(({ target: overlay }) => {
+      if (overlay.classList.contains("show")) {
+        overlayReturnFocus.set(overlay, document.activeElement);
+        requestAnimationFrame(() => {
+          const initial =
+            overlay.querySelector("[data-autofocus]") ||
+            overlay.querySelector(
+              "button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex='-1'])"
+            );
+          initial?.focus();
+        });
+        return;
+      }
+      if (overlay.dataset.skipFocusRestore === "true") {
+        delete overlay.dataset.skipFocusRestore;
+        return;
+      }
+      const previous = overlayReturnFocus.get(overlay);
+      if (previous?.isConnected) requestAnimationFrame(() => previous.focus());
+    });
+  });
+
+  document.querySelectorAll(".detail-overlay").forEach((overlay) => {
+    overlayObserver.observe(overlay, { attributes: true, attributeFilter: ["class"] });
+  });
+
+  document.addEventListener("keydown", (event) => {
+    const openOverlays = [...document.querySelectorAll(".detail-overlay.show")];
+    const overlay = openOverlays[openOverlays.length - 1];
+    if (!overlay) return;
+
+    if (event.key === "Escape") {
+      event.preventDefault();
+      overlay.click();
+      return;
+    }
+
+    if (event.key !== "Tab") return;
+    const focusable = [...overlay.querySelectorAll(
+      "button:not([disabled]), input:not([disabled]), select:not([disabled]), a[href], [tabindex]:not([tabindex='-1'])"
+    )].filter((el) => el.offsetParent !== null);
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  });
 
   supabaseClient?.auth.onAuthStateChange((event, session) => {
     if (session) {
@@ -3370,10 +3512,96 @@
     }, 0);
   });
 
-  // --- Tabs --------------------------------------------------------------
-  function switchTab(tab) {
+  // --- Primary navigation and tabs ---------------------------------------
+  const NAV_MENU_CONFIG = {
+    measurements: {
+      titleKey: "menuMeasurementsTitle",
+      items: [
+        { tab: "weight", icon: "weight", labelKey: "menuWeight" },
+        { tab: "blood", icon: "blood", labelKey: "menuBlood" },
+      ],
+    },
+    care: {
+      titleKey: "menuCareTitle",
+      items: [
+        { tab: "vax", icon: "vax", labelKey: "menuVaccinations" },
+        { tab: "medication", icon: "medication", labelKey: "menuMedication" },
+        { tab: "food", icon: "food", labelKey: "menuFood" },
+      ],
+    },
+    more: {
+      titleKey: "menuMoreTitle",
+      items: [
+        { tab: "vet", icon: "vet", labelKey: "menuVeterinarian" },
+        { tab: "profile", icon: "dashboard", labelKey: "menuProfile" },
+        { tab: "settings", icon: "more", labelKey: "menuSettings" },
+      ],
+    },
+  };
+
+  function openNavMenu(kind) {
+    const config = NAV_MENU_CONFIG[kind];
+    if (!config) return;
+    document.getElementById("navMenuTitle").textContent = t(config.titleKey);
+    document.getElementById("navMenuList").innerHTML = config.items
+      .map(
+        (item, index) => `<button type="button" class="pet-menu-item" ${index === 0 ? "data-autofocus" : ""} onclick="selectNavMenuTab('${item.tab}')">${iconHtml(item.icon)} <span>${escapeHtml(t(item.labelKey))}</span></button>`
+      )
+      .join("");
+    document.getElementById("navMenuOverlay").classList.add("show");
+    document.querySelectorAll(".bottom-nav [aria-haspopup='dialog']").forEach((button) => {
+      const expectedId = `tabBtn${kind[0].toUpperCase()}${kind.slice(1)}`;
+      button.setAttribute("aria-expanded", String(button.id === expectedId));
+    });
+    pushNavEntry();
+  }
+
+  function closeNavMenu() {
+    const overlay = document.getElementById("navMenuOverlay");
+    if (overlay.classList.contains("show")) consumeNavEntry();
+    overlay.classList.remove("show");
+    document.querySelectorAll(".bottom-nav [aria-haspopup='dialog']").forEach((button) => button.setAttribute("aria-expanded", "false"));
+  }
+
+  function selectNavMenuTab(tab) {
+    const overlay = document.getElementById("navMenuOverlay");
+    overlay.dataset.skipFocusRestore = "true";
+    overlay.classList.remove("show");
+    document.querySelectorAll(".bottom-nav [aria-haspopup='dialog']").forEach((button) => button.setAttribute("aria-expanded", "false"));
+    switchTab(tab, true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => {
+      const heading = document.querySelector("section.tab-panel.active h2");
+      if (!heading) return;
+      heading.setAttribute("tabindex", "-1");
+      heading.focus();
+      heading.addEventListener("blur", () => heading.removeAttribute("tabindex"), { once: true });
+    });
+  }
+
+  function updatePrimaryNav(tab) {
+    const activeId =
+      tab === "dashboard"
+        ? "tabBtnDashboard"
+        : tab === "weight" || tab === "blood"
+          ? "tabBtnMeasurements"
+          : tab === "vax" || tab === "medication" || tab === "food"
+            ? "tabBtnCare"
+            : tab === "symptoms"
+              ? "tabBtnLogbook"
+              : "tabBtnMore";
+
+    document.querySelectorAll(".bottom-nav button").forEach((button) => {
+      const active = button.id === activeId;
+      button.classList.toggle("active", active);
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    });
+  }
+
+  function switchTab(tab, skipHistory = false) {
     if (tab !== currentTabState) {
-      pushNavEntry();
+      if (!skipHistory) pushNavEntry();
       currentTabState = tab;
     }
     document.getElementById("tabDashboard").classList.toggle("active", tab === "dashboard");
@@ -3386,14 +3614,7 @@
     document.getElementById("tabFood").classList.toggle("active", tab === "food");
     document.getElementById("tabProfile").classList.toggle("active", tab === "profile");
     document.getElementById("tabSettings").classList.toggle("active", tab === "settings");
-    document.getElementById("tabBtnDashboard").classList.toggle("active", tab === "dashboard");
-    document.getElementById("tabBtnWeight").classList.toggle("active", tab === "weight");
-    document.getElementById("tabBtnBlood").classList.toggle("active", tab === "blood");
-    document.getElementById("tabBtnVax").classList.toggle("active", tab === "vax");
-    document.getElementById("tabBtnVet").classList.toggle("active", tab === "vet");
-    document.getElementById("tabBtnSymptoms").classList.toggle("active", tab === "symptoms");
-    document.getElementById("tabBtnMedication").classList.toggle("active", tab === "medication");
-    document.getElementById("tabBtnFood").classList.toggle("active", tab === "food");
+    updatePrimaryNav(tab);
     if (tab === "dashboard") renderDashboard();
     // Belt-and-suspenders against the "neutral color until refresh" bug:
     // even with catProfile guaranteed correct by the time refreshAll()
@@ -3848,6 +4069,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingWeightId) {
       document.getElementById("weightFormTitle").textContent = open ? "Nieuwe meting" : "+ Nieuwe meting";
     }
@@ -4537,6 +4759,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingBloodDate) {
       document.getElementById("bloodFormTitle").textContent = open ? "Nieuwe bloeduitslag" : "+ Nieuwe bloeduitslag";
     }
@@ -5108,6 +5331,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingVetId) {
       document.getElementById("vetFormTitle").textContent = open ? "Nieuwe dierenarts" : "+ Nieuwe dierenarts";
     }
@@ -5309,6 +5533,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingVetVisitId) {
       document.getElementById("vetVisitFormTitle").textContent = open ? "Nieuw dierenartsbezoek" : "+ Nieuw dierenartsbezoek";
     }
@@ -5451,6 +5676,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingVaxId) {
       document.getElementById("vaxFormTitle").textContent = open ? "Nieuwe vaccinatie" : "+ Nieuwe vaccinatie";
     }
@@ -6069,6 +6295,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingSymptomId) {
       document.getElementById("symptomFormTitle").textContent = open ? "Nieuwe afwijking" : "+ Nieuwe afwijking";
     }
@@ -6410,6 +6637,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingMedicationId) {
       document.getElementById("medicationFormTitle").textContent = open ? "Nieuwe medicatie" : "+ Nieuwe medicatie";
     }

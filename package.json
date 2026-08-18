@@ -2,7 +2,7 @@
   "name": "cat-health",
   "version": "0.0.0",
   "private": true,
-  "description": "Volg het gewicht en de bloedwaarden van je kat",
+  "description": "Houd de gezondheid en medische gegevens van je huisdier bij",
   "scripts": {
     "lint": "eslint index.html"
   },

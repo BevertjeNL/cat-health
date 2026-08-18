@@ -1,7 +1,8 @@
 # CatHealth
 
 Single-file PWA om het gewicht, bloedwaarden, vaccinaties, medicatie,
-afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
+afwijkingen en dierenartsbezoeken van een huisdier bij te houden. De app
+heet in de gebruikersinterface **Huisdiergezondheid**.
 
 ## Mappenstructuur
 

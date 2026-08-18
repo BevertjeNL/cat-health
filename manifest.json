@@ -1,7 +1,7 @@
 {
-  "name": "Kattengezondheid",
-  "short_name": "Kat Health",
-  "description": "Volg het gewicht en de bloedwaarden van je kat",
+  "name": "Huisdiergezondheid",
+  "short_name": "Huisdierzorg",
+  "description": "Houd de gezondheid, zorgmomenten en medische gegevens van je huisdier overzichtelijk bij",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
