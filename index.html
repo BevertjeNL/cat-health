@@ -2372,10 +2372,10 @@
 
       // Neon Auth persists the session correctly, but its beta adapter does
       // not always deliver SIGNED_IN to this tab before signIn resolves.
-      // Bootstrap from the successful response as well; the user-id guard
-      // prevents duplicate loading when the auth event did arrive first.
-      if (!error && data?.session && currentUser?.id !== data.session.user?.id) {
-        await bootstrapApp(data.session);
+      // Apply the successful response directly as well; the transition
+      // helper prevents duplicate loading when the event did arrive first.
+      if (!error && data?.session) {
+        await transitionToSession(data.session);
       }
     } catch (err) {
       error = err;
@@ -2398,7 +2398,12 @@
 
   async function logout() {
     await neonReady;
-    await neonClient.auth.signOut();
+    const { error } = await neonClient.auth.signOut();
+    if (error) {
+      showError(error.message);
+      return;
+    }
+    clearSessionUi();
   }
 
   // Custom flat single-color glyphs instead of the standard cat/dog emoji —
@@ -3217,16 +3222,26 @@
 
   function handleAuthStateChange(event, session) {
     if (session) {
-      // TOKEN_REFRESHED etc. re-fire with the same user; only re-bootstrap
-      // (and refetch everything) when the logged-in user actually changed.
-      if (currentUser && currentUser.id === session.user.id) return;
-      bootstrapApp(session);
+      transitionToSession(session).catch((error) => {
+        console.error("Sessie kon niet worden geopend", error);
+        showError("De sessie is gestart, maar de gegevens konden niet worden geladen. Ververs de pagina.");
+      });
     } else {
-      currentUser = null;
-      pets = [];
-      currentPetId = null;
-      showAuthScreen();
+      clearSessionUi();
     }
+  }
+
+  function clearSessionUi() {
+    currentUser = null;
+    pets = [];
+    currentPetId = null;
+    showAuthScreen();
+  }
+
+  async function transitionToSession(session) {
+    const appIsVisible = document.getElementById("appContent").style.display !== "none";
+    if (currentUser?.id === session.user.id && appIsVisible) return;
+    await bootstrapApp(session);
   }
 
   async function bootstrapApp(session) {
