@@ -11,6 +11,7 @@ trap 'rm -rf "$work_dir"' EXIT
 
 supabase link --project-ref "$SUPABASE_PROJECT_REF"
 supabase db dump --linked --data-only --schema public --use-copy \
+  --exclude public.cat_profile \
   --file "$work_dir/cathealth-data.sql"
 # Supabase wraps data-only dumps in a replication-role override so triggers
 # stay disabled. Neon intentionally reserves that setting for superusers. Our
