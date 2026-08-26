@@ -1,2 +1,5 @@
 # Project-ref, overgenomen uit de SUPABASE_URL die al in index.html stond.
 project_id = "cbnfogvfordqatlogfdt"
+
+[db]
+major_version = 17
