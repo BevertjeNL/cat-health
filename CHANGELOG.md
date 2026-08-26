@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/BevertjeNL/cat-health/compare/v1.14.0...v1.14.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* open app immediately after Neon login ([d0e6ecb](https://github.com/BevertjeNL/cat-health/commit/d0e6ecb83275a5713654bc0b111b901ddb44e396))
+
 # [1.14.0](https://github.com/BevertjeNL/cat-health/compare/v1.13.1...v1.14.0) (2026-08-26)
 
 
