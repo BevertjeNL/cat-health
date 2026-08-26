@@ -49,8 +49,14 @@ curl --fail --silent --show-error --request POST \
 jq -r '(if type == "array" then . else .result end)[] | [.table_name, .row_count] | @tsv' \
   "$work_dir/source-counts.json" > "$work_dir/source-counts.tsv"
 
-existing=$(psql "$NEON_DATABASE_URL" --tuples-only --no-align \
-  --command="select case when to_regclass('public.pets') is null then 0 else (select count(*) from public.pets) end")
+target_table=$(psql "$NEON_DATABASE_URL" --tuples-only --no-align \
+  --command="select to_regclass('public.pets')")
+if [[ -z "$target_table" ]]; then
+  existing=0
+else
+  existing=$(psql "$NEON_DATABASE_URL" --tuples-only --no-align \
+    --command="select count(*) from public.pets")
+fi
 test "$existing" = "0"
 
 psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --file neon/migrations/0001_initial_schema.sql
