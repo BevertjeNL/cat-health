@@ -1,0 +1,27 @@
+name: Run Neon cutover
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: Type MIGRATE_CATHEALTH_TO_NEON
+        required: true
+
+jobs:
+  migrate:
+    if: inputs.confirmation == 'MIGRATE_CATHEALTH_TO_NEON'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/migrate-cat-health-neon
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - name: Export, import, and verify
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: scripts/migrate-supabase-to-neon.sh

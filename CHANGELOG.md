@@ -1,3 +1,10 @@
+## [1.13.1](https://github.com/BevertjeNL/cat-health/compare/v1.13.0...v1.13.1) (2026-08-26)
+
+
+### Bug Fixes
+
+* export Supabase with PostgreSQL 17 tooling ([29323e3](https://github.com/BevertjeNL/cat-health/commit/29323e3b041ac255707f6ab52b76cdb0347f701d))
+
 # [1.13.0](https://github.com/BevertjeNL/cat-health/compare/v1.12.0...v1.13.0) (2026-08-18)
 
 
