@@ -63,14 +63,20 @@ else
   existing=$(psql "$NEON_DATABASE_URL" --tuples-only --no-align \
     --command="select count(*) from public.pets")
 fi
-test "$existing" = "0"
 
-psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --file neon/migrations/0001_initial_schema.sql
-psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --single-transaction \
-  --file "$work_dir/cathealth-data.sql"
+if [[ "$existing" = "0" ]]; then
+  psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --file neon/migrations/0001_initial_schema.sql
+  psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --single-transaction \
+    --file "$work_dir/cathealth-data.sql"
+else
+  echo "Target already contains data; it will be compared with the source before completion."
+fi
+
 psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 \
-  --variable legacy_users_file="$work_dir/legacy-users.tsv" <<'SQL'
-\copy cathealth_migration.legacy_users(old_user_id, email) from :'legacy_users_file' with (format csv, delimiter E'\t')
+  --command="truncate table cathealth_migration.legacy_users"
+psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 \
+  --command="\copy cathealth_migration.legacy_users(old_user_id, email) from '$work_dir/legacy-users.tsv' with (format csv, delimiter E'\t')"
+psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 <<'SQL'
 update public.pets as p
    set user_id = u.id::text
   from cathealth_migration.legacy_users as legacy
