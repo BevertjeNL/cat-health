@@ -1,3 +1,19 @@
+# [1.14.0](https://github.com/BevertjeNL/cat-health/compare/v1.13.1...v1.14.0) (2026-08-26)
+
+
+### Bug Fixes
+
+* exclude retired Supabase profile table ([3489681](https://github.com/BevertjeNL/cat-health/commit/34896818c8334e29ad24119914efc83de607b2e4))
+* handle pristine Neon target ([88217e8](https://github.com/BevertjeNL/cat-health/commit/88217e8024798bf812971356d95df720a8bbdd40))
+* remove Supabase-only replication override ([3376577](https://github.com/BevertjeNL/cat-health/commit/3376577284b6553d9001b7a287d8a08e809724b2))
+* resume cutover after completed data import ([af03c88](https://github.com/BevertjeNL/cat-health/commit/af03c88a344a0cf8450c4c8c392203a854307a31))
+* use PostgreSQL 17 for Supabase export ([9e2a92f](https://github.com/BevertjeNL/cat-health/commit/9e2a92f9d089869cd79a415439805d759605fef1))
+
+
+### Features
+
+* migrate CatHealth backend to Neon ([2b18a60](https://github.com/BevertjeNL/cat-health/commit/2b18a6087912cc01725af605e6cadc5eaea97218))
+
 ## [1.13.1](https://github.com/BevertjeNL/cat-health/compare/v1.13.0...v1.13.1) (2026-08-26)
 
 
