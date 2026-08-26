@@ -12,6 +12,11 @@ trap 'rm -rf "$work_dir"' EXIT
 supabase link --project-ref "$SUPABASE_PROJECT_REF"
 supabase db dump --linked --data-only --schema public --use-copy \
   --file "$work_dir/cathealth-data.sql"
+# Supabase wraps data-only dumps in a replication-role override so triggers
+# stay disabled. Neon intentionally reserves that setting for superusers. Our
+# target is empty and the imported tables have no data-mutating triggers, so
+# the override is unnecessary and can be removed safely.
+sed -i '/session_replication_role/d' "$work_dir/cathealth-data.sql"
 
 jq -n '{query: "select id::text as old_user_id, email from auth.users where email is not null order by id", read_only: true}' > "$work_dir/user-query.json"
 curl --fail --silent --show-error --request POST \
