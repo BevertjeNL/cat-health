@@ -2362,12 +2362,21 @@
     errEl.style.display = "none";
     btn.disabled = true;
 
+    let data = null;
     let error = null;
     try {
       await neonReady;
-      ({ error } = authMode === "login"
+      ({ data, error } = authMode === "login"
         ? await neonClient.auth.signInWithPassword({ email, password })
         : await neonClient.auth.signUp({ email, password }));
+
+      // Neon Auth persists the session correctly, but its beta adapter does
+      // not always deliver SIGNED_IN to this tab before signIn resolves.
+      // Bootstrap from the successful response as well; the user-id guard
+      // prevents duplicate loading when the auth event did arrive first.
+      if (!error && data?.session && currentUser?.id !== data.session.user?.id) {
+        await bootstrapApp(data.session);
+      }
     } catch (err) {
       error = err;
     }

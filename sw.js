@@ -1,4 +1,4 @@
-const CACHE_NAME = "cat-health-v7";
+const CACHE_NAME = "cat-health-v8";
 const SHELL_ASSETS = [
   "./",
   "./index.html",
