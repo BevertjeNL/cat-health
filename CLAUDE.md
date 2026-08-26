@@ -1,111 +1,222 @@
-# CatHealth
+# CatHealth — bron van waarheid voor coding-agents
 
-## Wat dit is
-Single-file PWA om het gewicht, bloedwaarden, vaccinaties, medicatie,
-afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
-- `index.html` — alles inline: HTML, CSS en JS in één bestand. Bewuste
-  keuze, geen build-stap. Externe libraries komen via CDN `<script>`-tags
-  (Neon JS, Chart.js, Hammer.js, chartjs-plugin-zoom, Tesseract.js,
-  pdf.js, html2canvas). Neon JS wordt als gepinde ESM-bundle dynamisch
-  geladen; de overige libraries zijn globals (`Chart`, `Hammer`,
-  `Tesseract`, `pdfjsLib`, `html2canvas`). Het zijn geen npm-afhankelijkheden.
-  **CDN-versies staan altijd exact
-  gepind** (bv. `chart.js@4.5.1`, nooit `@4`) — voorkomt dat een nieuwe
-  release van een CDN-pakket stilzwijgend meegetrokken wordt. Bij bijwerken:
-  nieuwe exacte versie opzoeken (`npm view <pakket> version`) en zowel de
-  `<script src>` als eventuele losse verwijzingen (bv. `pdfjsLib.GlobalWorkerOptions.workerSrc`)
+Lees dit bestand volledig vóór je aan CatHealth werkt. Deze afspraken gelden
+voor iedere AI/coding-agent. `README.md` is de menselijke projectintroductie;
+dit bestand beschrijft de actuele architectuur, operationele toestand en
+werkwijze.
+
+## Actuele productiestatus
+
+- Appnaam in de UI: **Huisdiergezondheid**.
+- Repository: `BevertjeNL/cat-health`.
+- Productie: `https://bevertjenl.github.io/cat-health/`.
+- Hosting: GitHub Pages vanaf `main`.
+- Backend: Neon Postgres + Neon Auth + Neon Data API.
+- Productierelease bij deze overdracht: `1.14.2` (27 augustus 2026).
+- Supabase is volledig uit runtime en CI/CD verwijderd. `supabase/` is alleen
+  een historisch auditspoor.
+
+## Wat er gebouwd is
+
+CatHealth is een installable single-file PWA voor meerdere huisdieren. De app
+beheert:
+
+- huisdierprofielen, actief huisdier en archivering;
+- gewicht en gewichtstrends;
+- bloedwaarden, referentiewaarden en OCR/PDF-invoer;
+- vaccinaties en herinneringen;
+- afwijkingen/symptomen;
+- medicatie en medicatiecatalogus;
+- dierenartsen en dierenartsbezoeken;
+- voersoorten, aankopen, verbruik en kosten;
+- dashboardwaarschuwingen, grafieken en rollend-jaar/kalenderjaarstatistiek;
+- print/PDF-overzichten en delen als JPEG;
+- Nederlandse, Engelse en Duitse UI-teksten.
+
+## Frontendarchitectuur
+
+- `index.html` bevat bewust alle HTML, CSS en applicatie-JavaScript inline.
+  Er is geen framework, bundler, `app/`, `components/` of runtime-buildstap.
+  Splits dit bestand niet op zonder voorafgaand overleg.
+- Interactie gebruikt nog veel globale functies en inline `onclick="..."`.
+  Dat is een bewuste architectuurkeuze, geen onafgemaakte refactor.
+- Neon JS wordt dynamisch geladen als exact gepinde ESM-bundle:
+  `@neondatabase/neon-js@0.7.0-beta/+esm`.
+- Overige gepinde CDN-globals zijn Chart.js, chartjs-adapter-date-fns,
+  chartjs-plugin-zoom, Hammer.js, Tesseract.js, pdf.js en html2canvas.
+- CDN-versies altijd exact pinnen. Werk bij een upgrade alle verwijzingen bij,
+  inclusief worker-URL's en de Content-Security-Policy.
+- De CSP staat als `<meta http-equiv="Content-Security-Policy">` in de head.
+  `connect-src` staat alleen de CatHealth Neon Auth- en Data API-hosts toe.
+
+## PWA en offline gedrag
+
+- `sw.js` cachet alleen de app-shell en gebruikt network-first. Bij een
+  bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache bij
+  deze overdracht is `cat-health-v9`.
+- IndexedDB-database `cathealth-offline` heeft stores `cache` en `outbox`.
+- Offline writes zijn bewust beperkt tot:
+  `weight_measurements`, `blood_values`, `vaccinations`, `symptom_logs`,
+  `medications`, `vet_visits` en `food_purchases`.
+- `mutateTable()` probeert eerst Neon en queue't alleen netwerkfouten.
+  Tijdelijke inserts krijgen negatieve IDs. `flushOutbox()` draait na login,
+  bij het `online`-event en elke 30 seconden.
+- Niet-netwerkfouten zoals RLS/validatie worden gemeld en uit de outbox
+  verwijderd; eindeloos opnieuw proberen is bewust vermeden.
+
+## Neon-project en publieke endpoints
+
+- Neon-project: `CatHealth` (`square-truth-06822146`).
+- Database: `neondb`.
+- Primaire branch: `main` (`br-steep-poetry-as5wth2o`).
+- Compute/endpoint: `ep-old-union-as8n94jd`, AWS Frankfurt.
+- Auth URL:
+  `https://ep-old-union-as8n94jd.neonauth.c-4.eu-central-1.aws.neon.tech/neondb/auth`
+- Data API URL:
+  `https://ep-old-union-as8n94jd.apirest.c-4.eu-central-1.aws.neon.tech/neondb/rest/v1`
+- Databasewachtwoord/connectionstring nooit in broncode of gedeelde
+  environment variables zetten. Alleen GitHub Actions-secret
+  `NEON_DATABASE_URL` mag de Postgres-connectionstring bevatten.
+
+## Neon Auth-configuratie en sessies
+
+Actuele Auth-configuratie:
+
+- application name: `CatHealth`;
+- sign-up with email: aan;
+- verify at sign-up: **uit** — er wordt dus geen bevestigingsmail verstuurd;
+- sign-in with email: aan;
+- email provider: gedeelde Neon-provider (`auth@mail.myneon.app`);
+- trusted domain: `https://bevertjenl.github.io`;
+- localhost toegestaan voor ontwikkeling;
+- één productieaccount heeft twee gemigreerde huisdieren geclaimd.
+
+De beta-versie van Neon JS kan `SIGNED_IN`/`SIGNED_OUT` later aan de huidige
+tab leveren dan de Auth-call resolve't. Belangrijke, bewust dubbele route:
+
+1. `onAuthStateChange(handleAuthStateChange)` verwerkt normale en cross-tab
+   events.
+2. Een geslaagde `signInWithPassword()`/`signUp()` roept óók direct
+   `transitionToSession(data.session)` aan.
+3. Een geslaagde `signOut()` roept direct `clearSessionUi()` aan.
+4. `transitionToSession()` dedupliceert wanneer hetzelfde account al zichtbaar
+   is.
+
+Verwijder deze expliciete UI-overgangen niet. Alleen vertrouwen op
+`onAuthStateChange()` veroorzaakt het bekende gedrag waarbij login/logout pas
+na een paginaverversing zichtbaar wordt.
+
+## Datamodel en RLS
+
+Actieve app-tabellen in `public`:
+
+| Tabel | Migratiestand 27-08-2026 |
+| --- | ---: |
+| `pets` | 3 |
+| `weight_measurements` | 10 |
+| `blood_values` | 95 |
+| `vaccinations` | 9 |
+| `symptom_logs` | 73 |
+| `medications` | 26 |
+| `medication_catalog` | 10 |
+| `veterinarians` | 2 |
+| `vet_visits` | 13 |
+| `food_catalog` | 2 |
+| `food_purchases` | 22 |
+| **Totaal** | **265** |
+
+Eigendom loopt altijd via `pets.user_id = auth.user_id()`. Alle onderliggende
+records verwijzen met `pet_id` naar een pet. `veterinarians` is een aparte
+contactenlijst; `vet_visits` bevat bezoeklogs en kan met `vet_id` verwijzen.
+
+RLS staat op alle app-tabellen. Clientrollen krijgen alleen de benodigde
+rechten; data blijft per ingelogde eigenaar afgeschermd. Gebruik bij nieuwe
+tabellen hetzelfde eigendomspatroon en voeg passende indexen, grants en RLS-
+policies toe.
+
+## Schema en migraties
+
+- Actief schema: `neon/migrations/0001_initial_schema.sql` en volgende
+  oplopend genummerde bestanden.
+- Bestaande toegepaste migraties nooit herschrijven om een wijziging door te
+  voeren. Voeg `0002_...sql`, `0003_...sql`, enzovoort toe.
+- De workflow doorloopt bij iedere relevante push alle migratiebestanden in
+  volgorde. Schrijf migraties daarom herhaalbaar/idempotent (`if exists`,
+  `if not exists`, guarded `DO`-blocks).
+- Geen handmatige productieschemawijzigingen in Neon SQL Editor buiten
+  migraties. Read-only diagnosequeries zijn wel toegestaan.
+- Na een wijziging aan Data API-zichtbare tabellen/kolommen kan in Neon onder
+  Data API `Refresh schema cache` nodig zijn.
+- Destructieve migraties (`drop table`, `drop column`, massale rewrite) altijd
+  eerst met de gebruiker bespreken en van een rollback/back-up voorzien.
+
+## Supabase-migratie en legacy-accountclaim
+
+- Cutover afgerond op 27 augustus 2026.
+- Gecontroleerd resultaat: 265 rijen in 11 tabellen en 2 e-mailmappings.
+- Wachtwoorden zijn niet gemigreerd; gebruikers registreren in Neon Auth met
+  hetzelfde e-mailadres.
+- Private schema `cathealth_migration` bevat `legacy_users`.
+- Trigger `cathealth_claim_legacy_pets` op `neon_auth."user"` vervangt bij
+  registratie de oude `pets.user_id` door de Neon Auth-user-ID.
+- De productieaccountclaim is geslaagd: 2 pets zijn gekoppeld. Eén historische
+  testmapping vertegenwoordigt de resterende derde pet.
+- De private mappingtabel en trigger zijn niet via de Data API bereikbaar.
+  Verwijder ze pas via een afzonderlijke cleanup-migratie nadat expliciet is
+  besloten wat met de testpet/mapping gebeurt.
+- Het externe Supabase-project mag pauzeren en is geen productieafhankelijkheid.
+  Verwijder het project, de GitHub Supabase-secrets of `supabase/` niet zonder
+  expliciete opdracht; ze vormen voorlopig rollback/auditmateriaal.
+
+## Versies, commits en releases
+
+- `APP_VERSION` in `index.html` wordt automatisch gezet door
+  `scripts/set-app-version.js` tijdens semantic-release. Niet handmatig
   aanpassen.
-- **Content-Security-Policy** staat als `<meta http-equiv>` in de `<head>`.
-  `script-src`/`style-src` bevatten noodgedwongen `'unsafe-inline'` omdat de
-  app overal `onclick="..."`-attributen en template-gegenereerde
-  `style="..."`-attributen gebruikt (zie hierboven, geen build-stap) — de
-  overige directives (welke hosts mogen laden, geen framing, geen plugins,
-  `connect-src` beperkt tot de eigen Neon Auth- en Data API-endpoints) staan
-  wél strak. Nieuwe externe host toevoegen (nieuwe CDN, ander Neon-project)? Ook de
-  CSP bijwerken, anders wordt die stilzwijgend geblokkeerd.
-- `sw.js` — service worker voor PWA-offline-gebruik. Network-first voor
-  app-shell assets. `CACHE_NAME` ophogen bij elke deploy die je op een
-  geïnstalleerde PWA wilt forceren te verversen.
-- `manifest.json` — PWA-manifest.
-- Backend: Neon (Neon Auth met e-mail/wachtwoord + Postgres, Data API en RLS).
-- Hosting: GitHub Pages op `https://bevertjenl.github.io/cat-health/`, vanuit
-  de `main`-branch van `BevertjeNL/cat-health`.
+- Conventional Commits bepalen semver:
+  `fix:` = patch, `feat:` = minor, `BREAKING CHANGE:` = major; gebruik verder
+  `docs:`, `chore:` en `refactor:` waar passend.
+- Werk op een branch, draai lokaal `npm run lint` en `git diff --check`, open
+  een PR en merge alleen met groene `lint`.
+- Push naar `main` start `.github/workflows/ci.yml`: lint en daarna
+  semantic-release. De releasecommit werkt `CHANGELOG.md`, tag en
+  `APP_VERSION` bij en veroorzaakt een tweede GitHub Pages-deployment.
+- Een eerste Pages-run kan daardoor worden vervangen/geannuleerd door de
+  releasecommit; beoordeel de nieuwste Pages-run, niet automatisch de eerste.
+- Wijzigingen in `neon/migrations/**` starten daarnaast
+  `.github/workflows/neon-migrations.yml` met secret `NEON_DATABASE_URL`.
+- GitHub Actions gebruikt momenteel Node 20 in de workflowconfig; GitHub kan
+  daarbij een deprecation-waarschuwing tonen maar forceert Node 24. Dit was
+  tijdens de Neon-cutover niet blokkerend.
 
-## Versienummer
-`APP_VERSION` in `index.html` (getoond onderaan het Account-kaartje in
-Instellingen) wordt na de eerste release automatisch bijgewerkt door
-semantic-release via `scripts/set-app-version.js` — nooit handmatig
-aanpassen zodra er releases lopen. Tot de eerste release bevat het nog een
-handmatige datum-string; zie punt hieronder over het semver-gedrag.
+## Lokale ontwikkeling en verificatie
 
-**Bekend gedrag, geen bug:** de eerste semantic-release-run begint bij
-`v1.0.0`, ook al stond er al een oudere handmatige versie-string. Oudere
-nummers blijven alleen als historische tekst in commit-logs/CHANGELOG staan.
+```bash
+npm ci
+npm run lint
+git diff --check
+python3 -m http.server 8000
+```
 
-## Commit- en release-flow
-- Conventional commits: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:` —
-  bepaalt automatisch de volgende semver-bump (feat = minor, fix = patch,
-  `BREAKING CHANGE:` in de body = major).
-- Werk op een branch, laat lokaal `npm run lint` slagen, merge daarna zelf
-  door naar `main` — ook bij schema/RLS-migraties, zonder daar per keer
-  vooraf los toestemming voor te vragen. `main` triggert automatisch de
-  release-job (semantic-release: versiebump, CHANGELOG, git-tag, GitHub
-  release) en, bij wijzigingen in `neon/migrations/**`, de migratie-
-  workflow tegen de live database.
-- Uitzondering die wél eerst overleg verdient: iets dat data onomkeerbaar
-  kan laten verliezen (bv. een `drop table`/`drop column` migratie) of een
-  grote herstructurering (bv. index.html opsplitsen in meerdere bestanden).
-  Een nieuwe tabel/kolom toevoegen is geen reden om te wachten.
+Open `http://localhost:8000/`. Test voor Auth- of datastorewijzigingen ten
+minste:
 
-## Branch protection — bekende beperking
-Op `main` staat (of hoort te staan) een **klassieke** branch protection rule
-(niet de nieuwere "Ruleset"-functie — die vereist een betaald Team/
-Enterprise-account voor privé-repo's): branch pattern `main`, "Require
-status checks to pass before merging" aan met check `lint`. "Require a
-pull request before merging" staat bewust **uit** — anders zou de directe
-push van de semantic-release-bot naar `main` geblokkeerd worden.
-Op een gratis privé-repo toont GitHub de rule als "Not enforced" — de regel
-staat er, maar wordt technisch niet afgedwongen. Dit wordt gecompenseerd
-door eigen discipline: nooit mergen met een rode `lint`-check.
+1. registreren of inloggen gaat zonder paginaverversing naar het dashboard;
+2. uitloggen gaat zonder paginaverversing naar het loginformulier;
+3. het juiste account ziet uitsluitend zijn eigen pets;
+4. minimaal één read en veilige write via de Data API werkt;
+5. offline queue, online herstel en PWA-update blijven intact indien geraakt;
+6. de live pagina serveert na release de verwachte `APP_VERSION` en
+   `CACHE_NAME`.
 
-## Secrets
-Nooit als environment variable van een gedeelde Claude Code cloud-omgeving
-zetten (zichtbaar voor iedereen die de omgeving gebruikt) — altijd als
-GitHub Actions secret (Settings → Secrets and variables → Actions).
+## Veiligheids- en wijzigingsregels
 
-## Neon
-- Neon-project: `CatHealth` (`square-truth-06822146`), database `neondb`,
-  primaire branch `main` (`br-steep-poetry-as5wth2o`).
-- De browser gebruikt alleen de publieke Neon Auth- en Data API-endpoints;
-  een Postgres connection string hoort uitsluitend in het versleutelde
-  GitHub Actions-secret `NEON_DATABASE_URL`.
-- Tabellen van déze app: `pets`, `weight_measurements`, `blood_values`,
-  `vaccinations`, `symptom_logs`, `medications`, `medication_catalog`,
-  `vet_visits`, `veterinarians`, `food_catalog`, `food_purchases`. Alle rijen
-  scopen via `pet_id` → `pets.user_id = auth.user_id()`. `veterinarians` is een losse contactenlijst
-  (naam, telefoon, e-mail, adres, notities, hoofddierenarts-vlag) — niet te
-  verwarren met `vet_visits`, dat alleen bezoek-logs bijhoudt.
-- Schema staat als migraties in `neon/migrations/`
-  (`0001_initial_schema.sql` + volgende genummerde bestanden) — geen
-  handmatige wijzigingen via de Neon SQL Editor meer buiten migraties
-  om. Nieuwe schema-wijzigingen: nieuw bestand
-  `neon/migrations/000N_....sql` toevoegen, bestaande nummers niet meer
-  aanpassen.
-- `supabase/` is **historisch** en wordt niet door CI uitgevoerd. Het blijft
-  bewaard als auditspoor van de bron en het oude single-user-upgradepad.
-- `cathealth_migration.legacy_users` en de bijbehorende Auth-trigger zijn
-  uitsluitend de tijdelijke eigendomsbrug tijdens de Supabase-cutover. Ze
-  zijn niet via de Data API bereikbaar en mogen na succesvolle accountclaim
-  in een afzonderlijke cleanup-migratie worden verwijderd.
-
-## CI/CD
-- `.github/workflows/ci.yml`: `lint` (ESLint via `eslint-plugin-html` op
-  `index.html`, elke PR + push naar `main`) en `release` (semantic-release,
-  alleen push naar `main`, na een groene `lint`).
-- `.github/workflows/neon-migrations.yml`: past `neon/migrations/*.sql` in
-  volgorde toe bij een push naar `main` die deze map raakt. Vereist secret
-  `NEON_DATABASE_URL`.
-- De eenmalige Supabase-naar-Neon-overdracht is op 27 augustus 2026
-  afgerond en geverifieerd: 265 rijen in 11 tabellen en 2 oude
-  account-e-mailkoppelingen. De tijdelijke migratieworkflows en het
-  overdrachtsscript zijn daarna verwijderd.
+- Bewaar geen wachtwoorden, tokens, connectionstrings of persoonlijke
+  accountdetails in broncode, logs of documentatie.
+- Nieuwe externe host? Werk de CSP bij.
+- Nieuwe CDN-library? Exact pinnen.
+- Nieuwe write-route voor een offline-ondersteunde tabel? Gebruik
+  `mutateTable()` en werk `OFFLINE_TABLES`/rendering consequent bij.
+- Nieuwe database-entiteit? Voeg migratie, indexen, grants, RLS, clientcode en
+  relevante offline/cachelogica samen toe.
+- Geen brede herstructurering of destructieve dataactie zonder overleg.

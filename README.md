@@ -1,56 +1,125 @@
 # CatHealth
 
-Single-file PWA om het gewicht, bloedwaarden, vaccinaties, medicatie,
-afwijkingen en dierenartsbezoeken van een huisdier bij te houden. De app
-heet in de gebruikersinterface **Huisdiergezondheid**.
+CatHealth is een Nederlandstalige, installable single-file PWA voor het
+bijhouden van de gezondheid van meerdere huisdieren. In de interface heet de
+app **Huisdiergezondheid**.
+
+- Productie: <https://bevertjenl.github.io/cat-health/>
+- Repository: `BevertjeNL/cat-health`
+- Frontendhosting: GitHub Pages
+- Backend: Neon Postgres + Neon Auth + Neon Data API
+- Productierelease bij deze overdracht: `1.14.2`
+
+Supabase is geen runtime-afhankelijkheid meer. De map `supabase/` is alleen
+een historisch auditspoor van het oude schema.
+
+## Wat de app kan
+
+- Meerdere huisdieren beheren, wisselen, archiveren en herstellen.
+- Gewicht, bloedwaarden, vaccinaties, medicatie, afwijkingen,
+  dierenartsbezoeken, dierenartsen en voeding vastleggen.
+- Trends, herinneringen, kosten en rollend-jaar/kalenderjaarstatistieken tonen.
+- Bloedonderzoeken uit afbeeldingen/PDF's verwerken met OCR-hulpmiddelen.
+- Een printoverzicht maken en als PDF of JPEG delen.
+- Zeven soorten logboekmutaties offline opslaan en later synchroniseren via
+  IndexedDB (`weight_measurements`, `blood_values`, `vaccinations`,
+  `symptom_logs`, `medications`, `vet_visits`, `food_purchases`).
+- Nederlands, Engels en Duits tonen vanuit de inline vertaalcatalogus.
+
+## Architectuur
+
+```text
+GitHub Pages
+  └─ index.html (HTML + CSS + JavaScript, geen bundler)
+       ├─ Neon JS 0.7.0-beta via gepinde ESM-import
+       ├─ Neon Auth (e-mail + wachtwoord)
+       ├─ Neon Data API (PostgREST-achtige client)
+       ├─ IndexedDB-cache en offline outbox
+       └─ sw.js (network-first PWA-shell)
+
+Neon
+  ├─ Postgres-tabellen en indexen
+  ├─ RLS: auth.user_id() → pets.user_id → onderliggende pet_id
+  ├─ Neon Auth-tabellen in neon_auth
+  └─ private tijdelijke legacy-accountclaim in cathealth_migration
+```
+
+`index.html` is bewust één bestand. Er is geen framework, bundler of
+applicatie-buildstap. Externe browserlibraries staan exact gepind; npm bevat
+alleen ontwikkel- en releasegereedschap.
 
 ## Mappenstructuur
 
-```
+```text
 .
-├── index.html                    Alles: HTML, CSS en JS in één bestand
-├── sw.js                         Service worker (PWA-offline app-shell-cache)
-├── manifest.json                 PWA-manifest
-├── icons/                        App-iconen (192/512/apple-touch)
-├── scripts/
-│   └── set-app-version.js        Schrijft APP_VERSION in index.html bij een release
-├── neon/
-│   └── migrations/                Actieve Neon-schema- en RLS-migraties
-├── supabase/                       Historisch bron-schema van vóór de Neon-migratie
-├── eslint.config.js               Lint-config (ESLint + eslint-plugin-html)
-├── .releaserc.json                semantic-release-config
-└── .github/workflows/              CI: lint, release en Neon-migraties
+├── index.html                     Volledige applicatie: HTML, CSS en JS
+├── sw.js                          Network-first service worker
+├── manifest.json                  PWA-manifest
+├── icons/                         PWA-iconen
+├── neon/migrations/               Actieve Neon-schema- en RLS-migraties
+├── supabase/                      Historisch schema; niet meer actief
+├── scripts/set-app-version.js     Zet APP_VERSION tijdens releases
+├── eslint.config.js               ESLint voor inline JavaScript
+├── .releaserc.json                semantic-release-configuratie
+├── .github/workflows/ci.yml       Lint en release
+├── .github/workflows/neon-migrations.yml
+└── CLAUDE.md                      Technische bron van waarheid voor AI-agents
 ```
-
-**Bewust geen `app/`, `components/`, `lib/` of build-stap.** `index.html`
-is één bestand met alle HTML, CSS en JS inline — geen framework, geen
-bundler. Alleen de gepinde Neon-client wordt met een dynamische `import()`
-geladen; de applicatiecode zelf gebruikt geen modules. Interactie loopt via `onclick="..."`-
-attributen die rechtstreeks globale functies in het ene `<script>`-blok
-aanroepen. Dat is een bewuste keuze (simpele hosting als statisch bestand,
-geen build-tooling nodig, makkelijk in de browser te debuggen) en geen
-tussenstap richting een grotere herstructurering — zie `CLAUDE.md` voor de
-volledige toelichting en de codeer-conventies binnen `index.html`.
-
-Externe libraries (Neon JS, Chart.js, Hammer.js, chartjs-plugin-zoom,
-Tesseract.js, pdf.js, html2canvas) komen via een exact gepinde CDN-versie in
-`index.html`. Het zijn geen npm-afhankelijkheden — de `devDependencies` in
-`package.json` zijn alleen voor lint/release-tooling, niet voor de app zelf.
-
-## Historische Supabase-bestanden
-
-`supabase/` is alleen bewaard als auditspoor van het oude schema en het
-historische single-user-naar-multi-user-pad. CI voert deze bestanden niet
-meer uit. De gegevensoverdracht naar Neon is afgerond; nieuwe
-schemawijzigingen horen in `neon/migrations/`.
 
 ## Lokaal draaien
 
-Geen build-stap nodig — `index.html` rechtstreeks openen (of via een
-lokale static-file-server) volstaat. Neon Auth staat localhost toe, zodat
-Auth en data lokaal hetzelfde werken als op GitHub Pages.
+```bash
+npm ci
+python3 -m http.server 8000
+```
 
-## Meer info
+Open daarna <http://localhost:8000/>. Neon Auth accepteert localhost. Voor een
+snelle statische controle kan `index.html` ook rechtstreeks worden geopend.
 
-Zie `CLAUDE.md` voor commit-/release-flow, Neon-tabellen en -conventies,
-en de reden achter alle bovenstaande keuzes.
+Controle vóór iedere merge:
+
+```bash
+npm run lint
+git diff --check
+```
+
+## Neon en authenticatie
+
+Het Neon-project heet `CatHealth`; database en branch zijn respectievelijk
+`neondb` en `main`. De browser bevat alleen publieke Auth- en Data API-URL's.
+De Postgres-connectionstring staat uitsluitend in GitHub Actions-secret
+`NEON_DATABASE_URL`.
+
+E-mailregistratie en -login staan aan. **E-mailverificatie bij registratie
+staat uit**, dus nieuwe gebruikers krijgen geen bevestigingsmail en kunnen
+direct inloggen. De bestaande productiegebruiker heeft de twee gemigreerde
+huisdieren succesvol geclaimd.
+
+Neon Auth-events kunnen in de gebruikte beta-client vertraagd arriveren.
+Daarom verwerkt CatHealth een succesvolle loginresponse en logout expliciet
+in de UI via `transitionToSession()` en `clearSessionUi()`. Verwijder deze
+logica niet ten gunste van alleen `onAuthStateChange()`.
+
+## Migratiestatus
+
+De Supabase-naar-Neon-overdracht is op 27 augustus 2026 afgerond en
+geverifieerd: **265 rijen in 11 tabellen** en **2 legacy-accountmappings**.
+De tijdelijke overdrachtsworkflows en het exportscript zijn verwijderd.
+
+Supabase mag pauzeren zonder effect op de productieapp. Het externe
+Supabase-project en de historische bestanden blijven voorlopig als
+rollback/auditspoor bestaan; verwijder ze niet zonder expliciete opdracht.
+
+## Releases en schemawijzigingen
+
+- Werk op een branch en gebruik Conventional Commits.
+- Een groene PR-lint gaat vóór merge naar `main`.
+- `main` start semantic-release, werkt `APP_VERSION` en `CHANGELOG.md` bij en
+  publiceert GitHub Pages.
+- Wijzigingen onder `neon/migrations/` starten de Neon-migratieworkflow.
+- Verhoog `CACHE_NAME` in `sw.js` bij elke deploy die geïnstalleerde PWA's
+  gedwongen moet verversen.
+
+Lees [CLAUDE.md](./CLAUDE.md) vóór codewijzigingen. Dat bestand bevat de
+volledige afspraken, identifiers, datamodellen, migratieregels en bekende
+valkuilen voor iedere coding-agent.
