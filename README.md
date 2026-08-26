@@ -41,7 +41,8 @@ Tesseract.js, pdf.js, html2canvas) komen via een exact gepinde CDN-versie in
 
 `supabase/` is alleen bewaard als auditspoor van het oude schema en het
 historische single-user-naar-multi-user-pad. CI voert deze bestanden niet
-meer uit. Nieuwe schemawijzigingen horen in `neon/migrations/`.
+meer uit. De gegevensoverdracht naar Neon is afgerond; nieuwe
+schemawijzigingen horen in `neon/migrations/`.
 
 ## Lokaal draaien
 

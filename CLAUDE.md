@@ -105,7 +105,7 @@ GitHub Actions secret (Settings → Secrets and variables → Actions).
 - `.github/workflows/neon-migrations.yml`: past `neon/migrations/*.sql` in
   volgorde toe bij een push naar `main` die deze map raakt. Vereist secret
   `NEON_DATABASE_URL`.
-- `.github/workflows/migrate-supabase-to-neon.yml`: bewaakte, eenmalige
-  data-overdracht. Deze weigert een niet-lege doeldatabase en vereist naast
-  `NEON_DATABASE_URL` tijdelijk de drie bestaande Supabase-secrets. Na een
-  volledig geverifieerde cutover kan deze workflow worden verwijderd.
+- De eenmalige Supabase-naar-Neon-overdracht is op 27 augustus 2026
+  afgerond en geverifieerd: 265 rijen in 11 tabellen en 2 oude
+  account-e-mailkoppelingen. De tijdelijke migratieworkflows en het
+  overdrachtsscript zijn daarna verwijderd.
