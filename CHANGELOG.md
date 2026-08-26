@@ -1,3 +1,10 @@
+## [1.14.2](https://github.com/BevertjeNL/cat-health/compare/v1.14.1...v1.14.2) (2026-08-26)
+
+
+### Bug Fixes
+
+* update UI for Neon session changes ([9d1b08f](https://github.com/BevertjeNL/cat-health/commit/9d1b08f245a92f0382fbe469de3ca1444cb2ebb8))
+
 ## [1.14.1](https://github.com/BevertjeNL/cat-health/compare/v1.14.0...v1.14.1) (2026-08-26)
 
 
