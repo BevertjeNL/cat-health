@@ -14,47 +14,43 @@ heet in de gebruikersinterface **Huisdiergezondheid**.
 ├── icons/                        App-iconen (192/512/apple-touch)
 ├── scripts/
 │   └── set-app-version.js        Schrijft APP_VERSION in index.html bij een release
-├── supabase/
-│   ├── config.toml                Supabase-projectconfig
-│   ├── migrations/                 Actieve, chronologische schema-migraties
-│   └── migrations_archive/         Historische migratie (niet actief, zie hieronder)
+├── neon/
+│   └── migrations/                Actieve Neon-schema- en RLS-migraties
+├── supabase/                       Historisch bron-schema van vóór de Neon-migratie
 ├── eslint.config.js               Lint-config (ESLint + eslint-plugin-html)
 ├── .releaserc.json                semantic-release-config
-└── .github/workflows/              CI: lint, release, Supabase-migraties
+└── .github/workflows/              CI: lint, release en Neon-migraties
 ```
 
 **Bewust geen `app/`, `components/`, `lib/` of build-stap.** `index.html`
 is één bestand met alle HTML, CSS en JS inline — geen framework, geen
-bundler, geen `import`/`export`. Interactie loopt via `onclick="..."`-
+bundler. Alleen de gepinde Neon-client wordt met een dynamische `import()`
+geladen; de applicatiecode zelf gebruikt geen modules. Interactie loopt via `onclick="..."`-
 attributen die rechtstreeks globale functies in het ene `<script>`-blok
 aanroepen. Dat is een bewuste keuze (simpele hosting als statisch bestand,
 geen build-tooling nodig, makkelijk in de browser te debuggen) en geen
 tussenstap richting een grotere herstructurering — zie `CLAUDE.md` voor de
 volledige toelichting en de codeer-conventies binnen `index.html`.
 
-Externe libraries (Supabase JS, Chart.js, Hammer.js, chartjs-plugin-zoom,
-Tesseract.js, pdf.js, html2canvas) komen via CDN `<script>`-tags in
-`index.html` en zijn dus globals (`supabase`, `Chart`, `Hammer`, etc.),
-geen npm-afhankelijkheden — de `devDependencies` in `package.json` zijn
-alleen voor lint/release-tooling, niet voor de app zelf.
+Externe libraries (Neon JS, Chart.js, Hammer.js, chartjs-plugin-zoom,
+Tesseract.js, pdf.js, html2canvas) komen via een exact gepinde CDN-versie in
+`index.html`. Het zijn geen npm-afhankelijkheden — de `devDependencies` in
+`package.json` zijn alleen voor lint/release-tooling, niet voor de app zelf.
 
-## `supabase/migrations_archive/`
+## Historische Supabase-bestanden
 
-`migration_multiuser.sql` staat hier omdat het een historisch, eenmalig
-upgrade-pad beschrijft (van een oude single-user-install naar multi-user)
-dat niet in de actieve migratieketen zit en niet door CI wordt uitgevoerd.
-`supabase/migrations/0001_initial_schema.sql` bevat het volledige, actuele
-schema en dekt dat pad al. Zie `CLAUDE.md` voor details.
+`supabase/` is alleen bewaard als auditspoor van het oude schema en het
+historische single-user-naar-multi-user-pad. CI voert deze bestanden niet
+meer uit. De gegevensoverdracht naar Neon is afgerond; nieuwe
+schemawijzigingen horen in `neon/migrations/`.
 
 ## Lokaal draaien
 
 Geen build-stap nodig — `index.html` rechtstreeks openen (of via een
-lokale static-file-server) volstaat. Zonder een geldige Supabase-config
-toont de app een configuratiemelding in plaats van in te loggen; met een
-Supabase-project ingesteld werkt de volledige app (Auth + data) lokaal
-hetzelfde als in productie.
+lokale static-file-server) volstaat. Neon Auth staat localhost toe, zodat
+Auth en data lokaal hetzelfde werken als op GitHub Pages.
 
 ## Meer info
 
-Zie `CLAUDE.md` voor commit-/release-flow, Supabase-tabellen en -conventies,
+Zie `CLAUDE.md` voor commit-/release-flow, Neon-tabellen en -conventies,
 en de reden achter alle bovenstaande keuzes.

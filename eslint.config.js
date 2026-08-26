@@ -12,7 +12,6 @@ module.exports = [
         ...globals.browser,
         // Loaded via <script src> from CDNs in index.html — not npm deps,
         // so ESLint can't infer them and needs to be told they exist.
-        supabase: "readonly",
         Chart: "readonly",
         Hammer: "readonly",
         Tesseract: "readonly",

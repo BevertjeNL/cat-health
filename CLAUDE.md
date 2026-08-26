@@ -5,9 +5,10 @@ Single-file PWA om het gewicht, bloedwaarden, vaccinaties, medicatie,
 afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
 - `index.html` — alles inline: HTML, CSS en JS in één bestand. Bewuste
   keuze, geen build-stap. Externe libraries komen via CDN `<script>`-tags
-  (Supabase JS, Chart.js, Hammer.js, chartjs-plugin-zoom, Tesseract.js,
-  pdf.js, html2canvas) — dit zijn globals (`supabase`, `Chart`, `Hammer`,
-  `Tesseract`, `pdfjsLib`, `html2canvas`), geen npm-afhankelijkheden.
+  (Neon JS, Chart.js, Hammer.js, chartjs-plugin-zoom, Tesseract.js,
+  pdf.js, html2canvas). Neon JS wordt als gepinde ESM-bundle dynamisch
+  geladen; de overige libraries zijn globals (`Chart`, `Hammer`,
+  `Tesseract`, `pdfjsLib`, `html2canvas`). Het zijn geen npm-afhankelijkheden.
   **CDN-versies staan altijd exact
   gepind** (bv. `chart.js@4.5.1`, nooit `@4`) — voorkomt dat een nieuwe
   release van een CDN-pakket stilzwijgend meegetrokken wordt. Bij bijwerken:
@@ -19,18 +20,16 @@ afwijkingen en dierenartsbezoeken van een huisdier bij te houden.
   app overal `onclick="..."`-attributen en template-gegenereerde
   `style="..."`-attributen gebruikt (zie hierboven, geen build-stap) — de
   overige directives (welke hosts mogen laden, geen framing, geen plugins,
-  `connect-src` beperkt tot het eigen Supabase-project) staan wél strak.
-  Nieuwe externe host toevoegen (nieuwe CDN, ander Supabase-project)? Ook de
+  `connect-src` beperkt tot de eigen Neon Auth- en Data API-endpoints) staan
+  wél strak. Nieuwe externe host toevoegen (nieuwe CDN, ander Neon-project)? Ook de
   CSP bijwerken, anders wordt die stilzwijgend geblokkeerd.
 - `sw.js` — service worker voor PWA-offline-gebruik. Network-first voor
   app-shell assets. `CACHE_NAME` ophogen bij elke deploy die je op een
   geïnstalleerde PWA wilt forceren te verversen.
 - `manifest.json` — PWA-manifest.
-- Backend: Supabase (Auth met e-mail/wachtwoord + Postgres met RLS).
-- Hosting: **onbekend/niet door Claude geverifieerd.** Als je een gehoste
-  URL gebruikt (bv. Vercel), controleer zelf of die aan deze GitHub-repo/
-  branch hangt — dit is niet iets wat Claude namens jou instelt of kan
-  bevestigen.
+- Backend: Neon (Neon Auth met e-mail/wachtwoord + Postgres, Data API en RLS).
+- Hosting: GitHub Pages op `https://bevertjenl.github.io/cat-health/`, vanuit
+  de `main`-branch van `BevertjeNL/cat-health`.
 
 ## Versienummer
 `APP_VERSION` in `index.html` (getoond onderaan het Account-kaartje in
@@ -51,7 +50,7 @@ nummers blijven alleen als historische tekst in commit-logs/CHANGELOG staan.
   door naar `main` — ook bij schema/RLS-migraties, zonder daar per keer
   vooraf los toestemming voor te vragen. `main` triggert automatisch de
   release-job (semantic-release: versiebump, CHANGELOG, git-tag, GitHub
-  release) en, bij wijzigingen in `supabase/migrations/**`, de migratie-
+  release) en, bij wijzigingen in `neon/migrations/**`, de migratie-
   workflow tegen de live database.
 - Uitzondering die wél eerst overleg verdient: iets dat data onomkeerbaar
   kan laten verliezen (bv. een `drop table`/`drop column` migratie) of een
@@ -74,38 +73,39 @@ Nooit als environment variable van een gedeelde Claude Code cloud-omgeving
 zetten (zichtbaar voor iedereen die de omgeving gebruikt) — altijd als
 GitHub Actions secret (Settings → Secrets and variables → Actions).
 
-## Supabase
-- Project-ref: **nog niet ingevuld** in `supabase/config.toml`
-  (`project_id = ""`) — vul dit zelf in.
-- Check of dit Supabase-project gedeeld wordt met een andere app van
-  dezelfde gebruiker (gratis account = max. 2 projecten). Zo ja: RLS
-  isoleert per gebruiker (`auth.uid() = user_id`), niet per app — zorg dat
-  tabelnamen tussen apps uniek blijven.
+## Neon
+- Neon-project: `CatHealth` (`square-truth-06822146`), database `neondb`,
+  primaire branch `main` (`br-steep-poetry-as5wth2o`).
+- De browser gebruikt alleen de publieke Neon Auth- en Data API-endpoints;
+  een Postgres connection string hoort uitsluitend in het versleutelde
+  GitHub Actions-secret `NEON_DATABASE_URL`.
 - Tabellen van déze app: `pets`, `weight_measurements`, `blood_values`,
   `vaccinations`, `symptom_logs`, `medications`, `medication_catalog`,
-  `vet_visits`, `veterinarians`. Alle rijen scopen via `pet_id` →
-  `pets.user_id = auth.uid()`. `veterinarians` is een losse contactenlijst
+  `vet_visits`, `veterinarians`, `food_catalog`, `food_purchases`. Alle rijen
+  scopen via `pet_id` → `pets.user_id = auth.user_id()`. `veterinarians` is een losse contactenlijst
   (naam, telefoon, e-mail, adres, notities, hoofddierenarts-vlag) — niet te
   verwarren met `vet_visits`, dat alleen bezoek-logs bijhoudt.
-- Schema staat als migraties in `supabase/migrations/`
+- Schema staat als migraties in `neon/migrations/`
   (`0001_initial_schema.sql` + volgende genummerde bestanden) — geen
-  handmatige wijzigingen via de Supabase SQL-editor meer buiten migraties
+  handmatige wijzigingen via de Neon SQL Editor meer buiten migraties
   om. Nieuwe schema-wijzigingen: nieuw bestand
-  `supabase/migrations/000N_....sql` toevoegen, bestaande nummers niet meer
+  `neon/migrations/000N_....sql` toevoegen, bestaande nummers niet meer
   aanpassen.
-- `supabase/migrations_archive/migration_multiuser.sql` is **historisch**,
-  zit niet in de actieve migratieketen en wordt niet door CI uitgevoerd —
-  het beschrijft het eenmalige upgrade-pad van een oude single-user-install
-  naar multi-user. `0001_initial_schema.sql` bevat de geconsolideerde,
-  actuele schema (inclusief de tabellen die pas in latere STAPpen van dat
-  archief-bestand zijn toegevoegd: `medications`, `medication_catalog`,
-  `symptom_logs`, `vet_visits`) — dit was voorheen niet zo (het oude losse
-  `supabase.sql` was buiten sync geraakt en miste die vier tabellen).
+- `supabase/` is **historisch** en wordt niet door CI uitgevoerd. Het blijft
+  bewaard als auditspoor van de bron en het oude single-user-upgradepad.
+- `cathealth_migration.legacy_users` en de bijbehorende Auth-trigger zijn
+  uitsluitend de tijdelijke eigendomsbrug tijdens de Supabase-cutover. Ze
+  zijn niet via de Data API bereikbaar en mogen na succesvolle accountclaim
+  in een afzonderlijke cleanup-migratie worden verwijderd.
 
 ## CI/CD
 - `.github/workflows/ci.yml`: `lint` (ESLint via `eslint-plugin-html` op
   `index.html`, elke PR + push naar `main`) en `release` (semantic-release,
   alleen push naar `main`, na een groene `lint`).
-- `.github/workflows/supabase-migrations.yml`: `supabase db push` bij een
-  push naar `main` die `supabase/migrations/**` raakt. Vereist secrets
-  `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`, `SUPABASE_DB_PASSWORD`.
+- `.github/workflows/neon-migrations.yml`: past `neon/migrations/*.sql` in
+  volgorde toe bij een push naar `main` die deze map raakt. Vereist secret
+  `NEON_DATABASE_URL`.
+- De eenmalige Supabase-naar-Neon-overdracht is op 27 augustus 2026
+  afgerond en geverifieerd: 265 rijen in 11 tabellen en 2 oude
+  account-e-mailkoppelingen. De tijdelijke migratieworkflows en het
+  overdrachtsscript zijn daarna verwijderd.
