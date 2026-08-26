@@ -1,0 +1,22 @@
+name: Neon migrations
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "neon/migrations/**"
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply Neon migrations
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          for migration in neon/migrations/*.sql; do
+            psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --file "$migration"
+          done

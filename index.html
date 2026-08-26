@@ -14,15 +14,17 @@
   still meaningfully restricts everything else: only the pinned CDN hosts can
   load as scripts (no arbitrary/compromised-origin script loading), no
   plugins/objects, no framing, and network requests are locked to this
-  origin + the Supabase project.
+  origin + the CatHealth Neon Auth and Data API endpoints.
 -->
 <meta http-equiv="Content-Security-Policy" content="
   default-src 'self';
-  script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net;
+  script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   style-src 'self' 'unsafe-inline';
   img-src 'self' data: blob:;
   font-src 'self';
-  connect-src 'self' https://cbnfogvfordqatlogfdt.supabase.co wss://cbnfogvfordqatlogfdt.supabase.co;
+  connect-src 'self'
+    https://ep-old-union-as8n94jd.neonauth.c-4.eu-central-1.aws.neon.tech
+    https://ep-old-union-as8n94jd.apirest.c-4.eu-central-1.aws.neon.tech;
   worker-src 'self' blob: https://cdn.jsdelivr.net;
   manifest-src 'self';
   object-src 'none';
@@ -38,7 +40,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 <meta name="apple-mobile-web-app-title" content="Huisdierzorg" />
 
-<script src="https://unpkg.com/@supabase/supabase-js@2.111.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
@@ -2301,17 +2302,30 @@
   // timestamp so there's no ambiguity about which version is running.
   const APP_VERSION = "1.13.0";
 
-  // --- Supabase config -------------------------------------------------
-  // Fill these in with your project's URL and public anon key
-  // (Supabase dashboard > Project Settings > API).
-  const SUPABASE_URL = "https://cbnfogvfordqatlogfdt.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNibmZvZ3Zmb3JkcWF0bG9nZmR0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MzI4NjcsImV4cCI6MjEwMDQwODg2N30.znP9_Y24aH4ePjQYE5GmAJPTefutVglxNVP5911Co9Y";
+  // --- Neon config ------------------------------------------------------
+  // Public Auth and Data API endpoints; database credentials never reach
+  // the browser.
+  const NEON_AUTH_URL = "https://ep-old-union-as8n94jd.neonauth.c-4.eu-central-1.aws.neon.tech/neondb/auth";
+  const NEON_DATA_API_URL = "https://ep-old-union-as8n94jd.apirest.c-4.eu-central-1.aws.neon.tech/neondb/rest/v1";
+  const NEON_JS_URL = "https://cdn.jsdelivr.net/npm/@neondatabase/neon-js@0.7.0-beta/+esm";
 
-  const isConfigured = SUPABASE_URL.startsWith("http");
-  let supabaseClient = null;
+  const isConfigured = NEON_AUTH_URL.startsWith("https://") && NEON_DATA_API_URL.startsWith("https://");
+  let neonClient = null;
+  let neonReady = Promise.resolve(null);
 
   if (isConfigured) {
-    supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    neonReady = import(NEON_JS_URL).then(({ createClient, SupabaseAuthAdapter }) => {
+      neonClient = createClient({
+        auth: { url: NEON_AUTH_URL, adapter: SupabaseAuthAdapter() },
+        dataApi: { url: NEON_DATA_API_URL },
+      });
+      neonClient.auth.onAuthStateChange(handleAuthStateChange);
+      return neonClient;
+    }).catch((error) => {
+      console.error("Neon initialisatie mislukt", error);
+      showError("De beveiligde gegevensverbinding kon niet worden gestart. Probeer de app opnieuw te laden.");
+      throw error;
+    });
   }
 
   // --- Auth ----------------------------------------------------------------
@@ -2348,10 +2362,15 @@
     errEl.style.display = "none";
     btn.disabled = true;
 
-    const { error } =
-      authMode === "login"
-        ? await supabaseClient.auth.signInWithPassword({ email, password })
-        : await supabaseClient.auth.signUp({ email, password });
+    let error = null;
+    try {
+      await neonReady;
+      ({ error } = authMode === "login"
+        ? await neonClient.auth.signInWithPassword({ email, password })
+        : await neonClient.auth.signUp({ email, password }));
+    } catch (err) {
+      error = err;
+    }
 
     btn.disabled = false;
 
@@ -2369,7 +2388,8 @@
   });
 
   async function logout() {
-    await supabaseClient.auth.signOut();
+    await neonReady;
+    await neonClient.auth.signOut();
   }
 
   // Custom flat single-color glyphs instead of the standard cat/dog emoji —
@@ -3186,7 +3206,7 @@
     }
   });
 
-  supabaseClient?.auth.onAuthStateChange((event, session) => {
+  function handleAuthStateChange(event, session) {
     if (session) {
       // TOKEN_REFRESHED etc. re-fire with the same user; only re-bootstrap
       // (and refetch everything) when the logged-in user actually changed.
@@ -3198,7 +3218,7 @@
       currentPetId = null;
       showAuthScreen();
     }
-  });
+  }
 
   async function bootstrapApp(session) {
     currentUser = session.user;
@@ -3206,6 +3226,7 @@
     document.getElementById("appVersionText").textContent = "App-versie " + APP_VERSION;
     showAppContent();
     await loadPets();
+    await flushOutbox();
   }
 
   // --- Pets ------------------------------------------------------------
@@ -3217,7 +3238,7 @@
   }
 
   async function loadPets() {
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("pets")
       .select("*")
       .is("archived_at", null)
@@ -3342,7 +3363,7 @@
     const species = document.getElementById("newPetSpecies").value;
     if (!name) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("pets")
       .insert([{ user_id: currentUser.id, name, species }])
       .select()
@@ -3365,7 +3386,7 @@
   // --- Huisdier archiveren (soft-delete met dubbele bevestiging) ------------
   async function openArchivedPetsMenu() {
     closePetMenu();
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("pets")
       .select("*")
       .not("archived_at", "is", null)
@@ -3400,7 +3421,7 @@
   }
 
   async function restorePet(id) {
-    const { error } = await supabaseClient.from("pets").update({ archived_at: null }).eq("id", id);
+    const { error } = await neonClient.from("pets").update({ archived_at: null }).eq("id", id);
     if (error) {
       showError(t("errRestoreFailed") + ": " + error.message);
       return;
@@ -3447,7 +3468,7 @@
     const btn = document.getElementById("archivePetConfirmBtn");
     btn.disabled = true;
 
-    const { error } = await supabaseClient.from("pets").update({ archived_at: new Date().toISOString() }).eq("id", pet.id);
+    const { error } = await neonClient.from("pets").update({ archived_at: new Date().toISOString() }).eq("id", pet.id);
 
     if (error) {
       showError(t("errArchiveFailed") + ": " + error.message);
@@ -3801,9 +3822,9 @@
     updateOfflineBanner();
   }
 
-  // Vervangt de 19 losse `supabaseClient.from(table).insert/update/delete(...)`-
+  // Vervangt de 19 losse `neonClient.from(table).insert/update/delete(...)`-
   // aanroepen in de logboek-formulieren. Gedraagt zich online exact als een
-  // rechtstreekse Supabase-call (zelfde return-vorm `{ error }`); offline
+  // rechtstreekse Neon-call (zelfde return-vorm `{ error }`); offline
   // (of bij een netwerkfout) wordt de wijziging gequeued en optimistisch
   // toegepast i.p.v. een foutmelding te tonen.
   async function mutateTable(table, op, { id, payload } = {}) {
@@ -3812,10 +3833,10 @@
       try {
         result =
           op === "insert"
-            ? await supabaseClient.from(table).insert(Array.isArray(payload) ? payload : [payload])
+            ? await neonClient.from(table).insert(Array.isArray(payload) ? payload : [payload])
             : op === "update"
-              ? await supabaseClient.from(table).update(payload).eq("id", id)
-              : await supabaseClient.from(table).delete().eq("id", id);
+              ? await neonClient.from(table).update(payload).eq("id", id)
+              : await neonClient.from(table).delete().eq("id", id);
       } catch (err) {
         result = { error: err };
       }
@@ -3829,7 +3850,7 @@
 
   let flushingOutbox = false;
   async function flushOutbox() {
-    if (flushingOutbox || !navigator.onLine || !isConfigured) return;
+    if (flushingOutbox || !navigator.onLine || !isConfigured || !neonClient || !currentUser) return;
     flushingOutbox = true;
     try {
       const entries = (await idbGetAll("outbox")).sort((a, b) => a.id - b.id);
@@ -3841,11 +3862,11 @@
         let result;
         try {
           if (entry.op === "insert") {
-            result = await supabaseClient.from(entry.table).insert([entry.payload]).select();
+            result = await neonClient.from(entry.table).insert([entry.payload]).select();
           } else if (entry.op === "update") {
-            result = await supabaseClient.from(entry.table).update(entry.payload).eq("id", entry.realId);
+            result = await neonClient.from(entry.table).update(entry.payload).eq("id", entry.realId);
           } else {
-            result = await supabaseClient.from(entry.table).delete().eq("id", entry.realId);
+            result = await neonClient.from(entry.table).delete().eq("id", entry.realId);
           }
         } catch (err) {
           result = { error: err };
@@ -3891,7 +3912,7 @@
   setInterval(flushOutbox, 30000);
 
   if (!isConfigured) {
-    showError("Supabase is nog niet geconfigureerd: vul SUPABASE_URL en SUPABASE_ANON_KEY in bovenaan index.html.");
+    showError("Neon is nog niet geconfigureerd: vul NEON_AUTH_URL en NEON_DATA_API_URL in bovenaan index.html.");
   }
 
   function formatDate(dateStr) {
@@ -4131,7 +4152,7 @@
   async function loadWeights() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("weight_measurements")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -4459,7 +4480,7 @@
     const val = parseInt(input.value, 10);
     if (!val || val < 1) return;
 
-    const { error } = await supabaseClient.from("pets").update({ weight_reminder_days: val }).eq("id", currentPetId);
+    const { error } = await neonClient.from("pets").update({ weight_reminder_days: val }).eq("id", currentPetId);
     if (error) {
       showError(t("errSaveFailed") + ": " + error.message);
       return;
@@ -4856,7 +4877,7 @@
   async function loadBloodValues() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("blood_values")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -5395,8 +5416,8 @@
     const is_primary = document.getElementById("vetIsPrimary").checked;
 
     const { error } = editingVetId
-      ? await supabaseClient.from("veterinarians").update({ name, phone, email, street, postal_city, notes, is_primary }).eq("id", editingVetId)
-      : await supabaseClient.from("veterinarians").insert([{ name, phone, email, street, postal_city, notes, is_primary, pet_id: currentPetId }]);
+      ? await neonClient.from("veterinarians").update({ name, phone, email, street, postal_city, notes, is_primary }).eq("id", editingVetId)
+      : await neonClient.from("veterinarians").insert([{ name, phone, email, street, postal_city, notes, is_primary, pet_id: currentPetId }]);
 
     submitBtn.disabled = false;
 
@@ -5413,7 +5434,7 @@
   async function loadVets() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient.from("veterinarians").select("*").eq("pet_id", currentPetId);
+    const { data, error } = await neonClient.from("veterinarians").select("*").eq("pet_id", currentPetId);
 
     if (error) {
       showError(t("errLoadFailed") + ": " + error.message);
@@ -5480,7 +5501,7 @@
   }
 
   async function deleteVet(id) {
-    const { error } = await supabaseClient.from("veterinarians").delete().eq("id", id);
+    const { error } = await neonClient.from("veterinarians").delete().eq("id", id);
     if (error) {
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
@@ -5605,7 +5626,7 @@
   async function loadVetVisits() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("vet_visits")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -5839,7 +5860,7 @@
   async function loadVaccinations() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("vaccinations")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -6405,7 +6426,7 @@
   async function loadSymptoms() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("symptom_logs")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -6694,7 +6715,7 @@
 
   async function loadMedicationCatalog() {
     if (!isConfigured || !currentPetId) return;
-    const { data, error } = await supabaseClient.from("medication_catalog").select("*").eq("pet_id", currentPetId);
+    const { data, error } = await neonClient.from("medication_catalog").select("*").eq("pet_id", currentPetId);
     if (error) return;
     medicationCatalog = data;
     updateMedicationPurposeSuggestions();
@@ -6718,7 +6739,7 @@
         norm(c.dose) === norm(dose)
     );
     if (exists) return;
-    const { error } = await supabaseClient
+    const { error } = await neonClient
       .from("medication_catalog")
       .insert([{ name, purpose: purpose || null, brand: brand || null, active_ingredient: activeIngredient || null, dose: dose || null, pet_id: currentPetId }]);
     if (!error) await loadMedicationCatalog();
@@ -6831,7 +6852,7 @@
   async function loadMedications() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("medications")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -6974,7 +6995,7 @@
 
   async function loadFoodCatalog() {
     if (!isConfigured || !currentPetId) return;
-    const { data, error } = await supabaseClient.from("food_catalog").select("*").eq("pet_id", currentPetId);
+    const { data, error } = await neonClient.from("food_catalog").select("*").eq("pet_id", currentPetId);
     if (error) return;
     foodCatalog = data;
     updateFoodNameSuggestions();
@@ -6985,7 +7006,7 @@
     const norm = (s) => (s || "").trim().toLowerCase();
     const exists = foodCatalog.some((c) => norm(c.name) === norm(name) && norm(c.food_type) === norm(food_type) && norm(c.shop) === norm(shop));
     if (exists) return;
-    const { error } = await supabaseClient.from("food_catalog").insert([{ name, food_type, shop: shop || null, pet_id: currentPetId }]);
+    const { error } = await neonClient.from("food_catalog").insert([{ name, food_type, shop: shop || null, pet_id: currentPetId }]);
     if (!error) await loadFoodCatalog();
   }
 
@@ -7083,7 +7104,7 @@
   async function loadFoodPurchases() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("food_purchases")
       .select("*")
       .eq("pet_id", currentPetId)
@@ -7428,7 +7449,7 @@
   // Named, not just counted: the tile used to only say "X within, Y outside",
   // which left the actual marker unidentifiable without opening the full
   // Bloedwaarden tab — naming it here lets it be checked directly against
-  // the underlying lab report. `parseFloat` guards against Supabase/PostgREST
+  // the underlying lab report. `parseFloat` guards against Neon/PostgREST
   // returning a `numeric` column as a JSON string rather than a number.
   // Watched ("extra bewaken") markers are surfaced separately and
   // unconditionally, regardless of whether they're in or out of range,
@@ -8219,7 +8240,7 @@
       profile.photo_data_url = pendingPhotoDataUrl;
     }
 
-    const { error } = await supabaseClient.from("pets").update(profile).eq("id", currentPetId);
+    const { error } = await neonClient.from("pets").update(profile).eq("id", currentPetId);
 
     submitBtn.disabled = false;
 
@@ -8241,7 +8262,7 @@
   async function loadProfile() {
     if (!isConfigured || !currentPetId) return;
 
-    const { data, error } = await supabaseClient
+    const { data, error } = await neonClient
       .from("pets")
       .select("*")
       .eq("id", currentPetId)
