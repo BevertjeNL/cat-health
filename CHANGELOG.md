@@ -1,3 +1,10 @@
+## [1.16.2](https://github.com/BevertjeNL/cat-health/compare/v1.16.1...v1.16.2) (2026-08-30)
+
+
+### Bug Fixes
+
+* harden data loading and accessibility ([d10fb16](https://github.com/BevertjeNL/cat-health/commit/d10fb168afa0b04cd6ca2810a11824a0c3a4e326))
+
 ## [1.16.1](https://github.com/BevertjeNL/cat-health/compare/v1.16.0...v1.16.1) (2026-08-30)
 
 
