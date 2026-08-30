@@ -4,7 +4,8 @@
   "private": true,
   "description": "Houd de gezondheid en medische gegevens van je huisdier bij",
   "scripts": {
-    "lint": "eslint index.html"
+    "lint": "eslint index.html",
+    "test": "node --test tests/*.test.js"
   },
   "devDependencies": {
     "eslint": "^9.0.0",

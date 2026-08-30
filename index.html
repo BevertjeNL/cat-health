@@ -2071,11 +2071,11 @@
         <div class="row">
           <div>
             <label for="catTargetMin">⚖️ Streefgewicht min (kg)</label>
-            <input type="number" id="catTargetMin" inputmode="decimal" step="0.1" placeholder="auto" />
+            <input type="number" id="catTargetMin" inputmode="decimal" min="0.1" step="0.1" placeholder="auto" />
           </div>
           <div>
             <label for="catTargetMax">⚖️ Streefgewicht max (kg)</label>
-            <input type="number" id="catTargetMax" inputmode="decimal" step="0.1" placeholder="auto" />
+            <input type="number" id="catTargetMax" inputmode="decimal" min="0.1" step="0.1" placeholder="auto" />
           </div>
         </div>
         <p class="hint-text info-tip" id="targetWeightHint" style="display:none;">
@@ -2085,7 +2085,7 @@
         <button type="button" class="info-btn" style="margin:-8px 0 10px;" onclick="toggleInfoTip('targetWeightHint')" aria-label="Meer info over streefgewicht">i</button>
         <div>
           <label for="catWeightReminderDays">Herinner bij geen meting na (dagen) <button type="button" class="info-btn" onclick="toggleInfoTip('weightReminderDaysHint')" aria-label="Meer info">i</button></label>
-          <input type="number" id="catWeightReminderDays" inputmode="numeric" min="1" step="1" placeholder="30" />
+          <input type="number" id="catWeightReminderDays" inputmode="numeric" min="1" max="3650" step="1" placeholder="30" />
           <p class="hint-text info-tip" id="weightReminderDaysHint" style="display:none;">
             Standaard 30 dagen. Dit is alleen een zelf ingestelde herinnering, geen medisch advies.
           </p>
@@ -2108,9 +2108,15 @@
     <div class="card">
       <h2 data-i18n="headingAccount">Account</h2>
       <p class="hint-text" id="accountEmailText" style="margin-bottom:12px;"></p>
-      <button type="button" class="today-btn" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
+      <button type="button" class="today-btn" id="refreshBtn" style="width:100%; margin-bottom:8px;" onclick="refreshAll(true)" data-i18n="btnRefreshData">Gegevens verversen</button>
       <button type="button" class="today-btn" style="width:100%;" onclick="logout()" data-i18n="btnLogout">Uitloggen</button>
       <p class="hint-text" id="appVersionText" style="margin-top:10px; text-align:center;"></p>
+    </div>
+
+    <div class="card">
+      <h2 data-i18n-js="headingSync">Synchronisatie</h2>
+      <p class="hint-text" id="syncStatusText" style="margin-bottom:12px;"></p>
+      <button type="button" class="today-btn" id="retrySyncBtn" style="width:100%; display:none;" onclick="retryFailedSync()" data-i18n-js="btnRetrySync">Opnieuw proberen</button>
     </div>
 
     <div class="card">
@@ -2337,16 +2343,16 @@
   ];
   const EXPORT_COLUMNS = {
     pets: ["id", "user_id", "name", "species", "breed", "birth_date", "sex", "neutered", "activity_level", "target_min_kg", "target_max_kg", "photo_data_url", "weight_reminder_days", "archived_at", "created_at", "updated_at"],
-    weight_measurements: ["id", "pet_id", "date", "weight_grams", "note", "created_at"],
-    blood_values: ["id", "pet_id", "date", "marker", "value", "unit", "note", "created_at"],
-    vaccinations: ["id", "pet_id", "date", "vaccine", "valid_until", "note", "cost", "no_repeat", "created_at"],
-    symptom_logs: ["id", "pet_id", "date", "symptom", "severity", "note", "created_at"],
-    medications: ["id", "pet_id", "date", "name", "dose", "next_due_date", "note", "purpose", "brand", "active_ingredient", "batch", "cost", "created_at"],
+    weight_measurements: ["id", "pet_id", "date", "weight_grams", "note", "client_mutation_id", "created_at"],
+    blood_values: ["id", "pet_id", "date", "marker", "value", "unit", "note", "client_mutation_id", "created_at"],
+    vaccinations: ["id", "pet_id", "date", "vaccine", "valid_until", "note", "cost", "no_repeat", "client_mutation_id", "created_at"],
+    symptom_logs: ["id", "pet_id", "date", "symptom", "severity", "note", "client_mutation_id", "created_at"],
+    medications: ["id", "pet_id", "date", "name", "dose", "next_due_date", "note", "purpose", "brand", "active_ingredient", "batch", "cost", "client_mutation_id", "created_at"],
     medication_catalog: ["id", "pet_id", "name", "purpose", "brand", "active_ingredient", "dose", "created_at"],
     veterinarians: ["id", "pet_id", "name", "phone", "email", "address", "notes", "is_primary", "created_at", "street", "postal_city"],
-    vet_visits: ["id", "pet_id", "date", "reason", "result", "note", "cost", "created_at", "vet_id"],
+    vet_visits: ["id", "pet_id", "date", "reason", "result", "note", "cost", "client_mutation_id", "created_at", "vet_id"],
     food_catalog: ["id", "pet_id", "name", "food_type", "shop", "created_at"],
-    food_purchases: ["id", "pet_id", "date", "name", "food_type", "amount_grams", "shop", "cost", "note", "created_at", "exclude_from_stats"],
+    food_purchases: ["id", "pet_id", "date", "name", "food_type", "amount_grams", "shop", "cost", "note", "client_mutation_id", "created_at", "exclude_from_stats"],
   };
   const EXCEL_SHEET_NAMES = {
     pets: "Huisdieren",
@@ -2451,6 +2457,10 @@
   });
 
   async function logout() {
+    const pendingChanges = await getCurrentUserOutboxEntries();
+    if (pendingChanges.length && !window.confirm(t("confirmLogoutWithPending").replace("{n}", pendingChanges.length))) {
+      return;
+    }
     await neonReady;
     const { error } = await neonClient.auth.signOut();
     if (error) {
@@ -2640,7 +2650,7 @@
       // Do not label a remote snapshot as complete while this browser still
       // contains unsynchronised writes. Flush first, then verify the outbox.
       await flushOutbox();
-      const pendingChanges = await idbGetAll("outbox");
+      const pendingChanges = await getCurrentUserOutboxEntries();
       if (pendingChanges.length) throw new Error(t("errExportPending"));
 
       const results = await Promise.all(EXPORT_TABLES.map((table) => fetchAllExportRows(table)));
@@ -2680,12 +2690,122 @@
     return `<svg viewBox="0 0 24 24" width="1.05em" height="1.05em" fill="var(--accent)" style="vertical-align:-0.15em;" aria-hidden="true"><path d="M5 3l3 5.2M19 3l-3 5.2" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" fill="none"/><circle cx="12" cy="13" r="7.2"/></svg>`;
   }
 
+  // --- Typed local settings -------------------------------------------------
+  // All local preferences pass through one versioned, scope-aware registry.
+  // Domain settings such as target weight remain in Postgres; this registry
+  // is for device/user/pet UI state only.
+  const SETTINGS_STORAGE_VERSION = 1;
+  const SETTING_DEFINITIONS = {
+    appLang: {
+      scope: "device",
+      defaultValue: "nl",
+      legacyKey: "appLang",
+      validate: (value) => ["nl", "en", "de"].includes(value),
+    },
+    iconStyle: {
+      scope: "device",
+      defaultValue: "color",
+      legacyKey: "iconStyle",
+      validate: (value) => ["color", "mono"].includes(value),
+    },
+    activePetId: {
+      scope: "user",
+      defaultValue: null,
+      legacyKey: () => currentUser ? `activePetId:${currentUser.id}` : null,
+      validate: (value) => value === null || Number.isSafeInteger(value) && value > 0,
+    },
+    watchMarkers: {
+      scope: "pet",
+      defaultValue: () => ["ALT", "ALKP", "GGT", "TBIL"],
+      legacyKey: "watchMarkers",
+      validate: (value) => Array.isArray(value) && value.every((item) => typeof item === "string"),
+    },
+    careReminderShownDate: {
+      scope: "pet",
+      defaultValue: null,
+      validate: (value) => value === null || /^\d{4}-\d{2}-\d{2}$/.test(value),
+    },
+  };
+
+  function settingDefault(definition) {
+    const value = typeof definition.defaultValue === "function"
+      ? definition.defaultValue()
+      : definition.defaultValue;
+    return Array.isArray(value) ? [...value] : value;
+  }
+
+  function settingStorageKey(name) {
+    const definition = SETTING_DEFINITIONS[name];
+    if (!definition) return null;
+    const prefix = `cathealth:settings:v${SETTINGS_STORAGE_VERSION}`;
+    if (definition.scope === "device") return `${prefix}:device:${name}`;
+    if (definition.scope === "user") return currentUser ? `${prefix}:user:${currentUser.id}:${name}` : null;
+    return currentUser && currentPetId ? `${prefix}:pet:${currentUser.id}:${currentPetId}:${name}` : null;
+  }
+
+  function localSettingGet(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  function localSettingSet(key, value) {
+    try {
+      localStorage.setItem(key, value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function readSetting(name) {
+    const definition = SETTING_DEFINITIONS[name];
+    const key = settingStorageKey(name);
+    if (!definition || !key) return definition ? settingDefault(definition) : null;
+
+    let raw = localSettingGet(key);
+    if (raw === null && definition.legacyKey) {
+      const legacyKey = typeof definition.legacyKey === "function"
+        ? definition.legacyKey()
+        : definition.legacyKey;
+      if (legacyKey) raw = localSettingGet(legacyKey);
+    }
+    if (raw === null) return settingDefault(definition);
+
+    let value;
+    try {
+      value = JSON.parse(raw);
+    } catch {
+      // Legacy string settings were stored without JSON encoding.
+      value = raw;
+    }
+    if (!definition.validate(value)) {
+      const fallback = settingDefault(definition);
+      localSettingSet(key, JSON.stringify(fallback));
+      return fallback;
+    }
+
+    // Complete the migration lazily, only once the setting's full scope is
+    // known (especially important for pet-scoped legacy preferences).
+    localSettingSet(key, JSON.stringify(value));
+    return Array.isArray(value) ? [...value] : value;
+  }
+
+  function writeSetting(name, value) {
+    const definition = SETTING_DEFINITIONS[name];
+    const key = settingStorageKey(name);
+    if (!definition || !key || !definition.validate(value)) return false;
+    return localSettingSet(key, JSON.stringify(value));
+  }
+
   // --- Icon style: calm uni-color glyphs vs. the original color emoji -----
   // A reversible experiment: nav/dashboard icons can render as either the
   // original multicolor emoji, or a calm single-accent-color line-icon set.
   // Persisted so the choice survives a reload; always reversible via the
   // toggle in the Profiel tab.
-  let iconStyle = localStorage.getItem("iconStyle") || "color";
+  let iconStyle = readSetting("iconStyle");
 
   const ICON_EMOJI = {
     dashboard: "🏠",
@@ -2735,7 +2855,7 @@
   // caches each element's original Dutch text the first time it sees it
   // (data-i18n-orig), then always restores THAT when appLang is "nl" or a
   // key has no translation — so nothing needs to be duplicated in nl.
-  let appLang = localStorage.getItem("appLang") || "nl";
+  let appLang = readSetting("appLang");
 
   const I18N = {
     en: {
@@ -3058,6 +3178,14 @@
     errSyncFailed: "Synchroniseren mislukt",
     offlinePendingChanges: "Offline — {n} wijziging(en) wachten op synchronisatie",
     offlinePendingRow: "Wacht op synchronisatie",
+    offlineFailedChanges: "{n} wijziging(en) vereisen aandacht — open Instellingen en probeer opnieuw",
+    confirmLogoutWithPending: "Er wachten nog {n} wijziging(en) op synchronisatie. Als je nu uitlogt, blijven ze veilig op dit apparaat staan en worden ze pas na opnieuw inloggen verzonden. Toch uitloggen?",
+    headingSync: "Synchronisatie",
+    syncNone: "Alle wijzigingen zijn gesynchroniseerd.",
+    syncPending: "{n} wijziging(en) wachten op synchronisatie.",
+    syncFailed: "{n} wijziging(en) konden niet worden gesynchroniseerd en zijn veilig op dit apparaat bewaard.",
+    btnRetrySync: "Opnieuw proberen",
+    errTargetWeightOrder: "Het minimale streefgewicht moet lager zijn dan of gelijk zijn aan het maximale streefgewicht.",
     errUpdateFailed: "Bijwerken mislukt",
     errRestoreFailed: "Herstellen mislukt",
     errArchiveFailed: "Archiveren mislukt",
@@ -3202,6 +3330,14 @@
     errSyncFailed: "Sync failed",
     offlinePendingChanges: "Offline — {n} change(s) waiting to sync",
     offlinePendingRow: "Waiting to sync",
+    offlineFailedChanges: "{n} change(s) need attention — open Settings and retry",
+    confirmLogoutWithPending: "{n} change(s) are still waiting to sync. If you log out now, they will remain safely on this device and will only be sent after you sign in again. Log out anyway?",
+    headingSync: "Sync",
+    syncNone: "All changes are synced.",
+    syncPending: "{n} change(s) are waiting to sync.",
+    syncFailed: "{n} change(s) could not be synced and are safely stored on this device.",
+    btnRetrySync: "Try again",
+    errTargetWeightOrder: "The minimum target weight must be less than or equal to the maximum target weight.",
     errUpdateFailed: "Update failed",
     errRestoreFailed: "Restore failed",
     errArchiveFailed: "Archiving failed",
@@ -3345,6 +3481,14 @@
     errSyncFailed: "Synchronisierung fehlgeschlagen",
     offlinePendingChanges: "Offline — {n} Änderung(en) warten auf Synchronisierung",
     offlinePendingRow: "Wartet auf Synchronisierung",
+    offlineFailedChanges: "{n} Änderung(en) benötigen Aufmerksamkeit — Einstellungen öffnen und erneut versuchen",
+    confirmLogoutWithPending: "{n} Änderung(en) warten noch auf die Synchronisierung. Wenn du dich jetzt abmeldest, bleiben sie sicher auf diesem Gerät und werden erst nach der nächsten Anmeldung gesendet. Trotzdem abmelden?",
+    headingSync: "Synchronisierung",
+    syncNone: "Alle Änderungen sind synchronisiert.",
+    syncPending: "{n} Änderung(en) warten auf die Synchronisierung.",
+    syncFailed: "{n} Änderung(en) konnten nicht synchronisiert werden und sind sicher auf diesem Gerät gespeichert.",
+    btnRetrySync: "Erneut versuchen",
+    errTargetWeightOrder: "Das minimale Zielgewicht muss kleiner oder gleich dem maximalen Zielgewicht sein.",
     errUpdateFailed: "Aktualisieren fehlgeschlagen",
     errRestoreFailed: "Wiederherstellen fehlgeschlagen",
     errArchiveFailed: "Archivieren fehlgeschlagen",
@@ -3414,11 +3558,12 @@
     delete el.dataset.i18nOrig;
     el.textContent = dutchText;
     applyTranslations();
+    updateOfflineBanner();
   }
 
   function setLang(lang) {
+    if (!writeSetting("appLang", lang)) return;
     appLang = lang;
-    localStorage.setItem("appLang", lang);
     applyTranslations();
     applyCurrentPetToHeader();
     if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
@@ -3442,10 +3587,11 @@
     document.querySelectorAll(".icon-style-btn").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.style === iconStyle);
     });
-    localStorage.setItem("iconStyle", iconStyle);
+    writeSetting("iconStyle", iconStyle);
   }
 
   function setIconStyle(style) {
+    if (!writeSetting("iconStyle", style)) return;
     iconStyle = style;
     applyIconStyle();
     if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
@@ -3561,10 +3707,6 @@
   let pets = [];
   let currentPetId = null;
 
-  function activePetIdStorageKey() {
-    return "activePetId:" + currentUser.id;
-  }
-
   async function loadPets() {
     const { data, error } = await neonClient
       .from("pets")
@@ -3578,13 +3720,14 @@
     }
 
     pets = data || [];
+    await adoptLegacyOutboxEntries();
 
     if (!pets.length) {
       openAddPetForm();
       return;
     }
 
-    const savedId = parseInt(localStorage.getItem(activePetIdStorageKey()), 10);
+    const savedId = readSetting("activePetId");
     const match = pets.find((p) => p.id === savedId);
     currentPetId = match ? match.id : pets[0].id;
 
@@ -3663,7 +3806,7 @@
 
   async function switchPet(id) {
     currentPetId = id;
-    localStorage.setItem(activePetIdStorageKey(), String(id));
+    writeSetting("activePetId", id);
     closePetMenu();
     applyCurrentPetToHeader();
     await refreshAll(false);
@@ -3704,7 +3847,7 @@
 
     pets.push(data);
     currentPetId = data.id;
-    localStorage.setItem(activePetIdStorageKey(), String(data.id));
+    writeSetting("activePetId", data.id);
     consumeNavEntry();
     document.getElementById("addPetOverlay").classList.remove("show");
     applyCurrentPetToHeader();
@@ -3809,7 +3952,7 @@
 
     if (pets.length) {
       currentPetId = pets[0].id;
-      localStorage.setItem(activePetIdStorageKey(), String(currentPetId));
+      writeSetting("activePetId", currentPetId);
       applyCurrentPetToHeader();
       await refreshAll(false);
       switchTab("dashboard");
@@ -4002,7 +4145,7 @@
   // periodieke timer zolang de app open blijft — geen echte achtergrond-
   // sync buiten de actieve sessie om.
   const OFFLINE_DB_NAME = "cathealth-offline";
-  const OFFLINE_DB_VERSION = 1;
+  const OFFLINE_DB_VERSION = 2;
   let offlineDbPromise = null;
 
   function openOfflineDb() {
@@ -4012,7 +4155,10 @@
       req.onupgradeneeded = () => {
         const db = req.result;
         if (!db.objectStoreNames.contains("cache")) db.createObjectStore("cache");
-        if (!db.objectStoreNames.contains("outbox")) db.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
+        const outbox = db.objectStoreNames.contains("outbox")
+          ? req.transaction.objectStore("outbox")
+          : db.createObjectStore("outbox", { keyPath: "id", autoIncrement: true });
+        if (!outbox.indexNames.contains("ownerUserId")) outbox.createIndex("ownerUserId", "ownerUserId", { unique: false });
       };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
@@ -4057,8 +4203,75 @@
     });
   }
 
+  function offlineCacheKey(table, petId, userId = currentUser?.id) {
+    if (!userId) return null;
+    return `${userId}:${petId}:${table}`;
+  }
+
+  async function getOfflineCachedRows(table, petId) {
+    const scopedKey = offlineCacheKey(table, petId);
+    if (!scopedKey) return null;
+    const scoped = await idbGet("cache", scopedKey);
+    if (scoped !== undefined) return scoped;
+
+    // Version 1 used globally keyed caches. Pet ids are globally unique and
+    // `petId` came from the current user's RLS-filtered pet list, so it is
+    // safe to adopt that cache lazily into the account namespace.
+    const legacy = await idbGet("cache", `${table}:${petId}`);
+    if (legacy !== undefined) await idbPut("cache", scopedKey, legacy);
+    return legacy ?? null;
+  }
+
+  async function getCurrentUserOutboxEntries({ includeFailed = true } = {}) {
+    if (!currentUser) return [];
+    let entries;
+    try {
+      entries = await idbGetAll("outbox");
+    } catch (error) {
+      console.warn("Offline wachtrij kon niet worden gelezen", error);
+      return [];
+    }
+    return entries.filter((entry) =>
+      entry.ownerUserId === currentUser.id && (includeFailed || entry.status !== "failed")
+    );
+  }
+
+  async function adoptLegacyOutboxEntries() {
+    if (!currentUser || !pets.length) return;
+    const ownedPetIds = new Set(pets.map((pet) => pet.id));
+    const entries = await idbGetAll("outbox");
+
+    for (const entry of entries.filter((item) => !item.ownerUserId)) {
+      let petId = entry.petId || entry.payload?.pet_id || null;
+      if (!ownedPetIds.has(petId)) {
+        petId = null;
+        for (const pet of pets) {
+          const cached = await idbGet("cache", `${entry.table}:${pet.id}`);
+          const rowId = entry.tempId ?? entry.realId;
+          if (Array.isArray(cached) && cached.some((row) => row.id === rowId)) {
+            petId = pet.id;
+            break;
+          }
+        }
+      }
+      if (!petId) continue;
+      entry.ownerUserId = currentUser.id;
+      entry.petId = petId;
+      entry.status = entry.status || "pending";
+      entry.attempts = entry.attempts || 0;
+      if (entry.op === "insert") entry.payload = addClientMutationIds(entry.table, entry.payload);
+      await idbPut("outbox", undefined, entry);
+    }
+  }
+
   function isNetworkError(err) {
-    return !navigator.onLine || (!!err && (err.message === "Failed to fetch" || err.name === "TypeError"));
+    if (!navigator.onLine) return true;
+    if (!err) return false;
+    const status = Number(err.status || err.statusCode || 0);
+    const message = String(err.message || "");
+    return err.name === "TypeError" ||
+      status >= 500 ||
+      /failed to fetch|network|load failed|timed? ?out|connection/i.test(message);
   }
 
   function pendingDotHtml(row) {
@@ -4071,14 +4284,15 @@
   // waarde van de `let latestXData`-variabelen lezen, ook al worden die
   // elders herwezen (bv. `latestWeightData = data` in loadWeights()).
   const OFFLINE_TABLES = {
-    weight_measurements: { data: () => latestWeightData, render: () => renderWeightList(latestWeightData) },
-    blood_values: { data: () => latestBloodData, render: () => renderBloodList(latestBloodData) },
-    vaccinations: { data: () => latestVaxData, render: () => renderVaxList(latestVaxData) },
-    symptom_logs: { data: () => latestSymptomData, render: () => renderSymptomList(latestSymptomData) },
-    medications: { data: () => latestMedicationData, render: () => renderMedicationList(latestMedicationData) },
-    vet_visits: { data: () => latestVetVisitData, render: () => renderVetVisitList(latestVetVisitData) },
+    weight_measurements: { data: () => latestWeightData, render: () => renderWeightList(latestWeightData), load: loadWeights },
+    blood_values: { data: () => latestBloodData, render: () => renderBloodList(latestBloodData), load: loadBloodValues },
+    vaccinations: { data: () => latestVaxData, render: () => renderVaxList(latestVaxData), load: loadVaccinations },
+    symptom_logs: { data: () => latestSymptomData, render: () => renderSymptomList(latestSymptomData), load: loadSymptoms },
+    medications: { data: () => latestMedicationData, render: () => renderMedicationList(latestMedicationData), load: loadMedications },
+    vet_visits: { data: () => latestVetVisitData, render: () => renderVetVisitList(latestVetVisitData), load: loadVetVisits },
     food_purchases: {
       data: () => latestFoodData,
+      load: loadFoodPurchases,
       render: () => {
         renderFoodList(latestFoodData);
         renderFoodChart(latestFoodData);
@@ -4096,50 +4310,65 @@
   async function updateOfflineBanner() {
     const banner = document.getElementById("statusBanner");
     if (banner.classList.contains("error") || banner.classList.contains("success")) return;
-    const entries = await idbGetAll("outbox");
+    const entries = await getCurrentUserOutboxEntries();
     if (entries.length > 0) {
-      banner.textContent = t("offlinePendingChanges").replace("{n}", entries.length);
+      const failedCount = entries.filter((entry) => entry.status === "failed").length;
+      banner.textContent = t(failedCount ? "offlineFailedChanges" : "offlinePendingChanges")
+        .replace("{n}", failedCount || entries.length);
       banner.classList.remove("error", "success");
       banner.classList.add("show", "offline");
     } else {
       banner.classList.remove("show", "offline");
     }
+    updateSyncStatusCard(entries);
+  }
+
+  function updateSyncStatusCard(entries) {
+    const text = document.getElementById("syncStatusText");
+    const retryBtn = document.getElementById("retrySyncBtn");
+    if (!text || !retryBtn) return;
+    const failedCount = entries.filter((entry) => entry.status === "failed").length;
+    const key = failedCount ? "syncFailed" : entries.length ? "syncPending" : "syncNone";
+    text.textContent = t(key).replace("{n}", failedCount || entries.length);
+    retryBtn.style.display = failedCount ? "" : "none";
   }
 
   async function queueOfflineMutation(table, op, { id, payload }) {
     const cfg = OFFLINE_TABLES[table];
-    if (!cfg) return;
+    if (!cfg || !currentUser) return;
+    const ownerUserId = currentUser.id;
+    const petId = payload?.pet_id || currentPetId;
 
     if (op === "insert") {
       const rows = Array.isArray(payload) ? payload : [payload];
       for (const row of rows) {
         const tempId = nextTempId();
         cfg.data().unshift({ ...row, id: tempId, _pending: true });
-        await idbPut("outbox", undefined, { table, op: "insert", tempId, payload: row, createdAt: Date.now() });
+        await idbPut("outbox", undefined, { ownerUserId, petId: row.pet_id || petId, table, op: "insert", tempId, payload: row, status: "pending", attempts: 0, createdAt: Date.now() });
       }
     } else if (op === "update") {
       if (id < 0) {
         // Rij is zelf nog niet gesynchroniseerd: vouw de wijziging in de
         // al-gequeuede insert i.p.v. een aparte update-entry toe te voegen.
-        const entries = await idbGetAll("outbox");
+        const entries = await getCurrentUserOutboxEntries();
         const insertEntry = entries.find((e) => e.table === table && e.op === "insert" && e.tempId === id);
         if (insertEntry) {
           insertEntry.payload = { ...insertEntry.payload, ...payload };
           await idbPut("outbox", undefined, insertEntry);
         }
       } else {
-        await idbPut("outbox", undefined, { table, op: "update", realId: id, payload, createdAt: Date.now() });
+        await idbPut("outbox", undefined, { ownerUserId, petId, table, op: "update", realId: id, payload, status: "pending", attempts: 0, createdAt: Date.now() });
       }
       const item = cfg.data().find((r) => r.id === id);
       if (item) Object.assign(item, payload, { _pending: true });
     } else if (op === "delete") {
       if (id < 0) {
-        const entries = await idbGetAll("outbox");
+        const entries = await getCurrentUserOutboxEntries();
         for (const e of entries.filter((e) => e.table === table && e.tempId === id)) {
           await idbDelete("outbox", e.id);
         }
       } else {
-        await idbPut("outbox", undefined, { table, op: "delete", realId: id, createdAt: Date.now() });
+        await idbPut("outbox", undefined, { ownerUserId, petId, table, op: "delete", realId: id, status: "pending", attempts: 0, createdAt: Date.now() });
       }
       const arr = cfg.data();
       const idx = arr.findIndex((r) => r.id === id);
@@ -4147,7 +4376,43 @@
     }
 
     cfg.render();
-    updateOfflineBanner();
+    try {
+      await idbPut("cache", offlineCacheKey(table, petId), cfg.data());
+    } catch (error) {
+      // The outbox is the durable source of truth. A cache write failure may
+      // reduce offline readability, but must not turn a safely queued write
+      // into a failed form submission.
+      console.warn("Offline cache kon niet worden bijgewerkt", error);
+    }
+    await updateOfflineBanner();
+  }
+
+  function createClientMutationId() {
+    if (crypto.randomUUID) return crypto.randomUUID();
+    return "10000000-1000-4000-8000-100000000000".replace(/[018]/g, (char) =>
+      (Number(char) ^ (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (Number(char) / 4)))).toString(16)
+    );
+  }
+
+  function addClientMutationIds(table, payload) {
+    if (!OFFLINE_TABLES[table]) return payload;
+    const rows = Array.isArray(payload) ? payload : [payload];
+    const enriched = rows.map((row) => ({
+      ...row,
+      client_mutation_id: row.client_mutation_id || createClientMutationId(),
+    }));
+    return Array.isArray(payload) ? enriched : enriched[0];
+  }
+
+  function withoutClientMutationIds(payload) {
+    const rows = Array.isArray(payload) ? payload : [payload];
+    const stripped = rows.map(({ client_mutation_id, ...row }) => row);
+    return Array.isArray(payload) ? stripped : stripped[0];
+  }
+
+  function isMissingClientMutationColumn(error) {
+    const message = String(error?.message || "");
+    return /client_mutation_id/i.test(message) && /column|schema cache|field/i.test(message);
   }
 
   // Vervangt de 19 losse `neonClient.from(table).insert/update/delete(...)`-
@@ -4156,6 +4421,7 @@
   // (of bij een netwerkfout) wordt de wijziging gequeued en optimistisch
   // toegepast i.p.v. een foutmelding te tonen.
   async function mutateTable(table, op, { id, payload } = {}) {
+    if (op === "insert") payload = addClientMutationIds(table, payload);
     if (navigator.onLine) {
       let result;
       try {
@@ -4168,20 +4434,60 @@
       } catch (err) {
         result = { error: err };
       }
+      // During deployment the static app and the Data API schema cache can
+      // briefly update in a different order. Keep online writes available in
+      // that narrow window; queued writes retain their mutation id and wait
+      // for the schema to become ready so their retries remain idempotent.
+      if (op === "insert" && isMissingClientMutationColumn(result.error)) {
+        try {
+          result = await neonClient.from(table).insert(
+            Array.isArray(payload)
+              ? withoutClientMutationIds(payload)
+              : [withoutClientMutationIds(payload)]
+          );
+        } catch (err) {
+          result = { error: err };
+        }
+      }
       if (!result.error || !isNetworkError(result.error)) {
         return { error: result.error, offline: false };
       }
     }
-    await queueOfflineMutation(table, op, { id, payload });
-    return { error: null, offline: true };
+    try {
+      await queueOfflineMutation(table, op, { id, payload });
+      return { error: null, offline: true };
+    } catch (error) {
+      return { error, offline: false };
+    }
   }
 
   let flushingOutbox = false;
+
+  async function findExistingClientMutation(table, clientMutationId) {
+    if (!clientMutationId) return { data: null, error: null };
+    return neonClient
+      .from(table)
+      .select("*")
+      .eq("client_mutation_id", clientMutationId)
+      .maybeSingle();
+  }
+
+  async function retryFailedSync() {
+    const entries = await getCurrentUserOutboxEntries();
+    for (const entry of entries.filter((item) => item.status === "failed")) {
+      entry.status = "pending";
+      entry.lastError = null;
+      await idbPut("outbox", undefined, entry);
+    }
+    await updateOfflineBanner();
+    await flushOutbox();
+  }
+
   async function flushOutbox() {
     if (flushingOutbox || !navigator.onLine || !isConfigured || !neonClient || !currentUser) return;
     flushingOutbox = true;
     try {
-      const entries = (await idbGetAll("outbox")).sort((a, b) => a.id - b.id);
+      const entries = (await getCurrentUserOutboxEntries({ includeFailed: false })).sort((a, b) => a.id - b.id);
       const touchedTables = new Set();
 
       for (const entry of entries) {
@@ -4190,7 +4496,12 @@
         let result;
         try {
           if (entry.op === "insert") {
-            result = await neonClient.from(entry.table).insert([entry.payload]).select();
+            const existing = await findExistingClientMutation(entry.table, entry.payload.client_mutation_id);
+            result = existing.error || !existing.data
+              ? existing.error
+                ? existing
+                : await neonClient.from(entry.table).insert([entry.payload]).select()
+              : { data: [existing.data], error: null };
           } else if (entry.op === "update") {
             result = await neonClient.from(entry.table).update(entry.payload).eq("id", entry.realId);
           } else {
@@ -4202,10 +4513,14 @@
 
         if (result.error) {
           if (isNetworkError(result.error)) break;
-          // Geen netwerkfout (bv. RLS/validatie): opnieuw proberen lost
-          // niets op, dus de entry wordt verwijderd i.p.v. de wachtrij
-          // voor altijd te blokkeren.
-          await idbDelete("outbox", entry.id);
+          // Bewaar een niet-netwerkfout. Een tijdelijke server- of schemafout
+          // mag nooit stil een medische mutatie vernietigen; de gebruiker kan
+          // de synchronisatie vanuit Instellingen opnieuw starten.
+          entry.status = "failed";
+          entry.attempts = (entry.attempts || 0) + 1;
+          entry.lastError = result.error.message;
+          entry.lastAttemptAt = Date.now();
+          await idbPut("outbox", undefined, entry);
           showError(t("errSyncFailed") + ": " + result.error.message);
           continue;
         }
@@ -4229,7 +4544,7 @@
         await idbDelete("outbox", entry.id);
       }
 
-      touchedTables.forEach((table) => OFFLINE_TABLES[table].render());
+      await Promise.all([...touchedTables].map((table) => OFFLINE_TABLES[table].load()));
       await updateOfflineBanner();
     } finally {
       flushingOutbox = false;
@@ -4477,18 +4792,22 @@
     if (!offline) await loadWeights();
   });
 
-  async function loadWeights() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadWeights(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("weight_measurements")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: true });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "weight_measurements:" + currentPetId);
+        const cached = await getOfflineCachedRows("weight_measurements", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestWeightData = cached;
           renderWeightChart(cached);
@@ -4501,7 +4820,7 @@
     }
 
     latestWeightData = data;
-    idbPut("cache", "weight_measurements:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("weight_measurements", petId), data);
     renderWeightChart(data);
     renderWeightList(data);
   }
@@ -4795,7 +5114,7 @@
     note.innerHTML = `
       <span class="inline-edit-form">
         Herinner na
-        <input type="number" id="inlineReminderDaysInput" min="1" step="1" value="${current}" />
+        <input type="number" id="inlineReminderDaysInput" min="1" max="3650" step="1" value="${current}" />
         dagen zonder meting
         <button type="button" class="today-btn" style="padding:2px 12px;" onclick="saveWeightReminderDaysInline()" data-i18n="btnSave">Opslaan</button>
       </span>
@@ -4935,12 +5254,10 @@
   const DEFAULT_WATCH_MARKERS = ["ALT", "ALKP", "GGT", "TBIL"];
 
   function getWatchMarkers() {
-    try {
-      const raw = localStorage.getItem("watchMarkers");
-      return raw ? JSON.parse(raw) : [...DEFAULT_WATCH_MARKERS];
-    } catch {
-      return [...DEFAULT_WATCH_MARKERS];
-    }
+    const stored = readSetting("watchMarkers");
+    const knownCodes = new Set(BLOOD_MARKERS.map((marker) => marker.code));
+    const valid = stored.filter((code) => knownCodes.has(code));
+    return valid.length === stored.length ? valid : [...DEFAULT_WATCH_MARKERS];
   }
 
   function isWatchedMarker(code) {
@@ -4952,7 +5269,7 @@
     const idx = list.indexOf(code);
     if (idx >= 0) list.splice(idx, 1);
     else list.push(code);
-    localStorage.setItem("watchMarkers", JSON.stringify(list));
+    writeSetting("watchMarkers", list);
     applyWatchMarkerStyling();
   }
 
@@ -5202,18 +5519,22 @@
     if (!anyOffline) await loadBloodValues();
   });
 
-  async function loadBloodValues() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadBloodValues(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("blood_values")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: false });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "blood_values:" + currentPetId);
+        const cached = await getOfflineCachedRows("blood_values", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestBloodData = cached;
           populateBloodChartMarkerSelect(cached);
@@ -5225,7 +5546,7 @@
     }
 
     latestBloodData = data;
-    idbPut("cache", "blood_values:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("blood_values", petId), data);
     populateBloodChartMarkerSelect(data);
   }
 
@@ -5759,10 +6080,13 @@
     await loadVets();
   });
 
-  async function loadVets() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadVets(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient.from("veterinarians").select("*").eq("pet_id", currentPetId);
+    const { data, error } = await neonClient.from("veterinarians").select("*").eq("pet_id", petId);
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       showError(t("errLoadFailed") + ": " + error.message);
@@ -5951,18 +6275,22 @@
     if (!offline) await loadVetVisits();
   });
 
-  async function loadVetVisits() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadVetVisits(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("vet_visits")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: false });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "vet_visits:" + currentPetId);
+        const cached = await getOfflineCachedRows("vet_visits", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestVetVisitData = cached;
           renderVetVisitList(cached);
@@ -5974,7 +6302,7 @@
     }
 
     latestVetVisitData = data;
-    idbPut("cache", "vet_visits:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("vet_visits", petId), data);
     renderVetVisitList(data);
   }
 
@@ -6185,18 +6513,22 @@
     if (!offline) await loadVaccinations();
   });
 
-  async function loadVaccinations() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadVaccinations(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("vaccinations")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: false });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "vaccinations:" + currentPetId);
+        const cached = await getOfflineCachedRows("vaccinations", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestVaxData = cached;
           renderVaxList(cached);
@@ -6209,7 +6541,7 @@
     }
 
     latestVaxData = data;
-    idbPut("cache", "vaccinations:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("vaccinations", petId), data);
     renderVaxList(data);
     renderVaxChart(data);
   }
@@ -6403,7 +6735,7 @@
     if (!due.length) return;
 
     const today = dateToISO(new Date());
-    if (localStorage.getItem("careReminderShownDate") === today) return;
+    if (readSetting("careReminderShownDate") === today) return;
 
     const body = due
       .map(({ kind, name, dueDate, status }) => {
@@ -6427,7 +6759,7 @@
     document.getElementById("careReminderBody").innerHTML = body;
     document.getElementById("careReminderOverlay").classList.add("show");
     pushNavEntry();
-    localStorage.setItem("careReminderShownDate", today);
+    writeSetting("careReminderShownDate", today);
   }
 
   function closeCareReminder() {
@@ -6751,18 +7083,22 @@
     if (!offline) await loadSymptoms();
   });
 
-  async function loadSymptoms() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadSymptoms(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("symptom_logs")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: false });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "symptom_logs:" + currentPetId);
+        const cached = await getOfflineCachedRows("symptom_logs", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestSymptomData = cached;
           updateSymptomSuggestions();
@@ -6777,7 +7113,7 @@
     }
 
     latestSymptomData = data;
-    idbPut("cache", "symptom_logs:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("symptom_logs", petId), data);
     updateSymptomSuggestions();
     renderSymptomList(data);
     renderSymptomSummary(data);
@@ -7041,9 +7377,11 @@
     document.getElementById("medicationBatchSuggestions").innerHTML = batches.map((b) => `<option value="${escapeHtml(b)}"></option>`).join("");
   }
 
-  async function loadMedicationCatalog() {
-    if (!isConfigured || !currentPetId) return;
-    const { data, error } = await neonClient.from("medication_catalog").select("*").eq("pet_id", currentPetId);
+  async function loadMedicationCatalog(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
+    const { data, error } = await neonClient.from("medication_catalog").select("*").eq("pet_id", petId);
+    if (isStaleLoad(loadContext)) return;
     if (error) return;
     medicationCatalog = data;
     updateMedicationPurposeSuggestions();
@@ -7177,18 +7515,22 @@
     if (!offline) await loadMedications();
   });
 
-  async function loadMedications() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadMedications(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("medications")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: false });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "medications:" + currentPetId);
+        const cached = await getOfflineCachedRows("medications", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestMedicationData = cached;
           updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
@@ -7201,7 +7543,7 @@
     }
 
     latestMedicationData = data;
-    idbPut("cache", "medications:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("medications", petId), data);
     updateMedicationNameSuggestions(document.getElementById("medicationPurpose").value);
     renderMedicationList(data);
   }
@@ -7321,9 +7663,11 @@
     autofillFoodType(e.target.value);
   });
 
-  async function loadFoodCatalog() {
-    if (!isConfigured || !currentPetId) return;
-    const { data, error } = await neonClient.from("food_catalog").select("*").eq("pet_id", currentPetId);
+  async function loadFoodCatalog(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
+    const { data, error } = await neonClient.from("food_catalog").select("*").eq("pet_id", petId);
+    if (isStaleLoad(loadContext)) return;
     if (error) return;
     foodCatalog = data;
     updateFoodNameSuggestions();
@@ -7429,18 +7773,22 @@
     if (!offline) await loadFoodPurchases();
   });
 
-  async function loadFoodPurchases() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadFoodPurchases(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("food_purchases")
       .select("*")
-      .eq("pet_id", currentPetId)
+      .eq("pet_id", petId)
       .order("date", { ascending: false });
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       if (isNetworkError(error)) {
-        const cached = await idbGet("cache", "food_purchases:" + currentPetId);
+        const cached = await getOfflineCachedRows("food_purchases", petId);
+        if (isStaleLoad(loadContext)) return;
         if (cached) {
           latestFoodData = cached;
           renderFoodList(cached);
@@ -7453,7 +7801,7 @@
     }
 
     latestFoodData = data;
-    idbPut("cache", "food_purchases:" + currentPetId, data);
+    idbPut("cache", offlineCacheKey("food_purchases", petId), data);
     updateFoodNameSuggestions();
     renderFoodList(data);
     renderFoodChart(data);
@@ -8564,6 +8912,15 @@
         : null,
       updated_at: new Date().toISOString(),
     };
+    if (
+      profile.target_min_kg != null &&
+      profile.target_max_kg != null &&
+      profile.target_min_kg > profile.target_max_kg
+    ) {
+      submitBtn.disabled = false;
+      showError(t("errTargetWeightOrder"));
+      return;
+    }
     if (pendingPhotoDataUrl !== undefined) {
       profile.photo_data_url = pendingPhotoDataUrl;
     }
@@ -8587,14 +8944,17 @@
     switchTab("dashboard");
   });
 
-  async function loadProfile() {
-    if (!isConfigured || !currentPetId) return;
+  async function loadProfile(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!isConfigured || !petId) return;
 
     const { data, error } = await neonClient
       .from("pets")
       .select("*")
-      .eq("id", currentPetId)
+      .eq("id", petId)
       .maybeSingle();
+
+    if (isStaleLoad(loadContext)) return;
 
     if (error) {
       showError(t("errProfileLoadFailed") + ": " + error.message);
@@ -8632,49 +8992,58 @@
 
   // --- Refresh -------------------------------------------------------------
   let refreshing = false;
+  let refreshGeneration = 0;
+
+  function currentLoadContext() {
+    return { petId: currentPetId, generation: refreshGeneration };
+  }
+
+  function isStaleLoad({ petId, generation }) {
+    return petId !== currentPetId || generation !== refreshGeneration;
+  }
 
   async function refreshAll(manual) {
-    if (refreshing) return;
+    if (!currentUser || !currentPetId) return;
+    const loadContext = { petId: currentPetId, generation: ++refreshGeneration };
     refreshing = true;
 
     const btn = document.getElementById("refreshBtn");
     if (manual && btn) btn.classList.add("spinning");
 
-    await Promise.all([
-      loadWeights(),
-      loadBloodValues(),
-      loadVaccinations(),
-      loadSymptoms(),
-      loadMedications(),
-      loadMedicationCatalog(),
-      loadFoodPurchases(),
-      loadFoodCatalog(),
-      loadVetVisits(),
-      loadVets(),
-      loadProfile(),
-    ]);
-    // loadWeights() renders the weight chart as soon as its own fetch
-    // resolves, which can happen before loadProfile() above has populated
-    // catProfile (both run in parallel) — that race is what caused the
-    // "neutral color until I hit refresh" bug: the first render used an
-    // empty profile, and only a later refresh (with catProfile already
-    // warm from the first load) showed the real color scale. Re-rendering
-    // once more here, after every load has settled, makes the very first
-    // paint correct too.
-    renderWeightChart(latestWeightData);
-    // Same parallel-load race as weight/profile above: the symptom timeline
-    // draws its gray dierenartsbezoek markers from latestVetVisitData, which
-    // may not be populated yet when loadSymptoms() first renders it.
-    if (symptomChart) renderSymptomChart(latestSymptomData);
-    // Same race again: renderVetVisitList() may have painted before
-    // loadVets() populated latestVetsData, so the linked vet's name would be
-    // missing on first load until a manual refresh.
-    renderVetVisitList(latestVetVisitData);
-    maybeShowCareReminders();
-    if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
+    try {
+      await Promise.all([
+        loadWeights(loadContext),
+        loadBloodValues(loadContext),
+        loadVaccinations(loadContext),
+        loadSymptoms(loadContext),
+        loadMedications(loadContext),
+        loadMedicationCatalog(loadContext),
+        loadFoodPurchases(loadContext),
+        loadFoodCatalog(loadContext),
+        loadVetVisits(loadContext),
+        loadVets(loadContext),
+        loadProfile(loadContext),
+      ]);
+      if (isStaleLoad(loadContext)) return;
 
-    if (manual && btn) setTimeout(() => btn.classList.remove("spinning"), 600);
-    refreshing = false;
+      // Re-render the few views that combine multiple independently loaded
+      // datasets only after the complete, current generation has settled.
+      renderWeightChart(latestWeightData);
+      if (symptomChart) renderSymptomChart(latestSymptomData);
+      renderVetVisitList(latestVetVisitData);
+      maybeShowCareReminders();
+      if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
+    } catch (error) {
+      if (!isStaleLoad(loadContext)) {
+        console.error("Gegevens verversen mislukt", error);
+        showError(t("errLoadFailed") + ": " + error.message);
+      }
+    } finally {
+      if (loadContext.generation === refreshGeneration) {
+        refreshing = false;
+        if (manual && btn) setTimeout(() => btn.classList.remove("spinning"), 600);
+      }
+    }
   }
 
   // The app is often resumed from the background (opened via the home
