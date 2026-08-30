@@ -31,6 +31,7 @@ beheert:
 - voersoorten, aankopen, verbruik en kosten;
 - dashboardwaarschuwingen, grafieken en rollend-jaar/kalenderjaarstatistiek;
 - print/PDF-overzichten en delen als JPEG;
+- volledige, provider-onafhankelijke JSON-export van alle accountgegevens;
 - Nederlandse, Engelse en Duitse UI-teksten.
 
 ## Frontendarchitectuur
@@ -52,8 +53,8 @@ beheert:
 ## PWA en offline gedrag
 
 - `sw.js` cachet alleen de app-shell en gebruikt network-first. Bij een
-  bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache bij
-  deze overdracht is `cat-health-v9`.
+  bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache is
+  `cat-health-v10`.
 - IndexedDB-database `cathealth-offline` heeft stores `cache` en `outbox`.
 - Offline writes zijn bewust beperkt tot:
   `weight_measurements`, `blood_values`, `vaccinations`, `symptom_logs`,
@@ -77,6 +78,25 @@ beheert:
 - Databasewachtwoord/connectionstring nooit in broncode of gedeelde
   environment variables zetten. Alleen GitHub Actions-secret
   `NEON_DATABASE_URL` mag de Postgres-connectionstring bevatten.
+
+## Volledige gegevensexport
+
+- De kaart **Gegevens exporteren** onder Instellingen downloadt één
+  `cathealth-data-YYYY-MM-DD.json` voor het ingelogde account.
+- `EXPORT_TABLES` in `index.html` is de expliciete lijst van alle 11 actieve
+  app-tabellen. Werk deze lijst bij wanneer een nieuwe app-tabel wordt
+  toegevoegd.
+- `fetchAllExportRows()` leest per 1000 rijen, zodat een Data API-limiet geen
+  stille, onvolledige export veroorzaakt. RLS blijft de eigendomsgrens.
+- Voor de export wordt de offline outbox eerst gesynchroniseerd. Als er daarna
+  nog wijzigingen wachten, wordt de export geblokkeerd in plaats van als
+  volledig aangeboden.
+- Het JSON-document bevat formaatnaam en `format_version`, exporttijd,
+  appversie, account-ID/e-mail, lokale weergavevoorkeuren, rij-aantallen en de
+  tabellen. Het bevat geen wachtwoord of private Neon Auth-/migratietabellen.
+- Het bestand bevat gevoelige medische en contactgegevens. Voeg daarom geen
+  automatische externe upload toe zonder expliciet beveiligings- en
+  privacybesluit.
 
 ## Neon Auth-configuratie en sessies
 

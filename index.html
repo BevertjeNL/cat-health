@@ -2119,6 +2119,12 @@
     </div>
 
     <div class="card">
+      <h2 data-i18n="headingDataExport">Gegevens exporteren</h2>
+      <p class="hint-text" style="margin-bottom:12px;" data-i18n="hintDataExport">Download alle gegevens van al je huisdieren als één leesbaar JSON-bestand. Het bestand kan gevoelige medische en contactgegevens bevatten; bewaar het veilig.</p>
+      <button type="button" class="today-btn" id="exportDataBtn" style="width:100%;" onclick="exportAllUserData()" data-i18n="btnExportData">Download al mijn gegevens</button>
+    </div>
+
+    <div class="card">
       <h2><span data-i18n="headingLanguage">Taal</span></h2>
       <div class="icon-style-toggle">
         <button type="button" class="lang-btn" data-lang="nl" onclick="setLang('nl')">Nederlands</button>
@@ -2308,6 +2314,19 @@
   const NEON_AUTH_URL = "https://ep-old-union-as8n94jd.neonauth.c-4.eu-central-1.aws.neon.tech/neondb/auth";
   const NEON_DATA_API_URL = "https://ep-old-union-as8n94jd.apirest.c-4.eu-central-1.aws.neon.tech/neondb/rest/v1";
   const NEON_JS_URL = "https://cdn.jsdelivr.net/npm/@neondatabase/neon-js@0.7.0-beta/+esm";
+  const EXPORT_TABLES = [
+    "pets",
+    "weight_measurements",
+    "blood_values",
+    "vaccinations",
+    "symptom_logs",
+    "medications",
+    "medication_catalog",
+    "veterinarians",
+    "vet_visits",
+    "food_catalog",
+    "food_purchases",
+  ];
 
   const isConfigured = NEON_AUTH_URL.startsWith("https://") && NEON_DATA_API_URL.startsWith("https://");
   let neonClient = null;
@@ -2404,6 +2423,87 @@
       return;
     }
     clearSessionUi();
+  }
+
+  // Fetch in pages so the export remains complete if a table grows beyond
+  // the Data API's per-request row limit. RLS restricts every query to rows
+  // owned by the signed-in user, including rows for archived pets.
+  async function fetchAllExportRows(table) {
+    const pageSize = 1000;
+    const rows = [];
+
+    for (let offset = 0; ; offset += pageSize) {
+      const { data, error } = await neonClient
+        .from(table)
+        .select("*")
+        .order("id", { ascending: true })
+        .range(offset, offset + pageSize - 1);
+      if (error) throw new Error(`${table}: ${error.message}`);
+      const page = data || [];
+      rows.push(...page);
+      if (page.length < pageSize) return rows;
+    }
+  }
+
+  let exportingData = false;
+  async function exportAllUserData() {
+    if (exportingData) return;
+    const btn = document.getElementById("exportDataBtn");
+    exportingData = true;
+    btn.disabled = true;
+    btn.textContent = t("exportPreparing");
+
+    try {
+      if (!navigator.onLine) throw new Error(t("errExportOffline"));
+      await neonReady;
+      if (!currentUser || !neonClient) throw new Error(t("errExportSession"));
+
+      // Do not label a remote snapshot as complete while this browser still
+      // contains unsynchronised writes. Flush first, then verify the outbox.
+      await flushOutbox();
+      const pendingChanges = await idbGetAll("outbox");
+      if (pendingChanges.length) throw new Error(t("errExportPending"));
+
+      const results = await Promise.all(EXPORT_TABLES.map((table) => fetchAllExportRows(table)));
+      const tables = Object.fromEntries(EXPORT_TABLES.map((table, index) => [table, results[index]]));
+      const rowCounts = Object.fromEntries(EXPORT_TABLES.map((table) => [table, tables[table].length]));
+      const exportedAt = new Date();
+      const exportDocument = {
+        format: "cathealth-data-export",
+        format_version: 1,
+        exported_at: exportedAt.toISOString(),
+        app_version: APP_VERSION,
+        account: {
+          id: currentUser.id,
+          email: currentUser.email,
+        },
+        preferences: {
+          language: appLang,
+          icon_style: iconStyle,
+          active_pet_id: currentPetId,
+          blood_watch_markers: getWatchMarkers(),
+        },
+        row_counts: rowCounts,
+        tables,
+      };
+
+      const blob = new Blob([JSON.stringify(exportDocument, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `cathealth-data-${exportedAt.toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      showSuccess(t("successExportDownloaded"));
+    } catch (error) {
+      showError(`${t("errExportFailed")}: ${error.message}`);
+    } finally {
+      exportingData = false;
+      btn.disabled = false;
+      setI18nText(btn, "btnExportData", "Download al mijn gegevens");
+    }
   }
 
   // Custom flat single-color glyphs instead of the standard cat/dog emoji —
@@ -2567,6 +2667,9 @@
       hintShareOverview: "A concise overview with the current details — handy to print or send as a PDF to, for example, a pet sitter.",
       btnOpenOverview: "Open overview",
       btnPrintOverview: "Print / save as PDF",
+      headingDataExport: "Export data",
+      hintDataExport: "Download all data for all your pets as one readable JSON file. The file may contain sensitive medical and contact details; store it securely.",
+      btnExportData: "Download all my data",
     },
     de: {
       authTitle: "🐾 Tiergesundheit",
@@ -2659,6 +2762,9 @@
       hintShareOverview: "Ein kompakter Überblick mit den aktuellen Daten — praktisch zum Ausdrucken oder als PDF an z. B. eine Tiersitterin zu senden.",
       btnOpenOverview: "Übersicht öffnen",
       btnPrintOverview: "Drucken / als PDF speichern",
+      headingDataExport: "Daten exportieren",
+      hintDataExport: "Lade alle Daten aller deiner Haustiere als eine lesbare JSON-Datei herunter. Die Datei kann sensible medizinische Daten und Kontaktdaten enthalten; bewahre sie sicher auf.",
+      btnExportData: "Alle meine Daten herunterladen",
     },
   };
 
@@ -2793,6 +2899,12 @@
     errAnalyzeFailed: "Analyseren mislukt",
     errProfileSaveFailed: "Profiel opslaan mislukt",
     errProfileLoadFailed: "Profiel laden mislukt",
+    exportPreparing: "Export maken…",
+    errExportOffline: "Voor een volledige export is een internetverbinding nodig.",
+    errExportSession: "Log opnieuw in om je gegevens te exporteren.",
+    errExportPending: "Niet alle offline wijzigingen zijn gesynchroniseerd. Maak opnieuw verbinding en probeer het nogmaals.",
+    errExportFailed: "Exporteren mislukt",
+    successExportDownloaded: "Volledige data-export gedownload ✓",
     successVaxSaved: "Vaccinatie opgeslagen ✓",
     successBloodSaved: "Bloeduitslag opgeslagen ✓",
     successVetVisitSaved: "Bezoek opgeslagen ✓",
@@ -2927,6 +3039,12 @@
     errAnalyzeFailed: "Analysis failed",
     errProfileSaveFailed: "Saving profile failed",
     errProfileLoadFailed: "Loading profile failed",
+    exportPreparing: "Creating export…",
+    errExportOffline: "An internet connection is required for a complete export.",
+    errExportSession: "Log in again to export your data.",
+    errExportPending: "Not all offline changes have been synchronised. Reconnect and try again.",
+    errExportFailed: "Export failed",
+    successExportDownloaded: "Complete data export downloaded ✓",
     successVaxSaved: "Vaccination saved ✓",
     successBloodSaved: "Blood test saved ✓",
     successVetVisitSaved: "Visit saved ✓",
@@ -3060,6 +3178,12 @@
     errAnalyzeFailed: "Analyse fehlgeschlagen",
     errProfileSaveFailed: "Profil speichern fehlgeschlagen",
     errProfileLoadFailed: "Profil laden fehlgeschlagen",
+    exportPreparing: "Export wird erstellt…",
+    errExportOffline: "Für einen vollständigen Export ist eine Internetverbindung erforderlich.",
+    errExportSession: "Melde dich erneut an, um deine Daten zu exportieren.",
+    errExportPending: "Nicht alle Offline-Änderungen wurden synchronisiert. Stelle die Verbindung wieder her und versuche es erneut.",
+    errExportFailed: "Export fehlgeschlagen",
+    successExportDownloaded: "Vollständiger Datenexport heruntergeladen ✓",
     successVaxSaved: "Impfung gespeichert ✓",
     successBloodSaved: "Blutwert gespeichert ✓",
     successVetVisitSaved: "Besuch gespeichert ✓",
