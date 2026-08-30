@@ -102,16 +102,23 @@ logica niet ten gunste van alleen `onAuthStateChange()`.
 
 ## Gegevensexport
 
-Onder **Instellingen → Gegevens exporteren** kan een ingelogde gebruiker alle
-eigen CatHealth-gegevens downloaden als één leesbaar JSON-bestand. De export
-bevat alle 11 actieve app-tabellen, alle actieve en gearchiveerde huisdieren,
-lokale weergavevoorkeuren, rij-aantallen, exportdatum en formaatversie. Queries
-worden gepagineerd en RLS beperkt de inhoud tot het ingelogde account.
-Openstaande offline wijzigingen worden eerst gesynchroniseerd; zolang dat niet
-volledig lukt, wordt geen mogelijk onvolledige export aangeboden.
+Onder **Instellingen → Gegevens exporteren** kiest een ingelogde gebruiker uit:
 
-De export bevat geen wachtwoord of interne Neon Auth-tabellen. Het JSON-bestand
-kan medische en contactgegevens bevatten en moet daarom veilig worden bewaard.
+- **JSON**: de volledige, provider-onafhankelijke en herstelbare back-up;
+- **Excel (.xlsx)**: een professioneel opgemaakte werkmap met Info,
+  Voorkeuren, één werkblad per actieve app-tabel en een apart fotoblad.
+
+Beide exports bevatten alle 11 actieve app-tabellen, alle actieve en
+gearchiveerde huisdieren, lokale weergavevoorkeuren, rij-aantallen, exportdatum
+en formaatversie. De Excel-export behoudt datums en getallen als echte
+Excel-typen en sluit opgeslagen huisdierfoto's als afbeeldingen in. JSON blijft
+het canonieke formaat voor volledig en exact herstel.
+
+Queries worden gepagineerd en RLS beperkt de inhoud tot het ingelogde account.
+Openstaande offline wijzigingen worden eerst gesynchroniseerd; zolang dat niet
+volledig lukt, wordt geen mogelijk onvolledige export aangeboden. De exports
+bevatten geen wachtwoord of interne Neon Auth-tabellen en moeten vanwege
+medische en contactgegevens veilig worden bewaard.
 
 ## Migratiestatus
 

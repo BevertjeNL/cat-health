@@ -12,7 +12,8 @@ werkwijze.
 - Productie: `https://bevertjenl.github.io/cat-health/`.
 - Hosting: GitHub Pages vanaf `main`.
 - Backend: Neon Postgres + Neon Auth + Neon Data API.
-- Productierelease bij deze overdracht: `1.14.2` (27 augustus 2026).
+- De actuele productierelease staat in `APP_VERSION` in `index.html` en in de
+  nieuwste Git-tag; semantic-release onderhoudt beide automatisch.
 - Supabase is volledig uit runtime en CI/CD verwijderd. `supabase/` is alleen
   een historisch auditspoor.
 
@@ -31,7 +32,7 @@ beheert:
 - voersoorten, aankopen, verbruik en kosten;
 - dashboardwaarschuwingen, grafieken en rollend-jaar/kalenderjaarstatistiek;
 - print/PDF-overzichten en delen als JPEG;
-- volledige, provider-onafhankelijke JSON-export van alle accountgegevens;
+- volledige JSON-back-up en leesbare Excel-export van alle accountgegevens;
 - Nederlandse, Engelse en Duitse UI-teksten.
 
 ## Frontendarchitectuur
@@ -44,7 +45,8 @@ beheert:
 - Neon JS wordt dynamisch geladen als exact gepinde ESM-bundle:
   `@neondatabase/neon-js@0.7.0-beta/+esm`.
 - Overige gepinde CDN-globals zijn Chart.js, chartjs-adapter-date-fns,
-  chartjs-plugin-zoom, Hammer.js, Tesseract.js, pdf.js en html2canvas.
+  chartjs-plugin-zoom, Hammer.js, Tesseract.js, pdf.js, html2canvas en
+  ExcelJS 4.4.0.
 - CDN-versies altijd exact pinnen. Werk bij een upgrade alle verwijzingen bij,
   inclusief worker-URL's en de Content-Security-Policy.
 - De CSP staat als `<meta http-equiv="Content-Security-Policy">` in de head.
@@ -54,7 +56,7 @@ beheert:
 
 - `sw.js` cachet alleen de app-shell en gebruikt network-first. Bij een
   bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache is
-  `cat-health-v10`.
+  `cat-health-v11`.
 - IndexedDB-database `cathealth-offline` heeft stores `cache` en `outbox`.
 - Offline writes zijn bewust beperkt tot:
   `weight_measurements`, `blood_values`, `vaccinations`, `symptom_logs`,
@@ -81,19 +83,27 @@ beheert:
 
 ## Volledige gegevensexport
 
-- De kaart **Gegevens exporteren** onder Instellingen downloadt één
-  `cathealth-data-YYYY-MM-DD.json` voor het ingelogde account.
-- `EXPORT_TABLES` in `index.html` is de expliciete lijst van alle 11 actieve
-  app-tabellen. Werk deze lijst bij wanneer een nieuwe app-tabel wordt
-  toegevoegd.
+- De kaart **Gegevens exporteren** onder Instellingen biedt JSON en Excel.
+  JSON (`cathealth-data-YYYY-MM-DD.json`) is de canonieke, volledig herstelbare
+  back-up. Excel (`cathealth-data-YYYY-MM-DD.xlsx`) is bedoeld voor lezen en
+  analyseren.
+- `EXPORT_TABLES` en `EXPORT_COLUMNS` in `index.html` zijn de expliciete lijst
+  van alle 11 actieve app-tabellen en hun kolommen. Werk beide bij wanneer een
+  tabel of kolom wordt toegevoegd. `EXCEL_SHEET_NAMES` bepaalt de stabiele,
+  Nederlandstalige werkbladnamen.
 - `fetchAllExportRows()` leest per 1000 rijen, zodat een Data API-limiet geen
   stille, onvolledige export veroorzaakt. RLS blijft de eigendomsgrens.
 - Voor de export wordt de offline outbox eerst gesynchroniseerd. Als er daarna
   nog wijzigingen wachten, wordt de export geblokkeerd in plaats van als
   volledig aangeboden.
-- Het JSON-document bevat formaatnaam en `format_version`, exporttijd,
+- Het interne exportdocument bevat formaatnaam en `format_version`, exporttijd,
   appversie, account-ID/e-mail, lokale weergavevoorkeuren, rij-aantallen en de
   tabellen. Het bevat geen wachtwoord of private Neon Auth-/migratietabellen.
+- `createExcelExport()` bouwt met de exact gepinde ExcelJS-browserbundle een
+  werkmap met Arial, vaste kopregels, filters, echte datum-/getaltypen, Info,
+  Voorkeuren en één blad per tabel. Foto-data-URL's gaan niet in Excel-cellen
+  (die een lengtelimiet hebben), maar worden als afbeeldingen op `Foto's`
+  ingesloten; de JSON-export bewaart de originele data-URL exact.
 - Het bestand bevat gevoelige medische en contactgegevens. Voeg daarom geen
   automatische externe upload toe zonder expliciet beveiligings- en
   privacybesluit.
