@@ -1,17 +1,17 @@
 # CatHealth
 
-CatHealth is een Nederlandstalige, installable single-file PWA voor het
-bijhouden van de gezondheid van meerdere huisdieren. In de interface heet de
-app **Huisdiergezondheid**.
+CatHealth is een installeerbare webapp voor het bijhouden van de gezondheid
+van meerdere huisdieren. In de interface heet de app
+**Huisdiergezondheid**.
 
 - Productie: <https://bevertjenl.github.io/cat-health/>
 - Repository: `BevertjeNL/cat-health`
-- Frontendhosting: GitHub Pages
-- Backend: Neon Postgres + Neon Auth + Neon Data API
-- Productierelease bij deze overdracht: `1.14.2`
+- Frontend: GitHub Pages
+- Backend: Neon Postgres, Neon Auth en Neon Data API
+- Actuele release: zie `APP_VERSION` in `index.html` of de nieuwste Git-tag
 
 Supabase is geen runtime-afhankelijkheid meer. De map `supabase/` is alleen
-een historisch auditspoor van het oude schema.
+een historisch audit- en rollbackspoor van het oude schema.
 
 ## Wat de app kan
 
@@ -19,51 +19,99 @@ een historisch auditspoor van het oude schema.
 - Gewicht, bloedwaarden, vaccinaties, medicatie, afwijkingen,
   dierenartsbezoeken, dierenartsen en voeding vastleggen.
 - Trends, herinneringen, kosten en rollend-jaar/kalenderjaarstatistieken tonen.
-- Bloedonderzoeken uit afbeeldingen/PDF's verwerken met OCR-hulpmiddelen.
+- Bloedonderzoeken uit afbeeldingen en PDF's verwerken met OCR-hulpmiddelen.
 - Een printoverzicht maken en als PDF of JPEG delen.
-- Zeven soorten logboekmutaties offline opslaan en later synchroniseren via
-  IndexedDB (`weight_measurements`, `blood_values`, `vaccinations`,
-  `symptom_logs`, `medications`, `vet_visits`, `food_purchases`).
-- Nederlands, Engels en Duits tonen vanuit de inline vertaalcatalogus.
+- Zeven soorten logboekmutaties offline bewaren en later synchroniseren.
+- Alle accountdata exporteren als JSON of als leesbare Excel-werkmap.
+- Nederlandse UI en een gedeeltelijke Engelse en Duitse vertaling tonen.
+
+De JSON-export is een volledig, provider-onafhankelijk gegevensarchief. De app
+heeft nog geen importfunctie; terugzetten vereist daarom momenteel aparte
+importtooling en is geen herstelactie met één klik.
 
 ## Architectuur
 
 ```text
 GitHub Pages
   └─ index.html (HTML + CSS + JavaScript, geen bundler)
-       ├─ Neon JS 0.7.0-beta via gepinde ESM-import
-       ├─ Neon Auth (e-mail + wachtwoord)
-       ├─ Neon Data API (PostgREST-achtige client)
-       ├─ IndexedDB-cache en offline outbox
-       └─ sw.js (network-first PWA-shell)
+       ├─ exact gepinde browserlibraries via jsDelivr
+       ├─ Neon Auth en Neon Data API
+       ├─ versie- en scopebewuste lokale settings
+       ├─ accountgebonden IndexedDB-cache en offline outbox
+       └─ sw.js (network-first lokale app-shell)
 
 Neon
-  ├─ Postgres-tabellen en indexen
+  ├─ Postgres-tabellen, constraints en indexen
   ├─ RLS: auth.user_id() → pets.user_id → onderliggende pet_id
-  ├─ Neon Auth-tabellen in neon_auth
-  └─ private tijdelijke legacy-accountclaim in cathealth_migration
+  ├─ idempotente offline inserts via client_mutation_id
+  └─ private legacy-accountclaim in cathealth_migration
 ```
 
-`index.html` is bewust één bestand. Er is geen framework, bundler of
-applicatie-buildstap. Externe browserlibraries staan exact gepind; npm bevat
-alleen ontwikkel- en releasegereedschap.
+`index.html` is bewust één bestand zonder framework, bundler of
+runtime-buildstap. Die keuze houdt deployment eenvoudig, maar maakt centrale
+statehelpers, regressietests en terughoudend gebruik van globale functies extra
+belangrijk.
+
+## Kwaliteitsstatus
+
+De app is geschikt voor het huidige kleinschalige productiegebruik, maar is
+nog niet op ieder onderdeel modern afgehard. De review van 31 augustus 2026
+gebruikt WCAG 2.2, actuele PWA-principes en OWASP-CSP-richtlijnen als
+referentiekader.
+
+Sterke fundamenten:
+
+- RLS op alle actieve tabellen en geen databasegeheimen in de browser;
+- accountgebonden en idempotente offline synchronisatie;
+- herstelbare syncfouten in plaats van stil gegevensverlies;
+- gevalideerde settings met expliciete device-, user- en pet-scope;
+- databaseconstraints voor belangrijke domeinwaarden;
+- gedeelde paginatie voor alle collectiequeries en de volledige export;
+- semantic-release, Git-tags en geautomatiseerde Neon-migraties;
+- contracttests als CI-gate, lint en een handmatig geverifieerde
+  browser-smoketest;
+- native toetsenbordnavigatie voor dashboardkaarten en -meldingen.
+
+Belangrijkste resterende grenzen:
+
+- `index.html` telt ruim 9.000 regels en gebruikt veel globale functies,
+  `innerHTML` en 116 inline eventhandlers. Dat beperkt typeveiligheid,
+  testbaarheid en een strikte Content Security Policy.
+- De belangrijkste dashboardbediening is toetsenbordtoegankelijk gemaakt,
+  maar een volledige WCAG 2.2 AA-audit van alle formulieren is niet afgerond.
+- De Engelse en Duitse vertaling is onvolledig; diverse labels, meldingen en
+  datum-/maandnotaties blijven Nederlands.
+- De serviceworker cachet alleen lokale shellbestanden. Zware CDN-libraries
+  voor grafieken, OCR, PDF en Excel zijn niet gegarandeerd beschikbaar bij een
+  koude offline start en worden grotendeels direct geladen.
+- De regressietests dekken settings, sync, paginatie, veilige contactlinks en
+  belangrijke toegankelijkheidscontracten. Volledige browser-, authenticatie-,
+  RLS- en offline end-to-endtests ontbreken nog.
+- Wachtwoordherstel, e-mailverificatie, accountverwijdering, back-upimport en
+  beheer van lokale medische cachedata ontbreken nog.
+- De npm-afhankelijkheden zijn alleen ontwikkel-/releasegereedschap, maar
+  `npm audit` is momenteel niet schoon. Beoordeel upgrades apart; dit zijn
+  geen browser-runtimepackages.
+
+Zie [het stabiliteitsplan](./docs/STABILITY_BUILD_PLAN.md) en de
+audit-/wijzigingsregels in [CLAUDE.md](./CLAUDE.md) voor prioriteiten.
 
 ## Mappenstructuur
 
 ```text
 .
 ├── index.html                     Volledige applicatie: HTML, CSS en JS
-├── sw.js                          Network-first service worker
+├── sw.js                          Network-first serviceworker
 ├── manifest.json                  PWA-manifest
 ├── icons/                         PWA-iconen
 ├── neon/migrations/               Actieve Neon-schema- en RLS-migraties
 ├── supabase/                      Historisch schema; niet meer actief
+├── tests/                         Node-contract- en regressietests
+├── docs/                          Architectuur- en bouwplannen
 ├── scripts/set-app-version.js     Zet APP_VERSION tijdens releases
 ├── eslint.config.js               ESLint voor inline JavaScript
-├── .releaserc.json                semantic-release-configuratie
-├── .github/workflows/ci.yml       Lint en release
-├── .github/workflows/neon-migrations.yml
-└── CLAUDE.md                      Technische bron van waarheid voor AI-agents
+├── .github/workflows/             CI, release en Neon-migraties
+└── CLAUDE.md                      Technische bron van waarheid
 ```
 
 ## Lokaal draaien
@@ -73,73 +121,64 @@ npm ci
 python3 -m http.server 8000
 ```
 
-Open daarna <http://localhost:8000/>. Neon Auth accepteert localhost. Voor een
-snelle statische controle kan `index.html` ook rechtstreeks worden geopend.
+Open daarna <http://localhost:8000/>. Neon Auth accepteert localhost. Open de
+app niet via `file://`: die origin is niet vertrouwd voor login en bootst de
+PWA/serviceworkeromgeving niet correct na.
 
-Controle vóór iedere merge:
+## Verificatie
+
+Voer vóór iedere merge minimaal uit:
 
 ```bash
+npm test
 npm run lint
 git diff --check
 ```
 
-## Neon en authenticatie
+Controleer bij wijzigingen aan auth, dataopslag of PWA-gedrag daarnaast
+handmatig:
 
-Het Neon-project heet `CatHealth`; database en branch zijn respectievelijk
-`neondb` en `main`. De browser bevat alleen publieke Auth- en Data API-URL's.
-De Postgres-connectionstring staat uitsluitend in GitHub Actions-secret
-`NEON_DATABASE_URL`.
+1. login en logout zonder paginaverversing;
+2. accountscheiding en het juiste actieve huisdier;
+3. online read/write via de Data API;
+4. offline invoer, herstart, herstel en retry van syncfouten;
+5. de nieuwste productieversie en serviceworkercache;
+6. keyboardbediening en zichtbare focus van gewijzigde interacties.
 
-E-mailregistratie en -login staan aan. **E-mailverificatie bij registratie
-staat uit**, dus nieuwe gebruikers krijgen geen bevestigingsmail en kunnen
-direct inloggen. De bestaande productiegebruiker heeft de twee gemigreerde
-huisdieren succesvol geclaimd.
+## Gegevens, privacy en beveiliging
 
-Neon Auth-events kunnen in de gebruikte beta-client vertraagd arriveren.
-Daarom verwerkt CatHealth een succesvolle loginresponse en logout expliciet
-in de UI via `transitionToSession()` en `clearSessionUi()`. Verwijder deze
-logica niet ten gunste van alleen `onAuthStateChange()`.
+De app verwerkt medische, financiële en contactgegevens. Exports en lokale
+IndexedDB-cache moeten daarom als gevoelige gegevens worden behandeld.
 
-## Gegevensexport
-
-Onder **Instellingen → Gegevens exporteren** kiest een ingelogde gebruiker uit:
-
-- **JSON**: de volledige, provider-onafhankelijke en herstelbare back-up;
-- **Excel (.xlsx)**: een professioneel opgemaakte werkmap met Info,
-  Voorkeuren, één werkblad per actieve app-tabel en een apart fotoblad.
-
-Beide exports bevatten alle 11 actieve app-tabellen, alle actieve en
-gearchiveerde huisdieren, lokale weergavevoorkeuren, rij-aantallen, exportdatum
-en formaatversie. De Excel-export behoudt datums en getallen als echte
-Excel-typen en sluit opgeslagen huisdierfoto's als afbeeldingen in. JSON blijft
-het canonieke formaat voor volledig en exact herstel.
-
-Queries worden gepagineerd en RLS beperkt de inhoud tot het ingelogde account.
-Openstaande offline wijzigingen worden eerst gesynchroniseerd; zolang dat niet
-volledig lukt, wordt geen mogelijk onvolledige export aangeboden. De exports
-bevatten geen wachtwoord of interne Neon Auth-tabellen en moeten vanwege
-medische en contactgegevens veilig worden bewaard.
-
-## Migratiestatus
-
-De Supabase-naar-Neon-overdracht is op 27 augustus 2026 afgerond en
-geverifieerd: **265 rijen in 11 tabellen** en **2 legacy-accountmappings**.
-De tijdelijke overdrachtsworkflows en het exportscript zijn verwijderd.
-
-Supabase mag pauzeren zonder effect op de productieapp. Het externe
-Supabase-project en de historische bestanden blijven voorlopig als
-rollback/auditspoor bestaan; verwijder ze niet zonder expliciete opdracht.
+- De browser bevat alleen publieke Auth- en Data API-URL's.
+- De Postgres-connectionstring staat uitsluitend in GitHub Actions-secret
+  `NEON_DATABASE_URL`.
+- RLS beperkt reads en writes tot huisdieren van het ingelogde account.
+- Offline records blijven accountgebonden op het apparaat staan, ook na
+  logout, totdat ze zijn gesynchroniseerd of lokale sitegegevens worden
+  gewist.
+- E-mailverificatie bij registratie staat momenteel uit.
+- De CSP beperkt hosts, maar `unsafe-inline` blijft nodig door inline handlers.
+  `frame-ancestors` in een meta-CSP wordt door browsers genegeerd; GitHub Pages
+  levert hiervoor geen projectspecifieke responseheader.
 
 ## Releases en schemawijzigingen
 
 - Werk op een branch en gebruik Conventional Commits.
-- Een groene PR-lint gaat vóór merge naar `main`.
-- `main` start semantic-release, werkt `APP_VERSION` en `CHANGELOG.md` bij en
-  publiceert GitHub Pages.
+- Open een PR en merge alleen na de afgesproken controles.
+- `main` start semantic-release en publiceert GitHub Pages.
 - Wijzigingen onder `neon/migrations/` starten de Neon-migratieworkflow.
-- Verhoog `CACHE_NAME` in `sw.js` bij elke deploy die geïnstalleerde PWA's
-  gedwongen moet verversen.
+- Frontenddeployment en databasemigratie zijn niet georkestreerd. Nieuwe code
+  moet daarom compatibel blijven tijdens de overgang waarin oud en nieuw
+  schema kort naast elkaar bestaan.
+- Verhoog `CACHE_NAME` in `sw.js` bij een bedoelde PWA-shellverversing.
 
-Lees [CLAUDE.md](./CLAUDE.md) vóór codewijzigingen. Dat bestand bevat de
-volledige afspraken, identifiers, datamodellen, migratieregels en bekende
-valkuilen voor iedere coding-agent.
+## Referentiekader
+
+- [WCAG 2.2](https://www.w3.org/TR/WCAG22/)
+- [OWASP Content Security Policy Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Content_Security_Policy_Cheat_Sheet.html)
+- [web.dev: PWA assets en data](https://web.dev/learn/pwa/assets-and-data)
+- [web.dev: offline data](https://web.dev/learn/pwa/offline-data/)
+
+Lees [CLAUDE.md](./CLAUDE.md) volledig vóór codewijzigingen. Dat bestand is de
+technische bron van waarheid voor alle coding-agents.
