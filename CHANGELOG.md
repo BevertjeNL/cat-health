@@ -1,3 +1,10 @@
+## [1.16.1](https://github.com/BevertjeNL/cat-health/compare/v1.16.0...v1.16.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* harden settings and offline sync ([36f739c](https://github.com/BevertjeNL/cat-health/commit/36f739cb775a58a1bcae3ad6956cb6c732f00e0a))
+
 # [1.16.0](https://github.com/BevertjeNL/cat-health/compare/v1.15.0...v1.16.0) (2026-08-30)
 
 
