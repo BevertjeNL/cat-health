@@ -98,3 +98,79 @@ test("every refresh loader rejects stale generations", () => {
     assert.match(html, new RegExp(`async function ${loader}\\(loadContext = currentLoadContext\\(\\)\\)`));
   }
 });
+
+test("paged reads collect every row without relying on the server limit", async () => {
+  const source = extractBetween("  // --- Paged Data API reads", "  // Fetch export rows");
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.fetchAllRows = fetchAllRows;`, context);
+
+  const allRows = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }, { id: 5 }];
+  const ranges = [];
+  const result = await context.fetchAllRows((from, to) => {
+    ranges.push([from, to]);
+    return Promise.resolve({ data: allRows.slice(from, to + 1), error: null });
+  }, 2);
+
+  assert.equal(result.error, null);
+  assert.deepEqual(Array.from(result.data, (row) => row.id), [1, 2, 3, 4, 5]);
+  assert.deepEqual(ranges, [[0, 1], [2, 3], [4, 5]]);
+});
+
+test("all collection loaders use the shared pagination helper", () => {
+  for (const loader of [
+    "loadPets",
+    "openArchivedPetsMenu",
+    "loadWeights",
+    "loadBloodValues",
+    "loadVets",
+    "loadVetVisits",
+    "loadVaccinations",
+    "loadSymptoms",
+    "loadMedicationCatalog",
+    "loadMedications",
+    "loadFoodCatalog",
+    "loadFoodPurchases",
+  ]) {
+    assert.match(
+      html,
+      new RegExp(`async function ${loader}\\([^]{0,700}?fetchAllRows\\(`),
+      `${loader} must use fetchAllRows()`
+    );
+  }
+});
+
+test("veterinarian contact links use validated DOM properties", () => {
+  const source = extractBetween("  function vetContactHref", "  function appendVetContactRow");
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.vetContactHref = vetContactHref;`, context);
+
+  assert.equal(context.vetContactHref("tel", "+31 6 12 34 56 78"), "tel:+31612345678");
+  assert.equal(context.vetContactHref("tel", `06 12 34 56 78\" onclick=\"alert(1)`), null);
+  assert.equal(
+    context.vetContactHref("mailto", "dierenarts@example.nl?bcc=andere@example.nl"),
+    null
+  );
+  assert.doesNotMatch(html, /vetDetailBody"\)\.innerHTML/);
+  assert.match(html, /content\.setAttribute\("href", href\)/);
+});
+
+test("dashboard navigation and every collapsible form are keyboard accessible", () => {
+  assert.match(
+    html,
+    /id="foodFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="foodFormBody"[^>]+onkeydown=/
+  );
+  assert.doesNotMatch(html, /<div class="dashboard-alert-row"/);
+  assert.doesNotMatch(html, /<div class="card dashboard-card" onclick=/);
+  assert.match(html, /<button type="button" class="dashboard-alert-row" data-tab-target=/);
+  assert.match(html, /<a class="card dashboard-card" href="#tabWeight" data-tab-target="weight"/);
+  assert.match(html, /const DASHBOARD_TARGET_PANELS = \{/);
+  assert.match(html, /aria-label="\$\{t\("selectYearLabel"\)\}"/);
+});
+
+test("CI runs regression tests before lint", () => {
+  const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
+  assert.ok(workflow.indexOf("- run: npm test") > -1);
+  assert.ok(workflow.indexOf("- run: npm test") < workflow.indexOf("- run: npm run lint"));
+});

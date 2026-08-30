@@ -32,8 +32,9 @@ beheert:
 - voersoorten, aankopen, verbruik en kosten;
 - dashboardwaarschuwingen, grafieken en rollend-jaar/kalenderjaarstatistiek;
 - print/PDF-overzichten en delen als JPEG;
-- volledige JSON-back-up en leesbare Excel-export van alle accountgegevens;
-- Nederlandse, Engelse en Duitse UI-teksten.
+- schema-compleet JSON-gegevensarchief en leesbare Excel-export van alle
+  accountgegevens;
+- Nederlandse UI-teksten en een gedeeltelijke Engelse en Duitse vertaling.
 
 ## Frontendarchitectuur
 
@@ -41,7 +42,10 @@ beheert:
   Er is geen framework, bundler, `app/`, `components/` of runtime-buildstap.
   Splits dit bestand niet op zonder voorafgaand overleg.
 - Interactie gebruikt nog veel globale functies en inline `onclick="..."`.
-  Dat is een bewuste architectuurkeuze, geen onafgemaakte refactor.
+  Dit is ondersteunde legacyarchitectuur, maar ook technische schuld: het
+  bemoeilijkt testen, typecontrole, toetsenbordbediening en een strikte CSP.
+  Splits niet breed op zonder overleg; verbeter geraakt gedrag wel lokaal met
+  `addEventListener`, kleine pure functies en veilige DOM-API's.
 - Neon JS wordt dynamisch geladen als exact gepinde ESM-bundle:
   `@neondatabase/neon-js@0.7.0-beta/+esm`.
 - Overige gepinde CDN-globals zijn Chart.js, chartjs-adapter-date-fns,
@@ -51,12 +55,20 @@ beheert:
   inclusief worker-URL's en de Content-Security-Policy.
 - De CSP staat als `<meta http-equiv="Content-Security-Policy">` in de head.
   `connect-src` staat alleen de CatHealth Neon Auth- en Data API-hosts toe.
+- De huidige `script-src` heeft door inline scripts en handlers nog
+  `'unsafe-inline'` nodig. `frame-ancestors` werkt niet in een meta-CSP en
+  GitHub Pages biedt geen projectspecifieke CSP-/X-Frame-Options-header.
+- CDN-scripts zijn exact gepind, maar hebben nog geen Subresource Integrity.
+  Behandel een CSP-aanscherping en SRI als afzonderlijke hardeningwijziging.
 
 ## PWA en offline gedrag
 
 - `sw.js` cachet alleen de app-shell en gebruikt network-first. Bij een
   bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache is
   `cat-health-v12`.
+- Externe CDN-runtimes worden niet door de serviceworker gecachet. Een koude
+  offline start is daardoor niet gegarandeerd; een eerder geladen shell kan
+  nog steeds stuklopen wanneer een library niet in de HTTP-cache staat.
 - IndexedDB-database `cathealth-offline` (versie 2) heeft stores `cache` en
   `outbox`. Cachekeys en outboxrecords zijn genamespaced met account-ID;
   outboxrecords bevatten daarnaast `petId`, status en retrymetadata.
@@ -73,6 +85,9 @@ beheert:
   Ze worden niet automatisch eindeloos herhaald en niet stil verwijderd.
 - Bestaande globale cache/outboxdata uit IndexedDB-versie 1 wordt alleen
   geadopteerd als het huisdier aantoonbaar bij het ingelogde account hoort.
+- Er is nog geen fetch-timeout, expliciete updateprompt, Background Sync of
+  aanvraag van persistente opslag. Registratiefouten van de serviceworker
+  worden momenteel niet zichtbaar aan de gebruiker gemeld.
 
 ## Lokale instellingen
 
@@ -84,6 +99,9 @@ beheert:
   `watchMarkers`/`careReminderShownDate` pet-scoped.
 - De storagekeys zijn versieerbaar (`cathealth:settings:v1:...`). Voeg bij een
   incompatibele vormwijziging een migratiepad toe en verhoog de versie bewust.
+- Settings worden niet naar Neon gesynchroniseerd. De scope bepaalt alleen de
+  lokale namespace; devicevoorkeuren en user-/petvoorkeuren blijven dus per
+  browserprofiel bestaan.
 
 ## Neon-project en publieke endpoints
 
@@ -102,9 +120,11 @@ beheert:
 ## Volledige gegevensexport
 
 - De kaart **Gegevens exporteren** onder Instellingen biedt JSON en Excel.
-  JSON (`cathealth-data-YYYY-MM-DD.json`) is de canonieke, volledig herstelbare
-  back-up. Excel (`cathealth-data-YYYY-MM-DD.xlsx`) is bedoeld voor lezen en
-  analyseren.
+  JSON (`cathealth-data-YYYY-MM-DD.json`) is het canonieke, schema-complete en
+  provider-onafhankelijke gegevensarchief. Excel
+  (`cathealth-data-YYYY-MM-DD.xlsx`) is bedoeld voor lezen en analyseren.
+  De app heeft nog geen importfunctie; volledig terugzetten vereist aparte
+  importtooling en is geen selfservice-herstelactie.
 - `EXPORT_TABLES` en `EXPORT_COLUMNS` in `index.html` zijn de expliciete lijst
   van alle 11 actieve app-tabellen en hun kolommen. Werk beide bij wanneer een
   tabel of kolom wordt toegevoegd. `EXCEL_SHEET_NAMES` bepaalt de stabiele,
@@ -125,6 +145,90 @@ beheert:
 - Het bestand bevat gevoelige medische en contactgegevens. Voeg daarom geen
   automatische externe upload toe zonder expliciet beveiligings- en
   privacybesluit.
+
+## Senior auditbaseline 31-08-2026
+
+De app is bruikbaar voor het huidige kleinschalige productiegebruik en heeft
+sterke datafundamenten. Zij voldoet nog niet op ieder onderdeel aan wat van een
+modern afgeharde medische PWA wordt verwacht. Onderstaande scores zijn een
+technische momentopname, geen certificering.
+
+| Onderdeel | Score | Kernbeeld |
+| --- | ---: | --- |
+| Beveiliging en privacy | 7/10 | Sterke RLS en veilige contactlinks; brede CSP/DOM- en accountfuncties vragen hardening |
+| Datacorrectheid | 8/10 | Constraints, idempotentie, collectiequeries en export zijn volledig gepagineerd |
+| Betrouwbaarheid | 7,5/10 | Degelijke outbox en stale-loadbescherming; blijvende syncfouten zijn beperkt beheerbaar |
+| Performance en PWA | 6/10 | Eenvoudige shell; zware eager CDN-runtimes en onvolledige koude-offlinedekking |
+| Toegankelijkheid | 6,5/10 | Dashboardkern en dialogen zijn keyboardgeschikt; volledige formulieraudit resteert |
+| Onderhoudbaarheid | 5,5/10 | Consistente conventies, maar één bestand van ruim 9.000 regels zonder types |
+| Tests en operations | 6,5/10 | Tien contracttests draaien in CI; browser-E2E ontbreekt nog |
+| **Totaalbeeld** | **7/10** | **Goed en consistent fundament, gericht verder hardenen** |
+
+### Bevestigde sterke punten
+
+- RLS staat op iedere actieve tabel; eigendom loopt consequent via `pets`.
+- Offline inserts zijn accountgebonden en idempotent via
+  `client_mutation_id`; mislukte writes worden niet stil verwijderd.
+- Settings hebben versie, scope, standaardwaarde en validator.
+- Async petloads negeren verouderde resultaten via een generatiecontrole.
+- Alle collectiequeries en exportreads gebruiken één geteste paginatiehelper;
+  export wordt geblokkeerd zolang de outbox niet leeg is.
+- Dialogen hebben focus trapping, Escape-afhandeling en focusherstel.
+- Dashboardkaarten/-meldingen gebruiken native controls, met focusverplaatsing
+  naar het gekozen paneel; alle inklapbare formulierheaders ondersteunen
+  Enter en spatie.
+- Migraties zijn oplopend en idempotent; browserdependencies zijn exact
+  gepind.
+- `npm test` en lint zijn beide CI-gates.
+
+### Uitgevoerde hardeningsfase 31-08-2026
+
+- Dierenartscontactlinks worden met gevalideerde `tel:`/`mailto:`-waarden en
+  DOM-properties gebouwd; gebruikersdata wordt daar niet meer in
+  `innerHTML`-attributen geïnterpoleerd.
+- `fetchAllRows()` haalt iedere collectie in stabiel gesorteerde pagina's op.
+  Ook huisdieren, catalogi en alle logboeken gebruiken deze helper.
+- Dashboardkaarten zijn links, meldingen zijn buttons en dynamische
+  jaarselecties hebben een vertaald toegankelijk label.
+- De voedingsheader heeft dezelfde ARIA- en keyboardcontracten als de andere
+  inklapbare formulieren.
+- De regressiesuite controleert deze contracten; `.github/workflows/ci.yml`
+  draait `npm test` vóór lint.
+
+### Hoogste technische prioriteiten
+
+1. **Ga door met veilige DOM-opbouw.** Dierenartscontacten zijn hersteld;
+   vermijd ook elders user-input in HTML-attributen, `href`, `style` en
+   eventhandlertekst. Bouw inline handlers gefaseerd af zodat `'unsafe-inline'`
+   uiteindelijk uit `script-src` kan.
+2. **Voltooi WCAG 2.2 AA voor kernflows.** Dashboard en inklapbare headers zijn
+   hersteld. Controleer nu alle inputs, dynamische foutmeldingen, contrast,
+   focusvolgorde, touchdoelen en reduced motion.
+3. **Voeg browser-E2E toe.** Unit-/contracttests zijn een CI-gate; automatiseer
+   nu auth, RLS/accountscheiding, offline herstart, synchronisatie,
+   exportblokkade en keyboardbediening in een echte browser.
+4. **Verbeter koude offline start en performance.** Laad OCR, PDF, Excel en
+   deelhulpmiddelen pas bij gebruik; bepaal bewust welke CDN-assets offline
+   beschikbaar moeten zijn en voeg update-/foutfeedback toe.
+5. **Voltooi internationalisatie.** Breng hardcoded Nederlandse tekst,
+   maandnamen en datumformattering onder één locale-laag en test ontbrekende
+   vertaalsleutels.
+6. **Rond account- en privacybeheer af.** Voeg wachtwoordherstel,
+   e-mailverificatiebeleid, accountverwijdering en een zichtbare optie voor het
+   wissen van lokale medische cachedata toe.
+
+### Architectuurgrenzen voor nieuw werk
+
+- Vertrouw voor collecties nooit impliciet op de server-rowlimit.
+- Gebruik `textContent` voor tekst en gevalideerde DOM-properties voor
+  attributen; HTML-escaping maakt attribuut- of URL-context niet automatisch
+  veilig.
+- Bouw klikbare bediening als native `button`/`a`; een `div` met `onclick` is
+  geen toegankelijke control.
+- Laad zware optionele libraries pas wanneer de functie wordt geopend.
+- Voeg lokale voorkeuren uitsluitend via de bestaande settingsregistry toe.
+- Houd frontend en schema achterwaarts compatibel: Pages-deployment en
+  Neon-migraties worden parallel, niet transactioneel, uitgerold.
 
 ## Neon Auth-configuratie en sessies
 
@@ -224,9 +328,9 @@ policies toe.
 - Conventional Commits bepalen semver:
   `fix:` = patch, `feat:` = minor, `BREAKING CHANGE:` = major; gebruik verder
   `docs:`, `chore:` en `refactor:` waar passend.
-- Werk op een branch, draai lokaal `npm run lint` en `git diff --check`, open
-  een PR en merge alleen met groene `lint`.
-- Push naar `main` start `.github/workflows/ci.yml`: lint en daarna
+- Werk op een branch, draai lokaal `npm test`, `npm run lint` en
+  `git diff --check`, open een PR en merge alleen met groene controles.
+- Push naar `main` start `.github/workflows/ci.yml`: tests, lint en daarna
   semantic-release. De releasecommit werkt `CHANGELOG.md`, tag en
   `APP_VERSION` bij en veroorzaakt een tweede GitHub Pages-deployment.
 - Een eerste Pages-run kan daardoor worden vervangen/geannuleerd door de
@@ -236,11 +340,15 @@ policies toe.
 - GitHub Actions gebruikt momenteel Node 20 in de workflowconfig; GitHub kan
   daarbij een deprecation-waarschuwing tonen maar forceert Node 24. Dit was
   tijdens de Neon-cutover niet blokkerend.
+- `npm audit` rapporteerde op 30-08-2026 kwetsbaarheden in uitsluitend de
+  ontwikkel-/releaseketen. Upgrade deze dependencies gecontroleerd en test het
+  releasepad; voer geen blinde geforceerde auditfix uit.
 
 ## Lokale ontwikkeling en verificatie
 
 ```bash
 npm ci
+npm test
 npm run lint
 git diff --check
 python3 -m http.server 8000
@@ -255,7 +363,9 @@ minste:
 4. minimaal één read en veilige write via de Data API werkt;
 5. offline queue, online herstel en PWA-update blijven intact indien geraakt;
 6. de live pagina serveert na release de verwachte `APP_VERSION` en
-   `CACHE_NAME`.
+   `CACHE_NAME`;
+7. gewijzigde bediening werkt met toetsenbord, zichtbare focus en correcte
+   programmatische labels.
 
 ## Veiligheids- en wijzigingsregels
 
@@ -263,6 +373,9 @@ minste:
   accountdetails in broncode, logs of documentatie.
 - Nieuwe externe host? Werk de CSP bij.
 - Nieuwe CDN-library? Exact pinnen.
+- Interpoleer geen gebruikersdata in `href`, `style`, `onclick` of andere
+  HTML-attributen. Gebruik gevalideerde DOM-properties; `escapeHtml()` is
+  uitsluitend geschikt voor tekstcontext.
 - Nieuwe write-route voor een offline-ondersteunde tabel? Gebruik
   `mutateTable()` en werk `OFFLINE_TABLES`/rendering consequent bij.
 - Nieuwe database-entiteit? Voeg migratie, indexen, grants, RLS, clientcode en

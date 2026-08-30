@@ -835,7 +835,12 @@
   }
 
   .dashboard-card {
+    display: block;
+    width: 100%;
     cursor: pointer;
+    color: inherit;
+    text-align: left;
+    text-decoration: none;
   }
 
   .dashboard-card-static {
@@ -998,12 +1003,18 @@
 
   .dashboard-alert-row {
     display: flex;
+    width: 100%;
     align-items: center;
     gap: 8px;
     padding: 9px 2px;
+    border: none;
     border-bottom: 1px solid var(--border);
+    background: none;
+    color: inherit;
     cursor: pointer;
+    font: inherit;
     font-size: 0.9rem;
+    text-align: left;
   }
 
   .dashboard-alert-row:last-child {
@@ -1932,7 +1943,7 @@
     </div>
 
     <div class="card">
-      <div class="collapsible-header" id="foodFormHeader" onclick="toggleFoodForm()">
+      <div class="collapsible-header" id="foodFormHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="foodFormBody" onclick="toggleFoodForm()" onkeydown="activateCollapsible(event, toggleFoodForm)">
         <h2 id="foodFormTitle">+ Nieuwe voeding</h2>
         <span class="chevron"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
       </div>
@@ -2470,24 +2481,33 @@
     clearSessionUi();
   }
 
-  // Fetch in pages so the export remains complete if a table grows beyond
-  // the Data API's per-request row limit. RLS restricts every query to rows
-  // owned by the signed-in user, including rows for archived pets.
-  async function fetchAllExportRows(table) {
-    const pageSize = 1000;
+  // --- Paged Data API reads ------------------------------------------------
+  // Every collection read uses explicit ranges. This prevents a screen from
+  // silently becoming incomplete when it reaches the Data API row limit.
+  const DATA_API_PAGE_SIZE = 1000;
+
+  async function fetchAllRows(buildPageQuery, pageSize = DATA_API_PAGE_SIZE) {
     const rows = [];
 
     for (let offset = 0; ; offset += pageSize) {
-      const { data, error } = await neonClient
-        .from(table)
-        .select("*")
-        .order("id", { ascending: true })
-        .range(offset, offset + pageSize - 1);
-      if (error) throw new Error(`${table}: ${error.message}`);
+      const { data, error } = await buildPageQuery(offset, offset + pageSize - 1);
+      if (error) return { data: null, error };
       const page = data || [];
       rows.push(...page);
-      if (page.length < pageSize) return rows;
+      if (page.length < pageSize) return { data: rows, error: null };
     }
+  }
+
+  // Fetch export rows with the same complete-read primitive. RLS restricts
+  // every query to the signed-in account, including archived pets.
+  async function fetchAllExportRows(table) {
+    const { data, error } = await fetchAllRows((from, to) => neonClient
+      .from(table)
+      .select("*")
+      .order("id", { ascending: true })
+      .range(from, to));
+    if (error) throw new Error(`${table}: ${error.message}`);
+    return data;
   }
 
   function createExportDocument(tables, exportedAt) {
@@ -3161,6 +3181,7 @@
     costVsSamePeriod: "vs. dezelfde periode vorig jaar",
     costToggleRolling: "Rollend jaar",
     costToggleCalendar: "Kalenderjaar",
+    selectYearLabel: "Jaar selecteren",
     dashboardVetLastVisit: "Laatste bezoek",
     dashboardVetLastLabel: "Laatste",
     dashboardVetPlannedLabel: "Gepland",
@@ -3313,6 +3334,7 @@
     costVsSamePeriod: "vs. same period last year",
     costToggleRolling: "Rolling year",
     costToggleCalendar: "Calendar year",
+    selectYearLabel: "Select year",
     dashboardVetLastVisit: "Last visit",
     dashboardVetLastLabel: "Last",
     dashboardVetPlannedLabel: "Planned",
@@ -3464,6 +3486,7 @@
     costVsSamePeriod: "vs. gleicher Zeitraum letztes Jahr",
     costToggleRolling: "Rollierendes Jahr",
     costToggleCalendar: "Kalenderjahr",
+    selectYearLabel: "Jahr auswählen",
     dashboardVetLastVisit: "Letzter Besuch",
     dashboardVetLastLabel: "Letzter",
     dashboardVetPlannedLabel: "Geplant",
@@ -3708,11 +3731,13 @@
   let currentPetId = null;
 
   async function loadPets() {
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("pets")
       .select("*")
       .is("archived_at", null)
-      .order("created_at", { ascending: true });
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to));
 
     if (error) {
       showError(t("errPetsLoadFailed") + ": " + error.message);
@@ -3857,11 +3882,13 @@
   // --- Huisdier archiveren (soft-delete met dubbele bevestiging) ------------
   async function openArchivedPetsMenu() {
     closePetMenu();
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("pets")
       .select("*")
       .not("archived_at", "is", null)
-      .order("archived_at", { ascending: false });
+      .order("archived_at", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (error) {
       showError(t("errArchivedPetsLoadFailed") + ": " + error.message);
@@ -4796,11 +4823,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("weight_measurements")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: true });
+      .order("date", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -5523,11 +5552,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("blood_values")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -6084,7 +6115,12 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient.from("veterinarians").select("*").eq("pet_id", petId);
+    const { data, error } = await fetchAllRows((from, to) => neonClient
+      .from("veterinarians")
+      .select("*")
+      .eq("pet_id", petId)
+      .order("id", { ascending: true })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -6161,24 +6197,49 @@
     await loadVets();
   }
 
-  // tel:/mailto: links work directly on iOS/Android without extra
-  // permissions or CSP changes — a plain anchor is enough for "klik om te
-  // bellen".
-  function buildVetDetailBodyHtml(row) {
-    const rows = [];
-    if (row.phone) rows.push(`<p><a href="tel:${escapeHtml(row.phone)}">📞 ${escapeHtml(row.phone)}</a></p>`);
-    if (row.email) rows.push(`<p><a href="mailto:${escapeHtml(row.email)}">✉️ ${escapeHtml(row.email)}</a></p>`);
-    if (row.street || row.postal_city) {
-      rows.push(`<p>${[row.street, row.postal_city].filter(Boolean).map(escapeHtml).join("<br>")}</p>`);
+  function vetContactHref(type, value) {
+    const trimmed = String(value || "").trim();
+    if (!trimmed || /[\u0000-\u001f\u007f]/.test(trimmed)) return null;
+    if (type === "tel") {
+      if (!/\d/.test(trimmed) || !/^\+?[\d\s().*#,;-]+$/.test(trimmed)) return null;
+      return `tel:${trimmed.replace(/\s+/g, "")}`;
     }
-    if (row.notes) rows.push(`<p>${escapeHtml(row.notes)}</p>`);
-    if (row.is_primary) rows.push(`<p>⭐ Hoofddierenarts</p>`);
-    return rows.join("") || `<p>${t("emptyVetContactDetails")}</p>`;
+    if (type === "mailto" && /^[^\s@]+@[^\s@]+$/.test(trimmed)) {
+      return `mailto:${encodeURIComponent(trimmed).replace(/%40/gi, "@")}`;
+    }
+    return null;
+  }
+
+  function appendVetContactRow(container, icon, value, href) {
+    const paragraph = document.createElement("p");
+    const content = href ? document.createElement("a") : document.createElement("span");
+    if (href) content.setAttribute("href", href);
+    content.textContent = [icon, value].filter(Boolean).join(" ");
+    paragraph.appendChild(content);
+    container.appendChild(paragraph);
+  }
+
+  function renderVetDetailBody(row) {
+    const body = document.getElementById("vetDetailBody");
+    body.replaceChildren();
+    if (row.phone) appendVetContactRow(body, "📞", row.phone, vetContactHref("tel", row.phone));
+    if (row.email) appendVetContactRow(body, "✉️", row.email, vetContactHref("mailto", row.email));
+    if (row.street || row.postal_city) {
+      const address = document.createElement("p");
+      [row.street, row.postal_city].filter(Boolean).forEach((line, index) => {
+        if (index) address.appendChild(document.createElement("br"));
+        address.appendChild(document.createTextNode(line));
+      });
+      body.appendChild(address);
+    }
+    if (row.notes) appendVetContactRow(body, "", row.notes, null);
+    if (row.is_primary) appendVetContactRow(body, "⭐", "Hoofddierenarts", null);
+    if (!body.childElementCount) appendVetContactRow(body, "", t("emptyVetContactDetails"), null);
   }
 
   function openVetDetail(row) {
     document.getElementById("vetDetailName").textContent = row.name;
-    document.getElementById("vetDetailBody").innerHTML = buildVetDetailBodyHtml(row);
+    renderVetDetailBody(row);
     document.getElementById("vetDetailEditBtn").onclick = () => {
       closeVetDetail();
       editVet(row);
@@ -6279,11 +6340,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("vet_visits")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -6517,11 +6580,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("vaccinations")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -7087,11 +7152,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("symptom_logs")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -7380,7 +7447,12 @@
   async function loadMedicationCatalog(loadContext = currentLoadContext()) {
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
-    const { data, error } = await neonClient.from("medication_catalog").select("*").eq("pet_id", petId);
+    const { data, error } = await fetchAllRows((from, to) => neonClient
+      .from("medication_catalog")
+      .select("*")
+      .eq("pet_id", petId)
+      .order("id", { ascending: true })
+      .range(from, to));
     if (isStaleLoad(loadContext)) return;
     if (error) return;
     medicationCatalog = data;
@@ -7519,11 +7591,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("medications")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -7624,6 +7698,7 @@
     const open = forceOpen !== undefined ? forceOpen : body.style.display === "none";
     body.style.display = open ? "" : "none";
     header.classList.toggle("open", open);
+    header.setAttribute("aria-expanded", String(open));
     if (!editingFoodId) {
       document.getElementById("foodFormTitle").textContent = open ? "Nieuwe voeding" : "+ Nieuwe voeding";
     }
@@ -7666,7 +7741,12 @@
   async function loadFoodCatalog(loadContext = currentLoadContext()) {
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
-    const { data, error } = await neonClient.from("food_catalog").select("*").eq("pet_id", petId);
+    const { data, error } = await fetchAllRows((from, to) => neonClient
+      .from("food_catalog")
+      .select("*")
+      .eq("pet_id", petId)
+      .order("id", { ascending: true })
+      .range(from, to));
     if (isStaleLoad(loadContext)) return;
     if (error) return;
     foodCatalog = data;
@@ -7777,11 +7857,13 @@
     const { petId } = loadContext;
     if (!isConfigured || !petId) return;
 
-    const { data, error } = await neonClient
+    const { data, error } = await fetchAllRows((from, to) => neonClient
       .from("food_purchases")
       .select("*")
       .eq("pet_id", petId)
-      .order("date", { ascending: false });
+      .order("date", { ascending: false })
+      .order("id", { ascending: false })
+      .range(from, to));
 
     if (isStaleLoad(loadContext)) return;
 
@@ -8430,10 +8512,10 @@
     document.getElementById("dashboardAlerts").innerHTML = alerts
       .map(
         (a) => `
-        <div class="dashboard-alert-row" onclick="switchTab('${a.tabTarget}')">
+        <button type="button" class="dashboard-alert-row" data-tab-target="${a.tabTarget}">
           <span class="status-dot" style="background:${a.color};"></span>
           <span>${escapeHtml(a.message)}</span>
-        </div>
+        </button>
       `
       )
       .join("");
@@ -8681,7 +8763,7 @@
     }
 
     const cards = [
-      `<div class="card dashboard-card" onclick="switchTab('weight')"${tileGlowStyle(weightGlowColor)}>
+      `<a class="card dashboard-card" href="#tabWeight" data-tab-target="weight"${tileGlowStyle(weightGlowColor)}>
         <h3>${iconHtml("weight")} ${t("dashboardWeight")}</h3>
         ${
           weightS
@@ -8689,8 +8771,8 @@
                <div class="dashboard-card-sub">${t("dashboardWeightLastMeasured")}: ${formatDaysAgo(weightS.daysSinceLast)}</div>`
             : `<div class="dashboard-card-empty">${t("emptyWeightMeasurements")}</div>`
         }
-      </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('vax')"${tileGlowStyle(vaxGlowColor)}>
+      </a>`,
+      `<a class="card dashboard-card" href="#tabVax" data-tab-target="vax"${tileGlowStyle(vaxGlowColor)}>
         <h3>${iconHtml("vax")} ${t("dashboardVax")}</h3>
         ${
           vaxS
@@ -8703,8 +8785,8 @@
                 .join("")
             : `<div class="dashboard-card-empty">${t("emptyVax")}</div>`
         }
-      </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('medication')"${tileGlowStyle(medGlowColor)}>
+      </a>`,
+      `<a class="card dashboard-card" href="#tabMedication" data-tab-target="medication"${tileGlowStyle(medGlowColor)}>
         <h3>${iconHtml("medication")} ${t("dashboardMedication")}</h3>
         ${
           openMeds.length
@@ -8720,8 +8802,8 @@
                <div class="dashboard-card-sub">${formatDate(lastMed.date)}</div>`
             : `<div class="dashboard-card-empty">${t("emptyMedicationLogged")}</div>`
         }
-      </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('blood')"${tileGlowStyle(bloodGlowColor)}>
+      </a>`,
+      `<a class="card dashboard-card" href="#tabBlood" data-tab-target="blood"${tileGlowStyle(bloodGlowColor)}>
         <h3>${iconHtml("blood")} ${t("dashboardBlood")}</h3>
         ${
           bloodS
@@ -8742,8 +8824,8 @@
                }`
             : `<div class="dashboard-card-empty">${t("emptyBloodExam")}</div>`
         }
-      </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('symptoms')"${tileGlowStyle(symGlowColor)}>
+      </a>`,
+      `<a class="card dashboard-card" href="#tabSymptoms" data-tab-target="symptoms"${tileGlowStyle(symGlowColor)}>
         <h3>${iconHtml("symptoms")} ${t("dashboardSymptoms")}</h3>
         <div class="dashboard-card-sub" style="margin-top:-6px;">${symS.hasData && symS.sinceDate ? t("dashboardSymptomsTitleSince") : t("dashboardSymptomsTitleStart")}</div>
         ${
@@ -8756,17 +8838,17 @@
                  ${symptomTrendHtml(symptomTrend)}`
               : `<div class="dashboard-card-empty">${t("emptySymptomsRecent")}</div>`
         }
-      </div>`,
+      </a>`,
       `<div class="card dashboard-card dashboard-card-static" id="foodCard">
         <h3>${iconHtml("food")} ${t("dashboardFood")}</h3>
         <div class="cost-toggle">
           <button type="button" class="cost-toggle-btn ${foodViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setFoodViewMode('rolling')">${t("costToggleRolling")}</button>
           <button type="button" class="cost-toggle-btn ${foodViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setFoodViewMode('calendar')">${t("costToggleCalendar")}</button>
-          <select id="foodYearSelect" style="display:${foodViewMode === "calendar" ? "" : "none"};" onchange="setFoodViewYear(this.value)">${foodYearOptionsHtml()}</select>
+          <select id="foodYearSelect" aria-label="${t("selectYearLabel")}" style="display:${foodViewMode === "calendar" ? "" : "none"};" onchange="setFoodViewYear(this.value)">${foodYearOptionsHtml()}</select>
         </div>
         <div id="foodCardBody">${foodCardBodyHtml()}</div>
       </div>`,
-      `<div class="card dashboard-card" onclick="switchTab('vet')">
+      `<a class="card dashboard-card" href="#tabVet" data-tab-target="vet">
         <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
           lastVetVisit || plannedVetVisit
@@ -8778,13 +8860,13 @@
                }`
             : `<div class="dashboard-card-empty">${t("emptyVetVisitsLogged")}</div>`
         }
-      </div>`,
+      </a>`,
       `<div class="card dashboard-card dashboard-card-static" id="costCard">
         <h3>${iconHtml("cost")} ${t("dashboardCost")}</h3>
         <div class="cost-toggle">
           <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">${t("costToggleRolling")}</button>
           <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">${t("costToggleCalendar")}</button>
-          <select id="costYearSelect" style="display:${costViewMode === "calendar" ? "" : "none"};" onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
+          <select id="costYearSelect" aria-label="${t("selectYearLabel")}" style="display:${costViewMode === "calendar" ? "" : "none"};" onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
         </div>
         <div id="costCardBody">${costCardBodyHtml()}</div>
       </div>`,
@@ -8792,6 +8874,28 @@
 
     document.getElementById("dashboardCards").innerHTML = cards.join("");
   }
+
+  const DASHBOARD_TARGET_PANELS = {
+    dashboard: "tabDashboard",
+    weight: "tabWeight",
+    blood: "tabBlood",
+    vax: "tabVax",
+    vet: "tabVet",
+    symptoms: "tabSymptoms",
+    medication: "tabMedication",
+  };
+
+  document.getElementById("tabDashboard").addEventListener("click", (event) => {
+    const control = event.target.closest("[data-tab-target]");
+    const tab = control?.dataset.tabTarget;
+    const panelId = DASHBOARD_TARGET_PANELS[tab];
+    if (!panelId) return;
+    event.preventDefault();
+    switchTab(tab);
+    const panel = document.getElementById(panelId);
+    panel.tabIndex = -1;
+    panel.focus({ preventScroll: true });
+  });
 
   function renderDashboard() {
     renderDashboardAlerts();
