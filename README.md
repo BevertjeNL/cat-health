@@ -100,6 +100,19 @@ Daarom verwerkt CatHealth een succesvolle loginresponse en logout expliciet
 in de UI via `transitionToSession()` en `clearSessionUi()`. Verwijder deze
 logica niet ten gunste van alleen `onAuthStateChange()`.
 
+## Gegevensexport
+
+Onder **Instellingen → Gegevens exporteren** kan een ingelogde gebruiker alle
+eigen CatHealth-gegevens downloaden als één leesbaar JSON-bestand. De export
+bevat alle 11 actieve app-tabellen, alle actieve en gearchiveerde huisdieren,
+lokale weergavevoorkeuren, rij-aantallen, exportdatum en formaatversie. Queries
+worden gepagineerd en RLS beperkt de inhoud tot het ingelogde account.
+Openstaande offline wijzigingen worden eerst gesynchroniseerd; zolang dat niet
+volledig lukt, wordt geen mogelijk onvolledige export aangeboden.
+
+De export bevat geen wachtwoord of interne Neon Auth-tabellen. Het JSON-bestand
+kan medische en contactgegevens bevatten en moet daarom veilig worden bewaard.
+
 ## Migratiestatus
 
 De Supabase-naar-Neon-overdracht is op 27 augustus 2026 afgerond en
