@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/BevertjeNL/cat-health/compare/v1.14.2...v1.15.0) (2026-08-30)
+
+
+### Features
+
+* add full account data export ([8e5eb92](https://github.com/BevertjeNL/cat-health/commit/8e5eb9228e593b4fe20706e68b97762e521ac8c6))
+
 ## [1.14.2](https://github.com/BevertjeNL/cat-health/compare/v1.14.1...v1.14.2) (2026-08-26)
 
 
