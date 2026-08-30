@@ -47,6 +47,7 @@
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
 
 <style>
   :root {
@@ -2120,8 +2121,15 @@
 
     <div class="card">
       <h2 data-i18n="headingDataExport">Gegevens exporteren</h2>
-      <p class="hint-text" style="margin-bottom:12px;" data-i18n="hintDataExport">Download alle gegevens van al je huisdieren als één leesbaar JSON-bestand. Het bestand kan gevoelige medische en contactgegevens bevatten; bewaar het veilig.</p>
-      <button type="button" class="today-btn" id="exportDataBtn" style="width:100%;" onclick="exportAllUserData()" data-i18n="btnExportData">Download al mijn gegevens</button>
+      <p class="hint-text" style="margin-bottom:12px;" data-i18n="hintDataExport">JSON is de volledige herstelbare back-up. Excel zet de gegevens in overzichtelijke werkbladen en neemt huisdierfoto's als afbeeldingen op. Beide bestanden kunnen gevoelige gegevens bevatten; bewaar ze veilig.</p>
+      <div class="field" style="margin-bottom:12px;">
+        <label for="exportFormat" data-i18n="labelExportFormat">Bestandstype</label>
+        <select id="exportFormat">
+          <option value="json" data-i18n="optionExportJson">JSON (.json) — volledige back-up</option>
+          <option value="xlsx" data-i18n="optionExportExcel">Excel (.xlsx) — werkbladen en foto's</option>
+        </select>
+      </div>
+      <button type="button" class="today-btn" id="exportDataBtn" style="width:100%;" onclick="exportAllUserData()" data-i18n="btnExportData">Export downloaden</button>
     </div>
 
     <div class="card">
@@ -2327,6 +2335,33 @@
     "food_catalog",
     "food_purchases",
   ];
+  const EXPORT_COLUMNS = {
+    pets: ["id", "user_id", "name", "species", "breed", "birth_date", "sex", "neutered", "activity_level", "target_min_kg", "target_max_kg", "photo_data_url", "weight_reminder_days", "archived_at", "created_at", "updated_at"],
+    weight_measurements: ["id", "pet_id", "date", "weight_grams", "note", "created_at"],
+    blood_values: ["id", "pet_id", "date", "marker", "value", "unit", "note", "created_at"],
+    vaccinations: ["id", "pet_id", "date", "vaccine", "valid_until", "note", "cost", "no_repeat", "created_at"],
+    symptom_logs: ["id", "pet_id", "date", "symptom", "severity", "note", "created_at"],
+    medications: ["id", "pet_id", "date", "name", "dose", "next_due_date", "note", "purpose", "brand", "active_ingredient", "batch", "cost", "created_at"],
+    medication_catalog: ["id", "pet_id", "name", "purpose", "brand", "active_ingredient", "dose", "created_at"],
+    veterinarians: ["id", "pet_id", "name", "phone", "email", "address", "notes", "is_primary", "created_at", "street", "postal_city"],
+    vet_visits: ["id", "pet_id", "date", "reason", "result", "note", "cost", "created_at", "vet_id"],
+    food_catalog: ["id", "pet_id", "name", "food_type", "shop", "created_at"],
+    food_purchases: ["id", "pet_id", "date", "name", "food_type", "amount_grams", "shop", "cost", "note", "created_at", "exclude_from_stats"],
+  };
+  const EXCEL_SHEET_NAMES = {
+    pets: "Huisdieren",
+    weight_measurements: "Gewicht",
+    blood_values: "Bloedwaarden",
+    vaccinations: "Vaccinaties",
+    symptom_logs: "Afwijkingen",
+    medications: "Medicatie",
+    medication_catalog: "Medicijncatalogus",
+    veterinarians: "Dierenartsen",
+    vet_visits: "Dierenartsbezoeken",
+    food_catalog: "Voercatalogus",
+    food_purchases: "Voeraankopen",
+  };
+  const EXCEL_NUMERIC_COLUMNS = new Set(["weight_grams", "target_min_kg", "target_max_kg", "weight_reminder_days", "value", "cost", "amount_grams"]);
 
   const isConfigured = NEON_AUTH_URL.startsWith("https://") && NEON_DATA_API_URL.startsWith("https://");
   let neonClient = null;
@@ -2445,12 +2480,156 @@
     }
   }
 
+  function createExportDocument(tables, exportedAt) {
+    return {
+      format: "cathealth-data-export",
+      format_version: 1,
+      exported_at: exportedAt.toISOString(),
+      app_version: APP_VERSION,
+      account: {
+        id: currentUser.id,
+        email: currentUser.email,
+      },
+      preferences: {
+        language: appLang,
+        icon_style: iconStyle,
+        active_pet_id: currentPetId,
+        blood_watch_markers: getWatchMarkers(),
+      },
+      row_counts: Object.fromEntries(EXPORT_TABLES.map((table) => [table, tables[table].length])),
+      tables,
+    };
+  }
+
+  function downloadExportBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function excelValue(column, value) {
+    if (value == null || value === "") return value;
+    if (column === "photo_data_url") return t("excelPhotoEmbedded");
+    // PostgreSQL bigint identifiers can eventually exceed Excel/JavaScript's
+    // exact numeric range. Keep IDs as text so relationships remain exact.
+    if (column === "id" || column === "pet_id" || column === "vet_id") return String(value);
+    if (column === "date" || column.endsWith("_date") || column.endsWith("_at")) {
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed;
+    }
+    if (EXCEL_NUMERIC_COLUMNS.has(column) && typeof value === "string") {
+      const parsed = Number(value);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+    return value;
+  }
+
+  function styleExcelHeader(row) {
+    row.height = 24;
+    row.eachCell((cell) => {
+      cell.font = { name: "Arial", size: 10, bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFD97757" } };
+      cell.alignment = { vertical: "middle", horizontal: "left" };
+    });
+  }
+
+  function styleExcelWorksheet(worksheet) {
+    worksheet.views = [{ state: "frozen", ySplit: 1 }];
+    styleExcelHeader(worksheet.getRow(1));
+    worksheet.eachRow((row, rowNumber) => {
+      if (rowNumber === 1) return;
+      row.eachCell((cell) => {
+        cell.font = { name: "Arial", size: 10 };
+        cell.alignment = { vertical: "top", wrapText: true };
+      });
+    });
+    worksheet.columns.forEach((column) => {
+      let width = String(column.header || "").length + 2;
+      column.eachCell({ includeEmpty: false }, (cell) => {
+        const text = cell.value instanceof Date ? "00-00-0000 00:00" : String(cell.value ?? "");
+        width = Math.max(width, Math.min(text.length + 2, 45));
+      });
+      column.width = Math.max(10, Math.min(width, 45));
+    });
+    if (worksheet.columnCount) worksheet.autoFilter = { from: "A1", to: worksheet.getRow(1).getCell(worksheet.columnCount).address };
+  }
+
+  async function createExcelExport(exportDocument) {
+    if (typeof ExcelJS === "undefined") throw new Error(t("errExcelUnavailable"));
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "CatHealth";
+    workbook.created = new Date(exportDocument.exported_at);
+    workbook.modified = new Date(exportDocument.exported_at);
+    workbook.subject = "Volledige CatHealth-gegevensexport";
+
+    const info = workbook.addWorksheet("Info", { properties: { tabColor: { argb: "FFD97757" } } });
+    info.columns = [{ header: "Onderdeel", key: "key", width: 28 }, { header: "Waarde", key: "value", width: 48 }];
+    info.addRows([
+      { key: "Formaat", value: exportDocument.format },
+      { key: "Formaatversie", value: exportDocument.format_version },
+      { key: "Exportdatum", value: new Date(exportDocument.exported_at) },
+      { key: "App-versie", value: exportDocument.app_version },
+      { key: "Account-ID", value: exportDocument.account.id },
+      { key: "E-mailadres", value: exportDocument.account.email },
+      { key: "Let op", value: t("excelSensitiveDataWarning") },
+    ]);
+    EXPORT_TABLES.forEach((table) => info.addRow({ key: `${table} (${EXCEL_SHEET_NAMES[table]})`, value: exportDocument.row_counts[table] }));
+    styleExcelWorksheet(info);
+    info.getCell("B4").numFmt = "dd-mm-yyyy hh:mm";
+
+    const preferences = workbook.addWorksheet("Voorkeuren");
+    preferences.columns = [{ header: "Instelling", key: "key", width: 28 }, { header: "Waarde", key: "value", width: 60 }];
+    Object.entries(exportDocument.preferences).forEach(([key, value]) => {
+      preferences.addRow({ key, value: Array.isArray(value) ? JSON.stringify(value) : value });
+    });
+    styleExcelWorksheet(preferences);
+
+    EXPORT_TABLES.forEach((table) => {
+      const worksheet = workbook.addWorksheet(EXCEL_SHEET_NAMES[table]);
+      const columns = EXPORT_COLUMNS[table];
+      worksheet.columns = columns.map((column) => ({ header: column, key: column }));
+      exportDocument.tables[table].forEach((sourceRow) => {
+        worksheet.addRow(Object.fromEntries(columns.map((column) => [column, excelValue(column, sourceRow[column])])));
+      });
+      columns.forEach((column, index) => {
+        if (column === "date" || column.endsWith("_date")) worksheet.getColumn(index + 1).numFmt = "dd-mm-yyyy";
+        if (column.endsWith("_at")) worksheet.getColumn(index + 1).numFmt = "dd-mm-yyyy hh:mm";
+      });
+      styleExcelWorksheet(worksheet);
+    });
+
+    const petsWithPhotos = exportDocument.tables.pets.filter((pet) => pet.photo_data_url);
+    if (petsWithPhotos.length) {
+      const photos = workbook.addWorksheet("Foto's");
+      photos.columns = [{ header: "pet_id", key: "id", width: 12 }, { header: "naam", key: "name", width: 28 }, { header: "foto", key: "photo", width: 24 }];
+      petsWithPhotos.forEach((pet) => {
+        const row = photos.addRow({ id: pet.id, name: pet.name, photo: "" });
+        row.height = 110;
+        const extension = pet.photo_data_url.startsWith("data:image/png") ? "png" : "jpeg";
+        const imageId = workbook.addImage({ base64: pet.photo_data_url, extension });
+        photos.addImage(imageId, { tl: { col: 2, row: row.number - 1 }, ext: { width: 140, height: 140 } });
+      });
+      styleExcelWorksheet(photos);
+      photos.getColumn(3).width = 24;
+    }
+
+    return workbook.xlsx.writeBuffer();
+  }
+
   let exportingData = false;
   async function exportAllUserData() {
     if (exportingData) return;
     const btn = document.getElementById("exportDataBtn");
+    const formatSelect = document.getElementById("exportFormat");
+    const format = formatSelect.value;
     exportingData = true;
     btn.disabled = true;
+    formatSelect.disabled = true;
     btn.textContent = t("exportPreparing");
 
     try {
@@ -2466,43 +2645,26 @@
 
       const results = await Promise.all(EXPORT_TABLES.map((table) => fetchAllExportRows(table)));
       const tables = Object.fromEntries(EXPORT_TABLES.map((table, index) => [table, results[index]]));
-      const rowCounts = Object.fromEntries(EXPORT_TABLES.map((table) => [table, tables[table].length]));
       const exportedAt = new Date();
-      const exportDocument = {
-        format: "cathealth-data-export",
-        format_version: 1,
-        exported_at: exportedAt.toISOString(),
-        app_version: APP_VERSION,
-        account: {
-          id: currentUser.id,
-          email: currentUser.email,
-        },
-        preferences: {
-          language: appLang,
-          icon_style: iconStyle,
-          active_pet_id: currentPetId,
-          blood_watch_markers: getWatchMarkers(),
-        },
-        row_counts: rowCounts,
-        tables,
-      };
+      const exportDocument = createExportDocument(tables, exportedAt);
+      const datePart = exportedAt.toISOString().slice(0, 10);
 
-      const blob = new Blob([JSON.stringify(exportDocument, null, 2)], { type: "application/json;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `cathealth-data-${exportedAt.toISOString().slice(0, 10)}.json`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showSuccess(t("successExportDownloaded"));
+      if (format === "xlsx") {
+        const buffer = await createExcelExport(exportDocument);
+        downloadExportBlob(new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `cathealth-data-${datePart}.xlsx`);
+        showSuccess(t("successExportExcelDownloaded"));
+      } else {
+        const blob = new Blob([JSON.stringify(exportDocument, null, 2)], { type: "application/json;charset=utf-8" });
+        downloadExportBlob(blob, `cathealth-data-${datePart}.json`);
+        showSuccess(t("successExportJsonDownloaded"));
+      }
     } catch (error) {
       showError(`${t("errExportFailed")}: ${error.message}`);
     } finally {
       exportingData = false;
       btn.disabled = false;
-      setI18nText(btn, "btnExportData", "Download al mijn gegevens");
+      formatSelect.disabled = false;
+      setI18nText(btn, "btnExportData", "Export downloaden");
     }
   }
 
@@ -2668,8 +2830,11 @@
       btnOpenOverview: "Open overview",
       btnPrintOverview: "Print / save as PDF",
       headingDataExport: "Export data",
-      hintDataExport: "Download all data for all your pets as one readable JSON file. The file may contain sensitive medical and contact details; store it securely.",
-      btnExportData: "Download all my data",
+      hintDataExport: "JSON is the complete restorable backup. Excel puts the data in clear worksheets and includes pet photos as images. Both files may contain sensitive data; store them securely.",
+      labelExportFormat: "File type",
+      optionExportJson: "JSON (.json) — complete backup",
+      optionExportExcel: "Excel (.xlsx) — worksheets and photos",
+      btnExportData: "Download export",
     },
     de: {
       authTitle: "🐾 Tiergesundheit",
@@ -2763,8 +2928,11 @@
       btnOpenOverview: "Übersicht öffnen",
       btnPrintOverview: "Drucken / als PDF speichern",
       headingDataExport: "Daten exportieren",
-      hintDataExport: "Lade alle Daten aller deiner Haustiere als eine lesbare JSON-Datei herunter. Die Datei kann sensible medizinische Daten und Kontaktdaten enthalten; bewahre sie sicher auf.",
-      btnExportData: "Alle meine Daten herunterladen",
+      hintDataExport: "JSON ist die vollständige wiederherstellbare Sicherung. Excel stellt die Daten in übersichtlichen Arbeitsblättern dar und nimmt Tierfotos als Bilder auf. Beide Dateien können sensible Daten enthalten; bewahre sie sicher auf.",
+      labelExportFormat: "Dateityp",
+      optionExportJson: "JSON (.json) — vollständige Sicherung",
+      optionExportExcel: "Excel (.xlsx) — Arbeitsblätter und Fotos",
+      btnExportData: "Export herunterladen",
     },
   };
 
@@ -2904,7 +3072,11 @@
     errExportSession: "Log opnieuw in om je gegevens te exporteren.",
     errExportPending: "Niet alle offline wijzigingen zijn gesynchroniseerd. Maak opnieuw verbinding en probeer het nogmaals.",
     errExportFailed: "Exporteren mislukt",
-    successExportDownloaded: "Volledige data-export gedownload ✓",
+    errExcelUnavailable: "De Excel-module kon niet worden geladen. Ververs de pagina en probeer het opnieuw.",
+    excelPhotoEmbedded: "Opgenomen als afbeelding op werkblad Foto's",
+    excelSensitiveDataWarning: "Dit bestand bevat mogelijk gevoelige medische en contactgegevens. Bewaar het veilig.",
+    successExportJsonDownloaded: "Volledige JSON-back-up gedownload ✓",
+    successExportExcelDownloaded: "Excel-export gedownload ✓",
     successVaxSaved: "Vaccinatie opgeslagen ✓",
     successBloodSaved: "Bloeduitslag opgeslagen ✓",
     successVetVisitSaved: "Bezoek opgeslagen ✓",
@@ -3044,7 +3216,11 @@
     errExportSession: "Log in again to export your data.",
     errExportPending: "Not all offline changes have been synchronised. Reconnect and try again.",
     errExportFailed: "Export failed",
-    successExportDownloaded: "Complete data export downloaded ✓",
+    errExcelUnavailable: "The Excel module could not be loaded. Refresh the page and try again.",
+    excelPhotoEmbedded: "Included as an image on the Photos worksheet",
+    excelSensitiveDataWarning: "This file may contain sensitive medical and contact details. Store it securely.",
+    successExportJsonDownloaded: "Complete JSON backup downloaded ✓",
+    successExportExcelDownloaded: "Excel export downloaded ✓",
     successVaxSaved: "Vaccination saved ✓",
     successBloodSaved: "Blood test saved ✓",
     successVetVisitSaved: "Visit saved ✓",
@@ -3183,7 +3359,11 @@
     errExportSession: "Melde dich erneut an, um deine Daten zu exportieren.",
     errExportPending: "Nicht alle Offline-Änderungen wurden synchronisiert. Stelle die Verbindung wieder her und versuche es erneut.",
     errExportFailed: "Export fehlgeschlagen",
-    successExportDownloaded: "Vollständiger Datenexport heruntergeladen ✓",
+    errExcelUnavailable: "Das Excel-Modul konnte nicht geladen werden. Lade die Seite neu und versuche es erneut.",
+    excelPhotoEmbedded: "Als Bild im Arbeitsblatt Fotos enthalten",
+    excelSensitiveDataWarning: "Diese Datei kann sensible medizinische Daten und Kontaktdaten enthalten. Bewahre sie sicher auf.",
+    successExportJsonDownloaded: "Vollständige JSON-Sicherung heruntergeladen ✓",
+    successExportExcelDownloaded: "Excel-Export heruntergeladen ✓",
     successVaxSaved: "Impfung gespeichert ✓",
     successBloodSaved: "Blutwert gespeichert ✓",
     successVetVisitSaved: "Besuch gespeichert ✓",

@@ -17,6 +17,7 @@ module.exports = [
         Tesseract: "readonly",
         pdfjsLib: "readonly",
         html2canvas: "readonly",
+        ExcelJS: "readonly",
       },
     },
     rules: {
