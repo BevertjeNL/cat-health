@@ -56,16 +56,34 @@ beheert:
 
 - `sw.js` cachet alleen de app-shell en gebruikt network-first. Bij een
   bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache is
-  `cat-health-v11`.
-- IndexedDB-database `cathealth-offline` heeft stores `cache` en `outbox`.
+  `cat-health-v12`.
+- IndexedDB-database `cathealth-offline` (versie 2) heeft stores `cache` en
+  `outbox`. Cachekeys en outboxrecords zijn genamespaced met account-ID;
+  outboxrecords bevatten daarnaast `petId`, status en retrymetadata.
 - Offline writes zijn bewust beperkt tot:
   `weight_measurements`, `blood_values`, `vaccinations`, `symptom_logs`,
   `medications`, `vet_visits` en `food_purchases`.
 - `mutateTable()` probeert eerst Neon en queue't alleen netwerkfouten.
   Tijdelijke inserts krijgen negatieve IDs. `flushOutbox()` draait na login,
   bij het `online`-event en elke 30 seconden.
-- Niet-netwerkfouten zoals RLS/validatie worden gemeld en uit de outbox
-  verwijderd; eindeloos opnieuw proberen is bewust vermeden.
+- Inserts in offline-ondersteunde tabellen krijgen een UUID in
+  `client_mutation_id`; unieke partiële indexen maken een retry idempotent.
+- Niet-netwerkfouten zoals RLS/validatie krijgen status `failed`, blijven op
+  het apparaat bewaard en kunnen via Instellingen opnieuw worden geprobeerd.
+  Ze worden niet automatisch eindeloos herhaald en niet stil verwijderd.
+- Bestaande globale cache/outboxdata uit IndexedDB-versie 1 wordt alleen
+  geadopteerd als het huisdier aantoonbaar bij het ingelogde account hoort.
+
+## Lokale instellingen
+
+- Lokale UI-voorkeuren lopen via `SETTING_DEFINITIONS`, `readSetting()` en
+  `writeSetting()` in `index.html`; schrijf nieuwe voorkeuren niet rechtstreeks
+  naar `localStorage`.
+- Iedere setting heeft een expliciete scope, standaardwaarde en validator.
+  `appLang` en `iconStyle` zijn device-scoped, `activePetId` user-scoped en
+  `watchMarkers`/`careReminderShownDate` pet-scoped.
+- De storagekeys zijn versieerbaar (`cathealth:settings:v1:...`). Voeg bij een
+  incompatibele vormwijziging een migratiepad toe en verhoog de versie bewust.
 
 ## Neon-project en publieke endpoints
 
