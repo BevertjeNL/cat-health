@@ -20,3 +20,10 @@ jobs:
           for migration in neon/migrations/*.sql; do
             psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --file "$migration"
           done
+      - name: Reload Data API schema cache
+        env:
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+        # New tables/columns are otherwise invisible to the Data API until
+        # "Refresh schema cache" is clicked in the Neon console. The notify is
+        # harmless when nothing listens on the channel.
+        run: psql "$NEON_DATABASE_URL" --set ON_ERROR_STOP=1 --command "notify pgrst, 'reload schema';"
