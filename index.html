@@ -469,7 +469,8 @@
     flex-shrink: 0;
   }
 
-  input[type="date"] {
+  input[type="date"],
+  input[type="time"] {
     width: 100%;
     box-sizing: border-box;
   }
@@ -502,7 +503,8 @@
     padding-right: 32px;
   }
 
-  input[type="date"] {
+  input[type="date"],
+  input[type="time"] {
     accent-color: var(--accent);
     min-height: 44px;
     font-size: 1rem;
@@ -1525,7 +1527,7 @@
           </div>
           <div>
             <label for="weightKg">Gewicht (kg)</label>
-            <input type="number" id="weightKg" inputmode="decimal" min="0" step="0.1" placeholder="4.2" required />
+            <input type="text" id="weightKg" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="4,2" required />
           </div>
           <div>
             <label for="weightNote" data-i18n="fieldNoteOptional">Notitie (optioneel)</label>
@@ -1702,7 +1704,7 @@
           </div>
           <div>
             <label for="vetVisitCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
-            <input type="number" id="vetVisitCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 45.00" />
+            <input type="text" id="vetVisitCost" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="bijv. 45,00" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
           <button type="button" class="today-btn" id="vetVisitCancelEditBtn" style="display:none;" onclick="cancelVetVisitEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
@@ -1760,7 +1762,7 @@
           </div>
           <div>
             <label for="vaxCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
-            <input type="number" id="vaxCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 35.00" />
+            <input type="text" id="vaxCost" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="bijv. 35,00" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
           <button type="button" class="today-btn" id="vaxCancelEditBtn" style="display:none;" onclick="cancelVaxEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
@@ -1801,6 +1803,13 @@
             <div class="date-field">
               <input type="date" id="symptomDate" required />
               <button type="button" class="today-btn" data-target="symptomDate" data-i18n="btnToday">Vandaag</button>
+            </div>
+          </div>
+          <div>
+            <label for="symptomTime" data-i18n="fieldTimeOptional">Tijdstip (optioneel)</label>
+            <div class="date-field">
+              <input type="time" id="symptomTime" step="60" />
+              <button type="button" class="today-btn" id="symptomTimeNowBtn" data-i18n="btnNow">Nu</button>
             </div>
           </div>
           <div id="symptomEndDateRow">
@@ -1917,7 +1926,7 @@
           </div>
           <div>
             <label for="medicationCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
-            <input type="number" id="medicationCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 15.00" />
+            <input type="text" id="medicationCost" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="bijv. 15,00" />
           </div>
           <button class="submit" type="submit" data-i18n="btnSave">Opslaan</button>
           <button type="button" class="today-btn" id="medicationCancelEditBtn" style="display:none;" onclick="cancelMedicationEdit()" data-i18n="btnCancelEdit">Bewerken annuleren</button>
@@ -1965,7 +1974,7 @@
           <div class="row">
             <div>
               <label for="foodAmount" data-i18n="fieldFoodAmount">Hoeveelheid</label>
-              <input type="number" id="foodAmount" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 400" required />
+              <input type="text" id="foodAmount" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="bijv. 400" required />
             </div>
             <div>
               <label for="foodUnit" data-i18n="fieldFoodUnit">Eenheid</label>
@@ -1993,7 +2002,7 @@
           </div>
           <div>
             <label for="foodCost" data-i18n="fieldCostOptional">Kosten (optioneel)</label>
-            <input type="number" id="foodCost" inputmode="decimal" step="0.01" min="0" placeholder="bijv. 25.00" />
+            <input type="text" id="foodCost" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="bijv. 25,00" />
           </div>
           <div class="checkbox-field">
             <label for="foodExcludeFromStats"><input type="checkbox" id="foodExcludeFromStats" /> <span data-i18n="fieldFoodExcludeFromStats">Niet meetellen voor gram/dag-verbruik (kosten tellen wel mee)</span></label>
@@ -2082,11 +2091,11 @@
         <div class="row">
           <div>
             <label for="catTargetMin">⚖️ Streefgewicht min (kg)</label>
-            <input type="number" id="catTargetMin" inputmode="decimal" min="0.1" step="0.1" placeholder="auto" />
+            <input type="text" id="catTargetMin" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="auto" />
           </div>
           <div>
             <label for="catTargetMax">⚖️ Streefgewicht max (kg)</label>
-            <input type="number" id="catTargetMax" inputmode="decimal" min="0.1" step="0.1" placeholder="auto" />
+            <input type="text" id="catTargetMax" inputmode="decimal" pattern="\s*[0-9]*[.,]?[0-9]+\s*" placeholder="auto" />
           </div>
         </div>
         <p class="hint-text info-tip" id="targetWeightHint" style="display:none;">
@@ -2357,7 +2366,7 @@
     weight_measurements: ["id", "pet_id", "date", "weight_grams", "note", "client_mutation_id", "created_at"],
     blood_values: ["id", "pet_id", "date", "marker", "value", "unit", "note", "client_mutation_id", "created_at"],
     vaccinations: ["id", "pet_id", "date", "vaccine", "valid_until", "note", "cost", "no_repeat", "client_mutation_id", "created_at"],
-    symptom_logs: ["id", "pet_id", "date", "symptom", "severity", "note", "client_mutation_id", "created_at"],
+    symptom_logs: ["id", "pet_id", "date", "time", "symptom", "severity", "note", "client_mutation_id", "created_at"],
     medications: ["id", "pet_id", "date", "name", "dose", "next_due_date", "note", "purpose", "brand", "active_ingredient", "batch", "cost", "client_mutation_id", "created_at"],
     medication_catalog: ["id", "pet_id", "name", "purpose", "brand", "active_ingredient", "dose", "created_at"],
     veterinarians: ["id", "pet_id", "name", "phone", "email", "address", "notes", "is_primary", "created_at", "street", "postal_city"],
@@ -2921,6 +2930,8 @@
       fieldNoteOptional: "Note (optional)",
       fieldCostOptional: "Cost (optional)",
       btnToday: "Today",
+      btnNow: "Now",
+      fieldTimeOptional: "Time (optional)",
       btnSave: "Save",
       btnUpdate: "Update",
       btnCancel: "Cancel",
@@ -3019,6 +3030,8 @@
       fieldNoteOptional: "Notiz (optional)",
       fieldCostOptional: "Kosten (optional)",
       btnToday: "Heute",
+      btnNow: "Jetzt",
+      fieldTimeOptional: "Uhrzeit (optional)",
       btnSave: "Speichern",
       btnUpdate: "Aktualisieren",
       btnCancel: "Abbrechen",
@@ -3193,6 +3206,7 @@
     bloodAllWithinRange: "Alle waarden binnen referentie",
     bloodNoReferenceKnown: "Geen referentiewaarden bekend voor deze markers",
     errSaveFailed: "Opslaan mislukt",
+    errInvalidNumber: "Ongeldig getal. Gebruik alleen cijfers met een komma of punt, bijvoorbeeld 4,2.",
     errShareFailed: "Delen mislukt",
     errLoadFailed: "Laden mislukt",
     errDeleteFailed: "Verwijderen mislukt",
@@ -3346,6 +3360,7 @@
     bloodAllWithinRange: "All values within range",
     bloodNoReferenceKnown: "No reference values known for these markers",
     errSaveFailed: "Save failed",
+    errInvalidNumber: "Invalid number. Use digits with a comma or dot only, for example 4.2.",
     errShareFailed: "Sharing failed",
     errLoadFailed: "Loading failed",
     errDeleteFailed: "Delete failed",
@@ -3498,6 +3513,7 @@
     bloodAllWithinRange: "Alle Werte innerhalb des Referenzbereichs",
     bloodNoReferenceKnown: "Keine Referenzwerte für diese Marker bekannt",
     errSaveFailed: "Speichern fehlgeschlagen",
+    errInvalidNumber: "Ungültige Zahl. Nur Ziffern mit Komma oder Punkt verwenden, zum Beispiel 4,2.",
     errShareFailed: "Teilen fehlgeschlagen",
     errLoadFailed: "Laden fehlgeschlagen",
     errDeleteFailed: "Löschen fehlgeschlagen",
@@ -4607,6 +4623,37 @@
     return "€ " + amount.toFixed(2).replace(".", ",");
   }
 
+  // --- Decimal input ------------------------------------------------------
+  // Decimal fields are type="text" with inputmode="decimal": a type="number"
+  // input silently empties "4,2" in browsers whose locale uses a dot, so a
+  // Dutch comma never reached the parser. Both "4,2" and "4.2" are accepted;
+  // anything else (thousand separators, letters) yields NaN, not a guess.
+  function parseDecimalInput(value) {
+    const text = String(value ?? "").trim();
+    if (!/^-?(\d+([.,]\d+)?|[.,]\d+)$/.test(text)) return NaN;
+    return Number(text.replace(",", "."));
+  }
+
+  function parseOptionalDecimalInput(value) {
+    return String(value ?? "").trim() === "" ? null : parseDecimalInput(value);
+  }
+
+  // Prefills an edit form in the notation the user types: comma for Dutch
+  // and German, dot for English.
+  function formatDecimalInput(value) {
+    if (value == null || value === "") return "";
+    const text = String(value);
+    return readSetting("appLang") === "en" ? text : text.replace(".", ",");
+  }
+
+  // Rejects a filled-in decimal field that could not be parsed, instead of
+  // saving NaN/null. Returns true when the form may continue.
+  function validDecimalFields(...values) {
+    if (values.every((v) => v == null || Number.isFinite(v))) return true;
+    showError(t("errInvalidNumber"));
+    return false;
+  }
+
   document.querySelectorAll(".today-btn").forEach((btn) => {
     if (!btn.dataset.target) return;
     btn.addEventListener("click", () => {
@@ -4773,7 +4820,7 @@
   function editWeight(row) {
     editingWeightId = row.id;
     document.getElementById("weightDate").value = row.date;
-    document.getElementById("weightKg").value = (row.weight_grams / 1000).toFixed(1);
+    document.getElementById("weightKg").value = formatDecimalInput((row.weight_grams / 1000).toFixed(1));
     document.getElementById("weightNote").value = row.note || "";
     document.getElementById("weightFormTitle").textContent = "Meting bewerken";
     setI18nText(weightForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
@@ -4801,8 +4848,13 @@
     submitBtn.disabled = true;
 
     const date = document.getElementById("weightDate").value;
-    const weight_grams = Math.round(parseFloat(document.getElementById("weightKg").value) * 1000);
+    const weightKg = parseDecimalInput(document.getElementById("weightKg").value);
+    const weight_grams = Math.round(weightKg * 1000);
     const note = document.getElementById("weightNote").value.trim() || null;
+    if (!validDecimalFields(weightKg)) {
+      submitBtn.disabled = false;
+      return;
+    }
 
     const { error, offline } = editingWeightId
       ? await mutateTable("weight_measurements", "update", { id: editingWeightId, payload: { date, weight_grams, note } })
@@ -5334,7 +5386,7 @@
               <button type="button" class="watch-star${watched ? " active" : ""}" data-code="${m.code}" title="Extra bewaken" onclick="toggleWatchMarker('${m.code}')">${watched ? "★" : "☆"}</button>
             </div>
             <div class="marker-input-wrap">
-              <input type="number" step="any" class="marker-value-input" data-code="${m.code}" placeholder="${placeholder}" />
+              <input type="text" inputmode="decimal" pattern="\\s*-?[0-9]*[.,]?[0-9]+\\s*" class="marker-value-input" data-code="${m.code}" placeholder="${placeholder}" />
             </div>
             <span class="marker-unit">${escapeHtml(m.unit)}</span>
           </div>
@@ -5350,12 +5402,12 @@
   function applyMarkerValueColor(input) {
     const known = findMarker(input.dataset.code);
     const val = input.value.trim();
-    if (!known || known.min == null || known.max == null || val === "" || isNaN(parseFloat(val))) {
+    if (!known || known.min == null || known.max == null || val === "" || isNaN(parseDecimalInput(val))) {
       input.style.borderColor = "";
       input.style.background = "";
       return;
     }
-    const [r, g, b] = targetZoneColorAt(parseFloat(val), { min: known.min, max: known.max });
+    const [r, g, b] = targetZoneColorAt(parseDecimalInput(val), { min: known.min, max: known.max });
     input.style.borderColor = `rgb(${r}, ${g}, ${b})`;
     input.style.background = `rgba(${r}, ${g}, ${b}, 0.14)`;
   }
@@ -5385,7 +5437,7 @@
     row.className = "custom-marker-row";
     row.innerHTML = `
       <input type="text" class="custom-marker-name" placeholder="Naam marker" value="${prefill ? escapeHtml(prefill.marker) : ""}" />
-      <input type="number" step="any" class="custom-marker-value" placeholder="Waarde" value="${prefill ? prefill.value : ""}" />
+      <input type="text" inputmode="decimal" pattern="\\s*-?[0-9]*[.,]?[0-9]+\\s*" class="custom-marker-value" placeholder="Waarde" value="${prefill ? escapeHtml(formatDecimalInput(prefill.value)) : ""}" />
       <input type="text" class="custom-marker-unit" placeholder="Eenh." value="${prefill && prefill.unit ? escapeHtml(prefill.unit) : ""}" />
       <button type="button" class="custom-marker-remove" onclick="this.closest('.custom-marker-row').remove()">✕</button>
     `;
@@ -5411,7 +5463,7 @@
       if (known) {
         const input = document.querySelector(`.marker-value-input[data-code="${known.code}"]`);
         if (input) {
-          input.value = row.value;
+          input.value = formatDecimalInput(row.value);
           applyMarkerValueColor(input);
           if (!known.key) needsExtended = true;
           return;
@@ -5428,14 +5480,14 @@
       const v = inp.value.trim();
       if (v === "") return;
       const m = findMarker(inp.dataset.code);
-      rows.push({ date, marker: m.code, value: parseFloat(v), unit: m.unit, note, pet_id: currentPetId });
+      rows.push({ date, marker: m.code, value: parseDecimalInput(v), unit: m.unit, note, pet_id: currentPetId });
     });
     document.querySelectorAll("#bloodCustomList .custom-marker-row").forEach((row) => {
       const name = row.querySelector(".custom-marker-name").value.trim();
       const value = row.querySelector(".custom-marker-value").value.trim();
       const unit = row.querySelector(".custom-marker-unit").value.trim();
       if (!name || value === "") return;
-      rows.push({ date, marker: name, value: parseFloat(value), unit: unit || null, note, pet_id: currentPetId });
+      rows.push({ date, marker: name, value: parseDecimalInput(value), unit: unit || null, note, pet_id: currentPetId });
     });
     return rows;
   }
@@ -5503,6 +5555,10 @@
 
     if (!rows.length) {
       showError("Vul minstens één waarde in.");
+      submitBtn.disabled = false;
+      return;
+    }
+    if (!validDecimalFields(...rows.map((row) => row.value))) {
       submitBtn.disabled = false;
       return;
     }
@@ -6000,7 +6056,7 @@
       candidates.forEach((c) => {
         const input = document.querySelector(`.marker-value-input[data-code="${c.code}"]`);
         if (!input) return;
-        input.value = c.value;
+        input.value = formatDecimalInput(c.value);
         input.classList.add("autofilled");
         applyMarkerValueColor(input);
         filled++;
@@ -6284,7 +6340,7 @@
     document.getElementById("vetVisitReason").value = row.reason || "";
     document.getElementById("vetVisitResult").value = row.result || "";
     document.getElementById("vetVisitNote").value = row.note || "";
-    document.getElementById("vetVisitCost").value = row.cost ?? "";
+    document.getElementById("vetVisitCost").value = formatDecimalInput(row.cost);
     document.getElementById("vetVisitFormTitle").textContent = "Bezoek bewerken";
     setI18nText(vetVisitForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("vetVisitCancelEditBtn").style.display = "";
@@ -6317,8 +6373,11 @@
     const reason = document.getElementById("vetVisitReason").value.trim() || null;
     const result = document.getElementById("vetVisitResult").value.trim() || null;
     const note = document.getElementById("vetVisitNote").value.trim() || null;
-    const costVal = document.getElementById("vetVisitCost").value;
-    const cost = costVal ? parseFloat(costVal) : null;
+    const cost = parseOptionalDecimalInput(document.getElementById("vetVisitCost").value);
+    if (!validDecimalFields(cost)) {
+      submitBtn.disabled = false;
+      return;
+    }
 
     const { error, offline } = editingVetVisitId
       ? await mutateTable("vet_visits", "update", { id: editingVetVisitId, payload: { date, vet_id, reason, result, note, cost } })
@@ -6525,7 +6584,7 @@
     document.getElementById("vaxValidUntil").value = row.valid_until || "";
     document.getElementById("vaxNoRepeat").checked = !!row.no_repeat;
     document.getElementById("vaxNote").value = row.note || "";
-    document.getElementById("vaxCost").value = row.cost ?? "";
+    document.getElementById("vaxCost").value = formatDecimalInput(row.cost);
     document.getElementById("vaxFormTitle").textContent = "Vaccinatie bewerken";
     setI18nText(vaxForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
     document.getElementById("vaxCancelEditBtn").style.display = "";
@@ -6557,8 +6616,11 @@
     const valid_until = document.getElementById("vaxValidUntil").value || null;
     const no_repeat = document.getElementById("vaxNoRepeat").checked;
     const note = document.getElementById("vaxNote").value.trim() || null;
-    const costVal = document.getElementById("vaxCost").value;
-    const cost = costVal ? parseFloat(costVal) : null;
+    const cost = parseOptionalDecimalInput(document.getElementById("vaxCost").value);
+    if (!validDecimalFields(cost)) {
+      submitBtn.disabled = false;
+      return;
+    }
 
     const { error, offline } = editingVaxId
       ? await mutateTable("vaccinations", "update", { id: editingVaxId, payload: { vaccine, date, valid_until, no_repeat, note, cost } })
@@ -6930,7 +6992,7 @@
               const color = SYMPTOM_SEVERITY_COLOR[row.severity] || "var(--text-muted)";
               return `<li><div class="entry-main">
                 <span class="primary"><span class="status-dot" style="background:${color};"></span>${escapeHtml(row.symptom)}</span>
-                <span class="secondary">${formatDate(row.date)}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+                <span class="secondary">${formatDate(row.date)}${formatSymptomTime(row.time) ? " " + formatSymptomTime(row.time) : ""}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
               </div></li>`;
             })
             .join("") +
@@ -7031,9 +7093,33 @@
   const symptomForm = document.getElementById("symptomForm");
   const symptomList = document.getElementById("symptomList");
   let editingSymptomId = null;
+  let editingSymptomHadTime = false;
   let latestSymptomData = [];
 
   document.getElementById("symptomDate").valueAsDate = new Date();
+
+  // Postgres returns "HH:MM:SS"; the form and the list only show HH:MM.
+  function formatSymptomTime(time) {
+    return typeof time === "string" && /^\d{2}:\d{2}/.test(time) ? time.slice(0, 5) : "";
+  }
+
+  function currentLocalTimeHHMM() {
+    const now = new Date();
+    return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
+  }
+
+  document.getElementById("symptomTimeNowBtn").addEventListener("click", () => {
+    document.getElementById("symptomTime").value = currentLocalTimeHHMM();
+  });
+
+  // Newest first within a day; entries without a time sort after timed ones.
+  function compareSymptomRowsDesc(a, b) {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    const ta = formatSymptomTime(a.time);
+    const tb = formatSymptomTime(b.time);
+    if (ta !== tb) return !ta ? 1 : !tb ? -1 : ta < tb ? 1 : -1;
+    return (b.id || 0) - (a.id || 0);
+  }
 
   function toggleSymptomForm(forceOpen) {
     const header = document.getElementById("symptomFormHeader");
@@ -7060,6 +7146,8 @@
     editingSymptomId = row.id;
     document.getElementById("symptomName").value = row.symptom;
     document.getElementById("symptomDate").value = row.date;
+    document.getElementById("symptomTime").value = formatSymptomTime(row.time);
+    editingSymptomHadTime = !!formatSymptomTime(row.time);
     document.getElementById("symptomEndDate").value = "";
     document.getElementById("symptomSeverity").value = row.severity || "";
     document.getElementById("symptomNote").value = row.note || "";
@@ -7080,6 +7168,7 @@
     editingSymptomId = null;
     document.getElementById("symptomName").value = row.symptom;
     document.getElementById("symptomDate").valueAsDate = new Date();
+    document.getElementById("symptomTime").value = "";
     document.getElementById("symptomEndDate").value = "";
     document.getElementById("symptomSeverity").value = row.severity || "";
     document.getElementById("symptomNote").value = row.note || "";
@@ -7094,6 +7183,7 @@
 
   function cancelSymptomEdit() {
     editingSymptomId = null;
+    editingSymptomHadTime = false;
     symptomForm.reset();
     document.getElementById("symptomDate").valueAsDate = new Date();
     document.getElementById("symptomFormTitle").textContent = "+ Nieuwe afwijking";
@@ -7112,20 +7202,26 @@
 
     const symptom = document.getElementById("symptomName").value.trim();
     const date = document.getElementById("symptomDate").value;
+    const time = document.getElementById("symptomTime").value || null;
     const endDate = document.getElementById("symptomEndDate").value || null;
     const severity = document.getElementById("symptomSeverity").value || null;
     const note = document.getElementById("symptomNote").value.trim() || null;
 
+    // `time` is only sent when it carries information (a value, or clearing
+    // one that existed), so saving without a time keeps working even while
+    // the 0004 migration and the Pages deploy roll out in parallel.
+    const timeFields = time || (editingSymptomId && editingSymptomHadTime) ? { time } : {};
+
     let error;
     let offline = false;
     if (editingSymptomId) {
-      ({ error, offline } = await mutateTable("symptom_logs", "update", { id: editingSymptomId, payload: { symptom, date, severity, note } }));
+      ({ error, offline } = await mutateTable("symptom_logs", "update", { id: editingSymptomId, payload: { symptom, date, ...timeFields, severity, note } }));
     } else if (endDate && endDate > date) {
       // One row per day in the range, so the timeline/frequency table need
       // no special-casing for a "spans multiple days" entry. Offline, each
       // day becomes its own outbox entry via mutateTable.
       for (let d = date; d <= endDate; d = addDaysToDateStr(d, 1)) {
-        const result = await mutateTable("symptom_logs", "insert", { payload: { symptom, date: d, severity, note, pet_id: currentPetId } });
+        const result = await mutateTable("symptom_logs", "insert", { payload: { symptom, date: d, ...timeFields, severity, note, pet_id: currentPetId } });
         if (result.offline) offline = true;
         if (result.error) {
           error = result.error;
@@ -7133,7 +7229,7 @@
         }
       }
     } else {
-      ({ error, offline } = await mutateTable("symptom_logs", "insert", { payload: { symptom, date, severity, note, pet_id: currentPetId } }));
+      ({ error, offline } = await mutateTable("symptom_logs", "insert", { payload: { symptom, date, ...timeFields, severity, note, pet_id: currentPetId } }));
     }
 
     submitBtn.disabled = false;
@@ -7318,12 +7414,12 @@
 
     const severityColor = { licht: "#34c759", matig: "#ff9500", ernstig: "#ff3b30" };
 
-    data.forEach((row) => {
+    data.slice().sort(compareSymptomRowsDesc).forEach((row) => {
       const color = severityColor[row.severity] || "var(--text-muted)";
       const innerHtml = `
         <div class="entry-main">
           <span class="primary"><span class="status-dot" style="background:${color};"></span>${escapeHtml(row.symptom)}${pendingDotHtml(row)}</span>
-          <span class="secondary">${formatDate(row.date)}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
+          <span class="secondary">${formatDate(row.date)}${formatSymptomTime(row.time) ? " " + formatSymptomTime(row.time) : ""}${row.severity ? " · " + escapeHtml(row.severity) : ""}${row.note ? " · " + escapeHtml(row.note) : ""}</span>
         </div>
       `;
       const li = createSwipeableListItem(innerHtml, [
@@ -7501,7 +7597,7 @@
     document.getElementById("medicationBatch").value = row.batch || "";
     document.getElementById("medicationNextDue").value = row.next_due_date || "";
     document.getElementById("medicationNote").value = row.note || "";
-    document.getElementById("medicationCost").value = row.cost ?? "";
+    document.getElementById("medicationCost").value = formatDecimalInput(row.cost);
     updateMedicationDetailSuggestions(row.name);
     document.getElementById("medicationFormTitle").textContent = "Medicatie bewerken";
     setI18nText(medicationForm.querySelector("button.submit"), "btnUpdate", "Bijwerken");
@@ -7564,8 +7660,11 @@
     const batch = document.getElementById("medicationBatch").value.trim() || null;
     const next_due_date = document.getElementById("medicationNextDue").value || null;
     const note = document.getElementById("medicationNote").value.trim() || null;
-    const costVal = document.getElementById("medicationCost").value;
-    const cost = costVal ? parseFloat(costVal) : null;
+    const cost = parseOptionalDecimalInput(document.getElementById("medicationCost").value);
+    if (!validDecimalFields(cost)) {
+      submitBtn.disabled = false;
+      return;
+    }
 
     const { error, offline } = editingMedicationId
       ? await mutateTable("medications", "update", { id: editingMedicationId, payload: { name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost } })
@@ -7766,12 +7865,12 @@
     editingFoodId = row.id;
     document.getElementById("foodName").value = row.name;
     document.getElementById("foodType").value = row.food_type;
-    document.getElementById("foodAmount").value = row.amount_grams;
+    document.getElementById("foodAmount").value = formatDecimalInput(row.amount_grams);
     document.getElementById("foodUnit").value = "gram";
     document.getElementById("foodShop").value = row.shop || "";
     document.getElementById("foodDate").value = row.date;
     document.getElementById("foodNote").value = row.note || "";
-    document.getElementById("foodCost").value = row.cost ?? "";
+    document.getElementById("foodCost").value = formatDecimalInput(row.cost);
     document.getElementById("foodExcludeFromStats").checked = !!row.exclude_from_stats;
     updateFoodShopSuggestions(row.name);
     document.getElementById("foodFormTitle").textContent = "Voeding bewerken";
@@ -7789,7 +7888,7 @@
     editingFoodId = null;
     document.getElementById("foodName").value = row.name;
     document.getElementById("foodType").value = row.food_type;
-    document.getElementById("foodAmount").value = row.amount_grams;
+    document.getElementById("foodAmount").value = formatDecimalInput(row.amount_grams);
     document.getElementById("foodUnit").value = "gram";
     document.getElementById("foodShop").value = row.shop || "";
     document.getElementById("foodDate").valueAsDate = new Date();
@@ -7824,14 +7923,17 @@
 
     const name = document.getElementById("foodName").value.trim();
     const food_type = document.getElementById("foodType").value;
-    const amountVal = parseFloat(document.getElementById("foodAmount").value);
+    const amountVal = parseDecimalInput(document.getElementById("foodAmount").value);
     const unit = document.getElementById("foodUnit").value;
     const amount_grams = unit === "kilogram" ? amountVal * 1000 : amountVal;
     const shop = document.getElementById("foodShop").value.trim() || null;
     const date = document.getElementById("foodDate").value;
     const note = document.getElementById("foodNote").value.trim() || null;
-    const costVal = document.getElementById("foodCost").value;
-    const cost = costVal ? parseFloat(costVal) : null;
+    const cost = parseOptionalDecimalInput(document.getElementById("foodCost").value);
+    if (!validDecimalFields(amountVal, cost)) {
+      submitBtn.disabled = false;
+      return;
+    }
     const exclude_from_stats = document.getElementById("foodExcludeFromStats").checked;
 
     const { error, offline } = editingFoodId
@@ -8998,7 +9100,6 @@
     const submitBtn = profileForm.querySelector("button.submit");
     submitBtn.disabled = true;
 
-    const toNullableFloat = (val) => (val === "" ? null : parseFloat(val));
     const toNullableBool = (val) => (val === "" ? null : val === "true");
 
     const profile = {
@@ -9009,13 +9110,17 @@
       sex: document.getElementById("catSex").value || null,
       neutered: toNullableBool(document.getElementById("catNeutered").value),
       activity_level: document.getElementById("catActivity").value || null,
-      target_min_kg: toNullableFloat(document.getElementById("catTargetMin").value),
-      target_max_kg: toNullableFloat(document.getElementById("catTargetMax").value),
+      target_min_kg: parseOptionalDecimalInput(document.getElementById("catTargetMin").value),
+      target_max_kg: parseOptionalDecimalInput(document.getElementById("catTargetMax").value),
       weight_reminder_days: document.getElementById("catWeightReminderDays").value
         ? parseInt(document.getElementById("catWeightReminderDays").value, 10)
         : null,
       updated_at: new Date().toISOString(),
     };
+    if (!validDecimalFields(profile.target_min_kg, profile.target_max_kg)) {
+      submitBtn.disabled = false;
+      return;
+    }
     if (
       profile.target_min_kg != null &&
       profile.target_max_kg != null &&
@@ -9076,8 +9181,8 @@
     document.getElementById("catNeutered").value =
       catProfile.neutered === true ? "true" : catProfile.neutered === false ? "false" : "";
     document.getElementById("catActivity").value = catProfile.activity_level || "";
-    document.getElementById("catTargetMin").value = catProfile.target_min_kg ?? "";
-    document.getElementById("catTargetMax").value = catProfile.target_max_kg ?? "";
+    document.getElementById("catTargetMin").value = formatDecimalInput(catProfile.target_min_kg);
+    document.getElementById("catTargetMax").value = formatDecimalInput(catProfile.target_max_kg);
     document.getElementById("catWeightReminderDays").value = catProfile.weight_reminder_days ?? "";
     onProfileSpeciesChange();
     setPhotoPreview(catProfile.photo_data_url || null);
