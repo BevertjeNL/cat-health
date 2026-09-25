@@ -297,8 +297,9 @@ policies toe.
   `if not exists`, guarded `DO`-blocks).
 - Geen handmatige productieschemawijzigingen in Neon SQL Editor buiten
   migraties. Read-only diagnosequeries zijn wel toegestaan.
-- Na een wijziging aan Data API-zichtbare tabellen/kolommen kan in Neon onder
-  Data API `Refresh schema cache` nodig zijn.
+- Na de migraties stuurt de workflow `notify pgrst, 'reload schema'`. Blijft een
+  nieuwe kolom daarna onzichtbaar voor de Data API, klik dan in Neon onder
+  Data API op `Refresh schema cache`.
 - Destructieve migraties (`drop table`, `drop column`, massale rewrite) altijd
   eerst met de gebruiker bespreken en van een rollback/back-up voorzien.
 
