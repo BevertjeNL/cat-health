@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/BevertjeNL/cat-health/compare/v1.16.2...v1.17.0) (2026-09-25)
+
+
+### Features
+
+* tijdstip bij afwijkingen en komma als decimaalteken ([6afe5a1](https://github.com/BevertjeNL/cat-health/commit/6afe5a128238fb406cb177700e540f6fec192914))
+
 ## [1.16.2](https://github.com/BevertjeNL/cat-health/compare/v1.16.1...v1.16.2) (2026-08-30)
 
 
