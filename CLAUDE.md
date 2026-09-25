@@ -96,7 +96,7 @@ beheert:
   naar `localStorage`.
 - Iedere setting heeft een expliciete scope, standaardwaarde en validator.
   `appLang` en `iconStyle` zijn device-scoped, `activePetId` user-scoped en
-  `watchMarkers`/`careReminderShownDate` pet-scoped.
+  `watchMarkers`/`careReminderShownDate`/`symptomChartRange` pet-scoped.
 - De storagekeys zijn versieerbaar (`cathealth:settings:v1:...`). Voeg bij een
   incompatibele vormwijziging een migratiepad toe en verhoog de versie bewust.
 - Settings worden niet naar Neon gesynchroniseerd. De scope bepaalt alleen de

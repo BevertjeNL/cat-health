@@ -221,3 +221,78 @@ test("symptom logs store an optional time of day", () => {
   assert.match(html, /<input type="time" id="symptomTime"/);
   assert.match(html, /symptom_logs: \["id", "pet_id", "date", "time",/);
 });
+
+function createSymptomTimelineHarness() {
+  const source = extractBetween("  // --- Afwijkingen: tijdlijn", "  function symptomRangeKey()");
+  const context = {};
+  vm.createContext(context);
+  vm.runInContext(
+    `${source}\nthis.api = { symptomRangeBounds, buildSymptomTimelineModel, computeSinceVisitOverview, isoWeekStart, isoAddDays, isoDayDiff };`,
+    context
+  );
+  return context.api;
+}
+
+const timelineRows = [
+  { id: 1, date: "2026-01-05", symptom: "Braken", severity: "licht" },
+  { id: 2, date: "2026-06-01", symptom: "Braken", severity: "matig" },
+  { id: 3, date: "2026-08-20", symptom: "Braken", severity: "ernstig" },
+  { id: 4, date: "2026-08-21", symptom: "Braken", severity: "licht" },
+  { id: 5, date: "2026-08-21", symptom: "Braken", severity: null },
+  { id: 6, date: "2026-09-01", symptom: "Niezen", severity: null },
+  { id: 7, date: "2026-07-15", symptom: "Diarree", severity: "matig" },
+];
+
+test("symptom timeline periods resolve to the expected bounds", () => {
+  const { symptomRangeBounds } = createSymptomTimelineHarness();
+  const dates = timelineRows.map((r) => r.date);
+  const ctx = { today: "2026-09-25", lastVisitDate: "2026-08-12", dates };
+  assert.deepEqual({ ...symptomRangeBounds("visit", ctx) }, { from: "2026-08-12", to: "2026-09-25" });
+  assert.deepEqual({ ...symptomRangeBounds("1m", ctx) }, { from: "2026-08-26", to: "2026-09-25" });
+  assert.deepEqual({ ...symptomRangeBounds("all", ctx) }, { from: "2026-01-05", to: "2026-09-25" });
+  assert.deepEqual({ ...symptomRangeBounds("visit", { ...ctx, lastVisitDate: null }) }, { from: "2026-01-05", to: "2026-09-25" });
+});
+
+test("symptom timeline groups per day for short periods and per ISO week for long ones", () => {
+  const { buildSymptomTimelineModel, isoWeekStart } = createSymptomTimelineHarness();
+  assert.equal(isoWeekStart("2026-08-23"), "2026-08-17");
+  assert.equal(isoWeekStart("2026-08-17"), "2026-08-17");
+
+  const short = buildSymptomTimelineModel(timelineRows, { from: "2026-08-12", to: "2026-09-25" });
+  assert.equal(short.mode, "day");
+  assert.deepEqual([...short.names], ["Braken", "Niezen"]);
+  assert.equal(short.total, 4);
+  const aug21 = short.points.find((p) => p.x === "2026-08-21");
+  assert.equal(aug21.count, 2);
+  assert.equal(aug21.severity, "licht");
+
+  const long = buildSymptomTimelineModel(timelineRows, { from: "2026-01-01", to: "2026-09-25" });
+  assert.equal(long.mode, "week");
+  const week = long.points.find((p) => p.from === "2026-08-17" && p.y === "Braken");
+  assert.equal(week.count, 3);
+  assert.equal(week.severity, "ernstig");
+  assert.equal(week.to, "2026-08-23");
+});
+
+test("since-visit overview compares with the equally long period before the visit", () => {
+  const { computeSinceVisitOverview } = createSymptomTimelineHarness();
+  assert.equal(computeSinceVisitOverview(timelineRows, null, "2026-09-25"), null);
+  const overview = computeSinceVisitOverview(timelineRows, "2026-08-12", "2026-09-25");
+  assert.equal(overview.days, 44);
+  assert.equal(overview.total, 4);
+  assert.equal(overview.kinds, 2);
+  const [braken, niezen] = overview.items;
+  assert.equal(braken.symptom, "Braken");
+  assert.equal(braken.count, 3);
+  assert.equal(braken.previousCount, 0);
+  assert.equal(braken.isNew, false);
+  assert.deepEqual({ ...braken.severity }, { ernstig: 1, matig: 0, licht: 1, onbekend: 1 });
+  assert.equal(niezen.isNew, true);
+  assert.equal(niezen.daysSinceLast, 24);
+});
+
+test("symptom timeline range is a validated pet-scoped setting and marks are not built with innerHTML", () => {
+  assert.match(html, /symptomChartRange: \{\s*scope: "pet",\s*defaultValue: "visit"/);
+  const card = extractBetween("  function renderSymptomSinceVisitCard", "  function setSymptomListFilter");
+  assert.doesNotMatch(card, /innerHTML/);
+});
