@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/BevertjeNL/cat-health/compare/v1.17.0...v1.18.0) (2026-09-25)
+
+
+### Features
+
+* afwijkingen-tijdlijn met periodekeuze, zoom en overzicht sinds dierenartsbezoek ([5292ef9](https://github.com/BevertjeNL/cat-health/commit/5292ef96db99492a1e1f36d01da93e68998f9db4))
+
 # [1.17.0](https://github.com/BevertjeNL/cat-health/compare/v1.16.2...v1.17.0) (2026-09-25)
 
 
