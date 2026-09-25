@@ -873,6 +873,143 @@
     color: #fff;
   }
 
+  #symptomRangeToggle {
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  #symptomRangeToggle .cost-toggle-btn {
+    min-height: 32px;
+    min-width: 36px;
+    padding: 4px 8px;
+  }
+
+  .since-visit-meta {
+    margin: 0 0 12px;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+  }
+
+  .since-visit-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 14px;
+  }
+
+  .since-visit-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .since-visit-name {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--text);
+    font: inherit;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 3px;
+    min-height: 24px;
+  }
+
+  .since-visit-new {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 1px 7px;
+  }
+
+  .since-visit-count {
+    margin-left: auto;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .since-visit-bar {
+    display: flex;
+    gap: 2px;
+    height: 10px;
+  }
+
+  .since-visit-bar span {
+    border-radius: 4px;
+    min-width: 4px;
+  }
+
+  .since-visit-sub {
+    margin-top: 5px;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+
+  .symptom-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  .symptom-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .symptom-legend-swatch {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    flex-shrink: 0;
+  }
+
+  .symptom-legend-dot { border-radius: 50%; background: var(--swatch); }
+  .symptom-legend-ring { border-radius: 50%; border: 2.5px solid var(--swatch); }
+  .symptom-legend-diamond { background: var(--swatch); transform: rotate(45deg) scale(0.85); }
+  .symptom-legend-cell { border-radius: 2px; background: var(--swatch); }
+  .symptom-legend-vet { width: 0; height: 12px; border-left: 1.5px dashed var(--text-muted); }
+
+  .symptom-legend-note {
+    flex-basis: 100%;
+  }
+
+  .symptom-chart-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .symptom-chart-footer .hint-text {
+    margin: 0;
+  }
+
+  .symptom-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 0 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    background: var(--bg);
+    font-size: 0.88rem;
+  }
+
   .icon-style-toggle {
     display: flex;
     gap: 8px;
@@ -1835,11 +1972,23 @@
       </div>
     </div>
 
+    <div class="card" id="symptomSinceVisitCard" style="display:none;">
+      <h2>Sinds laatste dierenartsbezoek</h2>
+      <p class="since-visit-meta" id="symptomSinceVisitMeta"></p>
+      <ul class="since-visit-list" id="symptomSinceVisitList"></ul>
+      <button type="button" class="today-btn" id="symptomSinceVisitShareBtn" style="width:100%;margin-top:12px;">Overzicht voor de dierenarts</button>
+    </div>
     <div class="card">
       <h2 data-i18n="headingTimeline">Tijdlijn</h2>
+      <div class="cost-toggle" id="symptomRangeToggle" role="group" aria-label="Periode van de tijdlijn" style="display:none;"></div>
       <p class="hint-text" id="symptomChartEmpty" style="margin-bottom:8px;" data-i18n-js="emptySymptomChart">Nog geen afwijkingen om een tijdlijn te tonen.</p>
       <div class="chart-wrap" id="symptomChartWrap" style="display:none;">
-        <canvas id="symptomChart"></canvas>
+        <canvas id="symptomChart" role="img" aria-label="Tijdlijn van afwijkingen per soort; het overzicht hierboven en het logboek hieronder bevatten dezelfde gegevens als tekst"></canvas>
+      </div>
+      <div class="symptom-legend" id="symptomChartLegend" style="display:none;"></div>
+      <div class="symptom-chart-footer">
+        <p class="hint-text" id="symptomChartHint" style="display:none;">Knijp of scroll om in te zoomen, sleep om te schuiven. Tik op een punt om het logboek te filteren.</p>
+        <button type="button" class="cost-toggle-btn" id="symptomZoomResetBtn" style="display:none;">Zoom herstellen</button>
       </div>
     </div>
 
@@ -1854,9 +2003,13 @@
       </table>
     </div>
 
-    <div class="card">
+    <div class="card" id="symptomListCard">
       <h2>Logboek</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <div class="symptom-filter-bar" id="symptomListFilterBar" style="display:none;">
+        <span id="symptomListFilterText"></span>
+        <button type="button" class="cost-toggle-btn" id="symptomListFilterClearBtn">Wis filter</button>
+      </div>
       <ul class="entry-list" id="symptomList"></ul>
     </div>
   </section>
@@ -2748,6 +2901,11 @@
       defaultValue: () => ["ALT", "ALKP", "GGT", "TBIL"],
       legacyKey: "watchMarkers",
       validate: (value) => Array.isArray(value) && value.every((item) => typeof item === "string"),
+    },
+    symptomChartRange: {
+      scope: "pet",
+      defaultValue: "visit",
+      validate: (value) => ["visit", "1m", "3m", "6m", "1y", "all"].includes(value),
     },
     careReminderShownDate: {
       scope: "pet",
@@ -6392,7 +6550,10 @@
 
     cancelVetVisitEdit();
     showSuccess(t("successVetVisitSaved"));
-    if (!offline) await loadVetVisits();
+    if (!offline) {
+      await loadVetVisits();
+      renderSymptomChart(latestSymptomData);
+    }
   });
 
   async function loadVetVisits(loadContext = currentLoadContext()) {
@@ -6458,7 +6619,10 @@
       showError(t("errDeleteFailed") + ": " + error.message);
       return;
     }
-    if (!offline) await loadVetVisits();
+    if (!offline) {
+      await loadVetVisits();
+      renderSymptomChart(latestSymptomData);
+    }
   }
 
   // --- Vaccinations ----------------------------------------------------
@@ -7108,6 +7272,10 @@
     return String(now.getHours()).padStart(2, "0") + ":" + String(now.getMinutes()).padStart(2, "0");
   }
 
+  document.getElementById("symptomListFilterClearBtn").addEventListener("click", () => clearSymptomListFilter());
+  document.getElementById("symptomZoomResetBtn").addEventListener("click", () => resetSymptomZoom());
+  document.getElementById("symptomSinceVisitShareBtn").addEventListener("click", () => openPrintOverview());
+
   document.getElementById("symptomTimeNowBtn").addEventListener("click", () => {
     document.getElementById("symptomTime").value = currentLocalTimeHHMM();
   });
@@ -7283,129 +7451,594 @@
     renderSymptomChart(data);
   }
 
-  // One row per distinct afwijking, dots colored by ernst — makes clusters
-  // ("Braken keeps coming back") jump out at a glance.
+  // --- Afwijkingen: tijdlijn en "sinds laatste dierenartsbezoek" ------------
+  // The timeline is a swimlane per afwijking. A period selector (default:
+  // since the last vet visit) plus pinch/wheel zoom keeps recent events
+  // readable once the log spans years. Short spans show one mark per day,
+  // with ernst encoded by shape AND color (not color alone); long spans
+  // switch to weekly cells whose opacity grows with the count, so marks never
+  // pile up. Vet visits are vertical lines through every row, and everything
+  // before the last visit is shaded, so "what happened since" reads at once.
   let symptomChart;
   const SYMPTOM_SEVERITY_COLOR = { licht: "#34c759", matig: "#ff9500", ernstig: "#ff3b30" };
+  const SYMPTOM_UNKNOWN_COLOR = "#8e8e93";
+  const SYMPTOM_SEVERITY_RANK = { ernstig: 3, matig: 2, licht: 1 };
+  const SYMPTOM_SEVERITY_LABEL = { ernstig: "ernstig", matig: "matig", licht: "licht" };
+  const SYMPTOM_RANGES = [
+    { key: "visit", label: "Sinds bezoek", aria: "Sinds laatste dierenartsbezoek" },
+    { key: "1m", label: "1M", aria: "Afgelopen maand", days: 30 },
+    { key: "3m", label: "3M", aria: "Afgelopen 3 maanden", days: 91 },
+    { key: "6m", label: "6M", aria: "Afgelopen 6 maanden", days: 182 },
+    { key: "1y", label: "1J", aria: "Afgelopen jaar", days: 365 },
+    { key: "all", label: "Alles", aria: "Hele periode" },
+  ];
+  // Above this many visible days a mark per day becomes too narrow to read.
+  const SYMPTOM_WEEK_BUCKET_MIN_DAYS = 120;
+  const DAY_MS = 86400000;
+  let symptomListFilter = null;
+
+  function isoToUtcMs(dateStr) {
+    const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number);
+    return Date.UTC(y, m - 1, d);
+  }
+
+  // Local midnight, which is how the chart's date adapter parses "YYYY-MM-DD".
+  function isoToLocalMs(dateStr) {
+    const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number);
+    return new Date(y, m - 1, d).getTime();
+  }
+
+  function isoAddDays(dateStr, days) {
+    return new Date(isoToUtcMs(dateStr) + days * DAY_MS).toISOString().slice(0, 10);
+  }
+
+  function isoDayDiff(fromStr, toStr) {
+    return Math.round((isoToUtcMs(toStr) - isoToUtcMs(fromStr)) / DAY_MS);
+  }
+
+  // Monday of the ISO week containing dateStr.
+  function isoWeekStart(dateStr) {
+    const weekday = (new Date(isoToUtcMs(dateStr)).getUTCDay() + 6) % 7;
+    return isoAddDays(dateStr, -weekday);
+  }
+
+  function maxSymptomSeverity(a, b) {
+    return (SYMPTOM_SEVERITY_RANK[b] || 0) > (SYMPTOM_SEVERITY_RANK[a] || 0) ? b : a;
+  }
+
+  // Resolves a period key to inclusive ISO bounds. "visit" falls back to the
+  // whole history when no past vet visit exists yet.
+  function symptomRangeBounds(rangeKey, { today, lastVisitDate, dates }) {
+    const sorted = dates.filter(Boolean).sort();
+    const earliest = sorted[0] || today;
+    const latest = sorted.length && sorted[sorted.length - 1] > today ? sorted[sorted.length - 1] : today;
+    const range = SYMPTOM_RANGES.find((r) => r.key === rangeKey);
+    let from = earliest;
+    if (range && range.days) from = isoAddDays(today, -range.days);
+    else if (rangeKey === "visit" && lastVisitDate) from = lastVisitDate;
+    if (from > latest) from = latest;
+    return { from, to: latest };
+  }
+
+  // Pure model behind the timeline: rows limited to the period, one lane per
+  // afwijking sorted by frequency in that period, and marks bucketed per day
+  // or per ISO week.
+  function buildSymptomTimelineModel(rows, { from, to }, bucket) {
+    const inRange = rows.filter((r) => r.date >= from && r.date <= to);
+    const counts = {};
+    inRange.forEach((r) => (counts[r.symptom] = (counts[r.symptom] || 0) + 1));
+    const names = Object.keys(counts).sort((a, b) => counts[b] - counts[a] || a.localeCompare(b));
+    const mode = bucket || (isoDayDiff(from, to) > SYMPTOM_WEEK_BUCKET_MIN_DAYS ? "week" : "day");
+    const groups = {};
+    inRange.forEach((r) => {
+      const start = mode === "week" ? isoWeekStart(r.date) : r.date;
+      const key = start + "|" + r.symptom;
+      if (!groups[key]) {
+        groups[key] = {
+          // Week cells sit mid-week so they line up with the dates they cover.
+          x: mode === "week" ? isoAddDays(start, 3) + "T12:00:00" : r.date,
+          y: r.symptom,
+          from: start,
+          to: mode === "week" ? isoAddDays(start, 6) : start,
+          count: 0,
+          severity: null,
+        };
+      }
+      groups[key].count += 1;
+      groups[key].severity = maxSymptomSeverity(groups[key].severity, r.severity);
+    });
+    const points = Object.values(groups);
+    const maxCount = points.reduce((max, p) => Math.max(max, p.count), 0);
+    return { mode, names, counts, points, maxCount, total: inRange.length };
+  }
+
+  // What happened since the last past vet visit, per afwijking, compared with
+  // an equally long period directly before that visit.
+  function computeSinceVisitOverview(rows, lastVisitDate, today) {
+    if (!lastVisitDate) return null;
+    const days = Math.max(0, isoDayDiff(lastVisitDate, today));
+    const windowDays = Math.max(1, days);
+    const previousFrom = isoAddDays(lastVisitDate, -windowDays);
+    const since = rows.filter((r) => r.date >= lastVisitDate && r.date <= today);
+    const seenBefore = new Set(rows.filter((r) => r.date < lastVisitDate).map((r) => r.symptom));
+    const previousCounts = {};
+    rows
+      .filter((r) => r.date >= previousFrom && r.date < lastVisitDate)
+      .forEach((r) => (previousCounts[r.symptom] = (previousCounts[r.symptom] || 0) + 1));
+
+    const byName = {};
+    since.forEach((r) => {
+      if (!byName[r.symptom]) {
+        byName[r.symptom] = { symptom: r.symptom, count: 0, severity: { ernstig: 0, matig: 0, licht: 0, onbekend: 0 }, last: r.date };
+      }
+      const item = byName[r.symptom];
+      item.count += 1;
+      item.severity[SYMPTOM_SEVERITY_RANK[r.severity] ? r.severity : "onbekend"] += 1;
+      if (r.date > item.last) item.last = r.date;
+    });
+    const items = Object.values(byName)
+      .map((item) => ({
+        ...item,
+        previousCount: previousCounts[item.symptom] || 0,
+        isNew: !seenBefore.has(item.symptom),
+        daysSinceLast: isoDayDiff(item.last, today),
+      }))
+      .sort((a, b) => b.count - a.count || a.symptom.localeCompare(b.symptom));
+    return { sinceDate: lastVisitDate, days, windowDays, total: since.length, kinds: items.length, items };
+  }
+
+  function symptomRangeKey() {
+    return readSetting("symptomChartRange");
+  }
+
+  function setSymptomChartRange(key) {
+    writeSetting("symptomChartRange", key);
+    renderSymptomChart(latestSymptomData);
+  }
+
+  function relativeDayText(days) {
+    if (days <= 0) return "vandaag";
+    if (days === 1) return "gisteren";
+    return `${days} dagen geleden`;
+  }
+
+  function hexToRgba(hex, alpha) {
+    const value = parseInt(hex.slice(1), 16);
+    return `rgba(${(value >> 16) & 255}, ${(value >> 8) & 255}, ${value & 255}, ${alpha})`;
+  }
+
+  function cssToken(name, fallback) {
+    const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return value || fallback;
+  }
+
+  function renderSymptomRangeToggle(hasData) {
+    const group = document.getElementById("symptomRangeToggle");
+    group.style.display = hasData ? "" : "none";
+    if (!group.childElementCount) {
+      SYMPTOM_RANGES.forEach((range) => {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "cost-toggle-btn";
+        btn.dataset.range = range.key;
+        btn.textContent = range.label;
+        btn.setAttribute("aria-label", range.aria);
+        btn.addEventListener("click", () => setSymptomChartRange(range.key));
+        group.appendChild(btn);
+      });
+    }
+    const active = symptomRangeKey();
+    group.querySelectorAll("button").forEach((btn) => {
+      const on = btn.dataset.range === active;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-pressed", String(on));
+    });
+  }
+
+  function renderSymptomLegend(mode) {
+    const legend = document.getElementById("symptomChartLegend");
+    legend.replaceChildren();
+    const entries = mode === "week"
+      ? [
+          ["cell", SYMPTOM_SEVERITY_COLOR.ernstig, "Ernstig"],
+          ["cell", SYMPTOM_SEVERITY_COLOR.matig, "Matig"],
+          ["cell", SYMPTOM_SEVERITY_COLOR.licht, "Licht"],
+          ["cell", SYMPTOM_UNKNOWN_COLOR, "Onbekend"],
+          ["vet", null, "Dierenartsbezoek"],
+        ]
+      : [
+          ["dot", SYMPTOM_SEVERITY_COLOR.ernstig, "Ernstig"],
+          ["diamond", SYMPTOM_SEVERITY_COLOR.matig, "Matig"],
+          ["ring", SYMPTOM_SEVERITY_COLOR.licht, "Licht"],
+          ["dot", SYMPTOM_UNKNOWN_COLOR, "Onbekend"],
+          ["vet", null, "Dierenartsbezoek"],
+        ];
+    entries.forEach(([shape, color, label]) => {
+      const item = document.createElement("span");
+      item.className = "symptom-legend-item";
+      const swatch = document.createElement("span");
+      swatch.className = `symptom-legend-swatch symptom-legend-${shape}`;
+      if (color) swatch.style.setProperty("--swatch", color);
+      item.append(swatch, document.createTextNode(label));
+      legend.appendChild(item);
+    });
+    const note = document.createElement("span");
+    note.className = "symptom-legend-note";
+    note.textContent = mode === "week" ? "Per week; donkerder vakje = vaker." : "Groter punt = vaker op die dag.";
+    legend.appendChild(note);
+  }
+
+  // Draws vet visits as dashed vertical lines with a short date label, and
+  // shades the part of the timeline before the most recent visit.
+  const symptomVetLinesPlugin = {
+    id: "symptomVetLines",
+    beforeDatasetsDraw(chart, args, opts) {
+      const { ctx, chartArea, scales } = chart;
+      const x = scales.x;
+      const visits = (opts.visits || []).slice().sort();
+      if (!visits.length) return;
+      const muted = opts.color || "#8e8e93";
+      ctx.save();
+      if (opts.lastVisit) {
+        const px = Math.min(chartArea.right, x.getPixelForValue(x.parse(opts.lastVisit)));
+        if (px > chartArea.left) {
+          ctx.fillStyle = hexToRgba("#8e8e93", 0.1);
+          ctx.fillRect(chartArea.left, chartArea.top, px - chartArea.left, chartArea.bottom - chartArea.top);
+        }
+      }
+      ctx.strokeStyle = muted;
+      ctx.fillStyle = muted;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.font = "10px -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "bottom";
+      let lastLabelPx = -Infinity;
+      visits.forEach((date) => {
+        const px = x.getPixelForValue(x.parse(date));
+        if (px < chartArea.left || px > chartArea.right) return;
+        ctx.beginPath();
+        ctx.moveTo(px, chartArea.top);
+        ctx.lineTo(px, chartArea.bottom);
+        ctx.stroke();
+        if (px - lastLabelPx >= 44) {
+          const [, m, d] = date.split("-");
+          ctx.fillText(`${parseInt(d, 10)} ${DUTCH_MONTH_ABBR[parseInt(m, 10) - 1]}`, px, chartArea.top - 3);
+          lastLabelPx = px;
+        }
+      });
+      ctx.restore();
+    },
+  };
+
+  // Heat-strip cells for the weekly view: one block per ISO week, as wide
+  // as the week at the current zoom (minus a 2px gap), opacity = frequency.
+  const symptomWeekCellsPlugin = {
+    id: "symptomWeekCells",
+    afterDatasetsDraw(chart) {
+      const state = chart.$symptom;
+      const dataset = chart.data.datasets[0];
+      if (!state || state.mode !== "week" || !dataset || !dataset.cellColors) return;
+      const { ctx, chartArea, scales } = chart;
+      const lane = scales.y.getPixelForValue(1) - scales.y.getPixelForValue(0);
+      const height = Math.max(8, Math.min(22, (Number.isFinite(lane) && lane > 0 ? lane : 40) * 0.5));
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(chartArea.left, chartArea.top, chartArea.right - chartArea.left, chartArea.bottom - chartArea.top);
+      ctx.clip();
+      dataset.data.forEach((point, index) => {
+        const left = scales.x.getPixelForValue(isoToLocalMs(point.from)) + 1;
+        const right = scales.x.getPixelForValue(isoToLocalMs(isoAddDays(point.to, 1))) - 1;
+        const y = scales.y.getPixelForValue(point.y);
+        ctx.fillStyle = dataset.cellColors[index];
+        ctx.beginPath();
+        const width = Math.max(2, right - left);
+        if (ctx.roundRect) ctx.roundRect(left, y - height / 2, width, height, Math.min(3, width / 2));
+        else ctx.rect(left, y - height / 2, width, height);
+        ctx.fill();
+      });
+      ctx.restore();
+    },
+  };
+
+  function symptomDatasetFromModel(model, cardBg) {
+    const colorOf = (p) => SYMPTOM_SEVERITY_COLOR[p.severity] || SYMPTOM_UNKNOWN_COLOR;
+    if (model.mode === "week") {
+      // The cells themselves are drawn by symptomWeekCellsPlugin as bars a
+      // full week wide; the dataset only provides hover/tap targets.
+      return {
+        data: model.points,
+        cellColors: model.points.map((p) => hexToRgba(colorOf(p), 0.3 + 0.7 * (p.count / (model.maxCount || 1)))),
+        pointStyle: "rect",
+        backgroundColor: "rgba(0, 0, 0, 0)",
+        borderWidth: 0,
+        pointRadius: 3,
+        pointHoverRadius: 3,
+        pointHitRadius: 10,
+      };
+    }
+    return {
+      data: model.points,
+      pointStyle: model.points.map((p) => (p.severity === "matig" ? "rectRot" : "circle")),
+      // Licht is an open ring; the others are filled with a thin surface ring
+      // so overlapping marks stay distinguishable.
+      backgroundColor: model.points.map((p) => (p.severity === "licht" ? cardBg : colorOf(p))),
+      borderColor: model.points.map((p) => (p.severity === "licht" ? colorOf(p) : cardBg)),
+      borderWidth: model.points.map((p) => (p.severity === "licht" ? 2.5 : 1.5)),
+      pointRadius: model.points.map((p) => 5 + Math.min(7, (p.count - 1) * 2)),
+      pointHoverRadius: model.points.map((p) => 7 + Math.min(7, (p.count - 1) * 2)),
+    };
+  }
+
+  function symptomAxisUnit(days) {
+    if (days <= 14) return "day";
+    if (days <= 70) return "week";
+    if (days <= 400) return "month";
+    return "quarter";
+  }
+
+  // Keeps the bucket size and the axis unit in step with the zoom level.
+  function refreshSymptomChartBuckets(chart) {
+    const state = chart.$symptom;
+    if (!state) return;
+    const visibleDays = (chart.scales.x.max - chart.scales.x.min) / DAY_MS;
+    const mode = visibleDays > SYMPTOM_WEEK_BUCKET_MIN_DAYS ? "week" : "day";
+    const unit = symptomAxisUnit(visibleDays);
+    const zoomed = typeof chart.isZoomedOrPanned === "function" && chart.isZoomedOrPanned();
+    document.getElementById("symptomZoomResetBtn").style.display = zoomed ? "" : "none";
+    if (mode === state.mode && unit === chart.options.scales.x.time.unit) return;
+    chart.options.scales.x.time.unit = unit;
+    if (mode !== state.mode) {
+      state.mode = mode;
+      const model = buildSymptomTimelineModel(state.rows, state.bounds, mode);
+      chart.data.datasets[0] = symptomDatasetFromModel(model, state.cardBg);
+      renderSymptomLegend(mode);
+    }
+    chart.update("none");
+  }
 
   function renderSymptomChart(data) {
+    renderSymptomSinceVisitCard(data);
+
     const emptyEl = document.getElementById("symptomChartEmpty");
     const wrapEl = document.getElementById("symptomChartWrap");
+    const legendEl = document.getElementById("symptomChartLegend");
+    const hintEl = document.getElementById("symptomChartHint");
+    document.getElementById("symptomZoomResetBtn").style.display = "none";
+    renderSymptomRangeToggle(data.length > 0);
+    if (symptomChart) {
+      symptomChart.destroy();
+      symptomChart = null;
+    }
 
-    if (!data.length) {
+    const today = dateToISO(new Date());
+    const lastVisit = lastPastVetVisit();
+    const vetVisitDates = (latestVetVisitData || []).map((v) => v.date);
+    const bounds = symptomRangeBounds(symptomRangeKey(), {
+      today,
+      lastVisitDate: lastVisit ? lastVisit.date : null,
+      dates: data.map((r) => r.date),
+    });
+    const model = buildSymptomTimelineModel(data, bounds);
+
+    if (!model.total) {
+      emptyEl.textContent = data.length ? "Geen afwijkingen in deze periode. Kies een langere periode." : t("emptySymptomChart");
       emptyEl.style.display = "";
       wrapEl.style.display = "none";
+      legendEl.style.display = "none";
+      hintEl.style.display = "none";
       return;
     }
     emptyEl.style.display = "none";
     wrapEl.style.display = "";
+    legendEl.style.display = "";
+    hintEl.style.display = "";
+    wrapEl.style.height = Math.max(170, 80 + model.names.length * 42) + "px";
 
-    const freq = {};
-    data.forEach((r) => (freq[r.symptom] = (freq[r.symptom] || 0) + 1));
-    const names = Object.keys(freq).sort((a, b) => freq[b] - freq[a]);
-
-    // Dierenartsbezoeken get their own reference row (gray triangles, distinct
-    // from the round symptom bubbles) at the top, so it's visually obvious
-    // from which point onward the "sinds laatste bezoek" count on the
-    // dashboard restarts.
-    const VET_ROW_LABEL = "🐾 Dierenarts";
-    const vetVisitDates = (latestVetVisitData || []).map((v) => v.date);
-    const allLabels = vetVisitDates.length ? [VET_ROW_LABEL, ...names] : names;
-    wrapEl.style.height = Math.max(160, 60 + allLabels.length * 46) + "px";
-
-    // Multiple entries for the same afwijking on the same day used to stack
-    // exactly on top of each other — invisible instead of "many entries".
-    // Grouping by (date, symptom) and scaling the dot's radius by how many
-    // entries it represents turns that invisible overlap into a visibly
-    // bigger bubble, which is what stays readable once the log gets dense.
-    const severityRank = { ernstig: 3, matig: 2, licht: 1 };
-    const grouped = {};
-    data.forEach((r) => {
-      const key = r.date + "|" + r.symptom;
-      if (!grouped[key]) grouped[key] = { x: r.date, y: r.symptom, count: 0, severity: r.severity || null };
-      grouped[key].count += 1;
-      if ((severityRank[r.severity] || 0) > (severityRank[grouped[key].severity] || 0)) grouped[key].severity = r.severity;
-    });
-    const points = Object.values(grouped);
-    const colors = points.map((p) => SYMPTOM_SEVERITY_COLOR[p.severity] || "#8e8e93");
-    const radii = points.map((p) => 5 + Math.min(9, (p.count - 1) * 3));
-    const vetPoints = vetVisitDates.map((d) => ({ x: d, y: VET_ROW_LABEL }));
-    const xRange = computeTimelineXRange([...data.map((r) => r.date), ...vetVisitDates]);
-
-    if (symptomChart) {
-      symptomChart.data.labels = allLabels;
-      symptomChart.data.datasets[0].data = points;
-      symptomChart.data.datasets[0].backgroundColor = colors;
-      symptomChart.data.datasets[0].pointRadius = radii;
-      symptomChart.data.datasets[0].pointHoverRadius = radii.map((r) => r + 2);
-      symptomChart.data.datasets[1].data = vetPoints;
-      symptomChart.options.scales.x.min = xRange.min;
-      symptomChart.options.scales.x.max = xRange.max;
-      symptomChart.options.scales.y.labels = allLabels;
-      symptomChart.update();
-      return;
-    }
+    // A little room on both ends so the first/last mark and a vet line on
+    // the start date never sit flush against the chart edge.
+    const span = Math.max(1, isoDayDiff(bounds.from, bounds.to));
+    const pad = Math.max(1, Math.round(span * 0.03));
+    const xMin = isoToLocalMs(isoAddDays(bounds.from, -pad));
+    const xMax = isoToLocalMs(isoAddDays(bounds.to, pad));
+    const cardBg = cssToken("--card-bg", "#ffffff");
+    const muted = cssToken("--text-muted", "#6f6b60");
+    const laneLabels = model.names.map((name) => `${name} · ${model.counts[name]}`);
 
     symptomChart = new Chart(document.getElementById("symptomChart"), {
       type: "scatter",
-      data: {
-        labels: allLabels,
-        datasets: [
-          {
-            data: points,
-            backgroundColor: colors,
-            pointRadius: radii,
-            pointHoverRadius: radii.map((r) => r + 2),
-          },
-          {
-            data: vetPoints,
-            backgroundColor: "#8e8e93",
-            borderColor: "#8e8e93",
-            pointStyle: "triangle",
-            pointRadius: 7,
-            pointHoverRadius: 9,
-          },
-        ],
-      },
+      data: { datasets: [symptomDatasetFromModel(model, cardBg)] },
+      plugins: [symptomVetLinesPlugin, symptomWeekCellsPlugin],
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        layout: { padding: { top: 8, right: 8, left: 8, bottom: 8 } },
+        animation: false,
+        layout: { padding: { top: 16, right: 10, left: 4, bottom: 4 } },
         scales: {
           x: {
             type: "time",
-            min: xRange.min,
-            max: xRange.max,
+            min: xMin,
+            max: xMax,
             time: {
               tooltipFormat: "dd-MM-yyyy",
-              minUnit: "day",
-              displayFormats: { day: "d MMM", week: "d MMM", month: "MMM yyyy", quarter: "QQQ yyyy", year: "yyyy" },
+              unit: symptomAxisUnit(span),
+              displayFormats: { day: "d MMM", week: "d MMM", month: "MMM yy", quarter: "MMM yy", year: "yyyy" },
             },
+            ticks: { color: muted, maxRotation: 0, autoSkipPadding: 14, font: { size: 11 } },
             grid: { display: false },
           },
           y: {
             type: "category",
-            labels: allLabels,
+            labels: model.names,
             offset: true,
-            grid: { display: false },
-            ticks: { font: { size: 11 } },
+            grid: { color: hexToRgba("#8e8e93", 0.12), drawTicks: false },
+            border: { display: false },
+            ticks: {
+              color: muted,
+              padding: 8,
+              font: { size: 11 },
+              callback: (value, index) => laneLabels[index],
+            },
           },
+        },
+        onClick: (evt, elements, chart) => {
+          if (!elements.length) return;
+          const raw = chart.data.datasets[elements[0].datasetIndex].data[elements[0].index];
+          setSymptomListFilter({ symptom: raw.y, from: raw.from, to: raw.to });
         },
         plugins: {
           legend: { display: false },
+          symptomVetLines: { visits: vetVisitDates, lastVisit: lastVisit ? lastVisit.date : null, color: muted },
           tooltip: {
             callbacks: {
               title: (items) => items[0].raw.y,
-              label: (item) => formatDate(item.raw.x) + (item.raw.count > 1 ? ` · ${item.raw.count}x` : "") + (item.raw.severity ? " · " + item.raw.severity : ""),
+              label: (item) => {
+                const raw = item.raw;
+                const when = raw.from === raw.to ? formatDate(raw.from) : `Week ${formatDate(raw.from)} t/m ${formatDate(raw.to)}`;
+                const severity = raw.severity ? ` · ${raw.from === raw.to ? "" : "zwaarste: "}${SYMPTOM_SEVERITY_LABEL[raw.severity]}` : "";
+                return `${when} · ${raw.count}×${severity}`;
+              },
+              footer: () => "Tik om het logboek te filteren",
             },
+          },
+          zoom: {
+            pan: { enabled: true, mode: "x", onPanComplete: ({ chart }) => refreshSymptomChartBuckets(chart) },
+            zoom: {
+              pinch: { enabled: true },
+              wheel: { enabled: true, speed: 0.05 },
+              mode: "x",
+              onZoomComplete: ({ chart }) => refreshSymptomChartBuckets(chart),
+            },
+            limits: { x: { min: "original", max: "original", minRange: 7 * DAY_MS } },
           },
         },
       },
     });
+    symptomChart.$symptom = { rows: data, bounds, mode: model.mode, cardBg };
+    // The first paint happened inside the constructor, before the state
+    // above existed; repaint so the week cells appear.
+    symptomChart.draw();
+    renderSymptomLegend(model.mode);
+  }
+
+  function resetSymptomZoom() {
+    if (!symptomChart) return;
+    symptomChart.resetZoom();
+    refreshSymptomChartBuckets(symptomChart);
+  }
+
+  function renderSymptomSinceVisitCard(data) {
+    const card = document.getElementById("symptomSinceVisitCard");
+    const meta = document.getElementById("symptomSinceVisitMeta");
+    const list = document.getElementById("symptomSinceVisitList");
+    const shareBtn = document.getElementById("symptomSinceVisitShareBtn");
+    list.replaceChildren();
+    if (!data.length) {
+      card.style.display = "none";
+      return;
+    }
+    card.style.display = "";
+
+    const lastVisit = lastPastVetVisit();
+    const today = dateToISO(new Date());
+    const overview = computeSinceVisitOverview(data, lastVisit ? lastVisit.date : null, today);
+    if (!overview) {
+      meta.textContent = "Nog geen dierenartsbezoek gelogd. Log een bezoek om te zien wat er sindsdien is gebeurd.";
+      shareBtn.style.display = "none";
+      return;
+    }
+    shareBtn.style.display = "";
+
+    const reason = lastVisit.reason ? ` (${lastVisit.reason})` : "";
+    const dayWord = overview.days === 1 ? "dag" : "dagen";
+    meta.textContent = overview.total
+      ? `${overview.days} ${dayWord} sinds ${formatDate(overview.sinceDate)}${reason} · ${overview.total} ${overview.total === 1 ? "afwijking" : "afwijkingen"} · ${overview.kinds} ${overview.kinds === 1 ? "soort" : "soorten"}`
+      : `${overview.days} ${dayWord} sinds ${formatDate(overview.sinceDate)}${reason} · geen afwijkingen gelogd`;
+
+    const maxCount = overview.items.reduce((max, item) => Math.max(max, item.count), 0);
+    overview.items.forEach((item) => {
+      const li = document.createElement("li");
+      li.className = "since-visit-item";
+
+      const head = document.createElement("div");
+      head.className = "since-visit-head";
+      const name = document.createElement("button");
+      name.type = "button";
+      name.className = "since-visit-name";
+      name.textContent = item.symptom;
+      name.setAttribute("aria-label", `Toon ${item.symptom} sinds het bezoek in het logboek`);
+      name.addEventListener("click", () => setSymptomListFilter({ symptom: item.symptom, from: overview.sinceDate, to: today }));
+      head.appendChild(name);
+      if (item.isNew) {
+        const badge = document.createElement("span");
+        badge.className = "since-visit-new";
+        badge.textContent = "nieuw";
+        head.appendChild(badge);
+      }
+      const count = document.createElement("span");
+      count.className = "since-visit-count";
+      count.textContent = `${item.count}×`;
+      head.appendChild(count);
+
+      const bar = document.createElement("div");
+      bar.className = "since-visit-bar";
+      bar.style.width = `${Math.max(8, (item.count / maxCount) * 100)}%`;
+      const parts = [];
+      [["ernstig", SYMPTOM_SEVERITY_COLOR.ernstig], ["matig", SYMPTOM_SEVERITY_COLOR.matig], ["licht", SYMPTOM_SEVERITY_COLOR.licht], ["onbekend", SYMPTOM_UNKNOWN_COLOR]].forEach(([key, color]) => {
+        const n = item.severity[key];
+        if (!n) return;
+        const seg = document.createElement("span");
+        seg.style.flexGrow = String(n);
+        seg.style.background = color;
+        bar.appendChild(seg);
+        parts.push(`${n} ${key}`);
+      });
+      bar.setAttribute("role", "img");
+      bar.setAttribute("aria-label", `${item.count} keer: ${parts.join(", ")}`);
+
+      const sub = document.createElement("div");
+      sub.className = "since-visit-sub";
+      let trend = "";
+      if (!item.isNew) {
+        const period = `de ${overview.windowDays} ${overview.windowDays === 1 ? "dag" : "dagen"} ervóór`;
+        if (item.count > item.previousCount) trend = `↑ vaker dan ${period} (${item.previousCount}×)`;
+        else if (item.count < item.previousCount) trend = `↓ minder dan ${period} (${item.previousCount}×)`;
+        else trend = `= even vaak als ${period}`;
+      } else {
+        trend = "niet eerder gelogd";
+      }
+      sub.textContent = `laatst ${relativeDayText(item.daysSinceLast)} · ${trend}`;
+
+      li.append(head, bar, sub);
+      list.appendChild(li);
+    });
+  }
+
+  function setSymptomListFilter(filter) {
+    symptomListFilter = { ...filter, petId: currentPetId };
+    renderSymptomList(latestSymptomData);
+    document.getElementById("symptomListCard").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function clearSymptomListFilter() {
+    symptomListFilter = null;
+    renderSymptomList(latestSymptomData);
   }
 
   function renderSymptomList(data) {
     symptomList.innerHTML = "";
+
+    const filterBar = document.getElementById("symptomListFilterBar");
+    if (symptomListFilter && symptomListFilter.petId !== currentPetId) symptomListFilter = null;
+    if (symptomListFilter) {
+      const { symptom, from, to } = symptomListFilter;
+      data = data.filter((r) => r.symptom === symptom && r.date >= from && r.date <= to);
+      document.getElementById("symptomListFilterText").textContent =
+        `${symptom} · ${from === to ? formatDate(from) : `${formatDate(from)} t/m ${formatDate(to)}`} (${data.length})`;
+      filterBar.style.display = "";
+    } else {
+      filterBar.style.display = "none";
+    }
 
     if (data.length === 0) {
       symptomList.innerHTML = '<li class="empty-state" style="border:none;">' + t("emptySymptomsLogged") + '</li>';
@@ -9238,7 +9871,7 @@
       // Re-render the few views that combine multiple independently loaded
       // datasets only after the complete, current generation has settled.
       renderWeightChart(latestWeightData);
-      if (symptomChart) renderSymptomChart(latestSymptomData);
+      renderSymptomChart(latestSymptomData);
       renderVetVisitList(latestVetVisitData);
       maybeShowCareReminders();
       if (document.getElementById("tabDashboard").classList.contains("active")) renderDashboard();
