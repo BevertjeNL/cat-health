@@ -174,3 +174,50 @@ test("CI runs regression tests before lint", () => {
   assert.ok(workflow.indexOf("- run: npm test") > -1);
   assert.ok(workflow.indexOf("- run: npm test") < workflow.indexOf("- run: npm run lint"));
 });
+
+function createDecimalHarness(lang = "nl") {
+  const source = extractBetween("  // --- Decimal input", '  document.querySelectorAll(".today-btn")');
+  const errors = [];
+  const context = { readSetting: () => lang, showError: (msg) => errors.push(msg), t: (key) => key };
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.api = { parseDecimalInput, parseOptionalDecimalInput, formatDecimalInput, validDecimalFields };`, context);
+  return { ...context.api, errors };
+}
+
+test("decimal inputs accept a Dutch comma as well as a dot", () => {
+  const { parseDecimalInput, parseOptionalDecimalInput } = createDecimalHarness();
+  assert.equal(parseDecimalInput("4,2"), 4.2);
+  assert.equal(parseDecimalInput(" 4.25 "), 4.25);
+  assert.equal(parseDecimalInput(",5"), 0.5);
+  assert.equal(parseDecimalInput("-1,5"), -1.5);
+  assert.equal(parseDecimalInput("12"), 12);
+  assert.ok(Number.isNaN(parseDecimalInput("1.234,5")));
+  assert.ok(Number.isNaN(parseDecimalInput("4,2kg")));
+  assert.ok(Number.isNaN(parseDecimalInput("")));
+  assert.equal(parseOptionalDecimalInput("  "), null);
+  assert.equal(parseOptionalDecimalInput("45,00"), 45);
+});
+
+test("decimal prefills follow the interface language and invalid values block saving", () => {
+  assert.equal(createDecimalHarness("nl").formatDecimalInput(4.2), "4,2");
+  assert.equal(createDecimalHarness("en").formatDecimalInput(4.2), "4.2");
+  assert.equal(createDecimalHarness("nl").formatDecimalInput(null), "");
+  const harness = createDecimalHarness();
+  assert.equal(harness.validDecimalFields(4.2, null), true);
+  assert.equal(harness.validDecimalFields(NaN), false);
+  assert.deepEqual(harness.errors, ["errInvalidNumber"]);
+});
+
+test("decimal fields no longer use number inputs that drop a comma", () => {
+  for (const id of ["weightKg", "vetVisitCost", "vaxCost", "medicationCost", "foodAmount", "foodCost", "catTargetMin", "catTargetMax"]) {
+    assert.match(html, new RegExp(`<input type="text" id="${id}" inputmode="decimal"`));
+  }
+  assert.doesNotMatch(html, /parseFloat\(document\.getElementById/);
+});
+
+test("symptom logs store an optional time of day", () => {
+  const migration = fs.readFileSync(path.join(root, "neon/migrations/0004_symptom_log_time.sql"), "utf8");
+  assert.match(migration, /alter table symptom_logs add column if not exists time time;/);
+  assert.match(html, /<input type="time" id="symptomTime"/);
+  assert.match(html, /symptom_logs: \["id", "pet_id", "date", "time",/);
+});
