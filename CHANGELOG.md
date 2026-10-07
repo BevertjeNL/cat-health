@@ -1,3 +1,10 @@
+## [1.18.1](https://github.com/BevertjeNL/cat-health/compare/v1.18.0...v1.18.1) (2026-10-07)
+
+
+### Bug Fixes
+
+* clarify symptom trends with comparable periods ([#12](https://github.com/BevertjeNL/cat-health/issues/12)) ([592df52](https://github.com/BevertjeNL/cat-health/commit/592df520f27f6c373a2ff5fbc8ef7ad69f3a44c3))
+
 # [1.18.0](https://github.com/BevertjeNL/cat-health/compare/v1.17.0...v1.18.0) (2026-09-25)
 
 
