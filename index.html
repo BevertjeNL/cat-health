@@ -3161,10 +3161,11 @@
     emptyVaxChart: "Nog geen vaccinaties om een tijdlijn te tonen.",
     emptySymptomChart: "Nog geen afwijkingen om een tijdlijn te tonen.",
     emptyArchivedPets: "Geen gearchiveerde huisdieren.",
-    symptomTrendUp: "komt vaker voor dan normaal",
-    symptomTrendDown: "komt minder vaak voor dan normaal",
-    symptomTrendDetail: "keer in",
-    symptomTrendWindowUnit: "dagen",
+    symptomTrendUp: "op meer dagen geregistreerd",
+    symptomTrendDown: "op minder dagen geregistreerd",
+    symptomTrendRecent: "Afgelopen 14 dagen",
+    symptomTrendPrevious: "84 dagen daarvoor",
+    symptomTrendDays: "dagen met registratie",
     alertVaxExpiredSince: "is verlopen sinds",
     alertVaxExpiresIn: "verloopt over",
     alertVaxAllCurrent: "Vaccinaties zijn actueel.",
@@ -3314,10 +3315,11 @@
     emptyVaxChart: "No vaccinations yet to show a timeline.",
     emptySymptomChart: "No symptoms yet to show a timeline.",
     emptyArchivedPets: "No archived pets.",
-    symptomTrendUp: "is occurring more often than usual",
-    symptomTrendDown: "is occurring less often than usual",
-    symptomTrendDetail: "times in",
-    symptomTrendWindowUnit: "days",
+    symptomTrendUp: "logged on more days",
+    symptomTrendDown: "logged on fewer days",
+    symptomTrendRecent: "Past 14 days",
+    symptomTrendPrevious: "Previous 84 days",
+    symptomTrendDays: "days with a log",
     alertVaxExpiredSince: "expired on",
     alertVaxExpiresIn: "expires in",
     alertVaxAllCurrent: "Vaccinations are up to date.",
@@ -3466,10 +3468,11 @@
     emptyVaxChart: "Noch keine Impfungen für eine Zeitachse.",
     emptySymptomChart: "Noch keine Symptome für eine Zeitachse.",
     emptyArchivedPets: "Keine archivierten Haustiere.",
-    symptomTrendUp: "tritt häufiger auf als normal",
-    symptomTrendDown: "tritt seltener auf als normal",
-    symptomTrendDetail: "mal in",
-    symptomTrendWindowUnit: "Tage",
+    symptomTrendUp: "an mehr Tagen erfasst",
+    symptomTrendDown: "an weniger Tagen erfasst",
+    symptomTrendRecent: "Letzte 14 Tage",
+    symptomTrendPrevious: "84 Tage davor",
+    symptomTrendDays: "Tage mit Eintrag",
     alertVaxExpiredSince: "ist abgelaufen seit",
     alertVaxExpiresIn: "läuft ab in",
     alertVaxAllCurrent: "Impfungen sind aktuell.",
@@ -8309,83 +8312,83 @@
     };
   }
 
-  // Turns loose log entries into a usable pattern signal: compares how often
-  // a symptom occurred in the last 14 days against a benchmark rate — a
-  // factual frequency comparison, not a diagnosis or health score, consistent
-  // with the rest of the dashboard. Two benchmarks, tried in order per symptom:
-  //   1. Rolling year: the last 14 days vs. this symptom's own rate over the
-  //      trailing 365 days before that window. Deliberately NOT "since the
-  //      first ever log" — logging density is rarely even across years (a cat
-  //      logged sparsely in year one and closely in year three would get a
-  //      baseline dragged down by the thin early data), so the baseline is
-  //      capped to a rolling year and requires at least 30 days of it.
-  //   2. Previous period: the last 14 days vs. the 14 days directly before —
-  //      a lighter-weight fallback so a fresh spike/drop still surfaces for
-  //      pets that don't have a year of history yet.
-  // Only fires with enough history to establish a real baseline; a single
-  // past entry isn't a rate.
-  function computeSymptomTrend() {
-    const data = latestSymptomData || [];
+  function symptomLogCombination(total, chosen) {
+    let result = 0;
+    for (let i = 1; i <= Math.min(chosen, total - chosen); i++) {
+      result += Math.log(total - i + 1) - Math.log(i);
+    }
+    return result;
+  }
+
+  // Fisher's exact one-sided tail for days with a log in 14 vs. 84 days.
+  // Counting distinct dates keeps repeated entries on one day from looking
+  // like independent evidence. The conditional distribution is
+  // hypergeometric, with 14 of the 98 observed days in the recent window.
+  function symptomFrequencyTail(recentDaysWithLog, previousDaysWithLog, upper) {
+    const totalDaysWithLog = recentDaysWithLog + previousDaysWithLog;
+    const firstPossible = Math.max(0, totalDaysWithLog - 84);
+    const lastPossible = Math.min(14, totalDaysWithLog);
+    let logTail = -Infinity;
+    for (let k = firstPossible; k <= lastPossible; k++) {
+      if (upper ? k >= recentDaysWithLog : k <= recentDaysWithLog) {
+        const logProbability = symptomLogCombination(14, k)
+          + symptomLogCombination(84, totalDaysWithLog - k)
+          - symptomLogCombination(98, totalDaysWithLog);
+        const high = Math.max(logTail, logProbability);
+        logTail = high + Math.log(Math.exp(logTail - high) + Math.exp(logProbability - high));
+      }
+    }
+    return Math.min(1, Math.exp(logTail));
+  }
+
+  // Use two fixed, non-overlapping windows. The logbook must cover the whole
+  // baseline and contain logs of this symptom on at least five distinct days.
+  // A two-sided 5% decision is made with exact one-sided tails and a
+  // Bonferroni correction across all eligible symptom names. This only
+  // describes recorded frequency; it does not infer a medical diagnosis.
+  function computeSymptomTrend(data = latestSymptomData || [], today = dateToISO(new Date()), visibleNames = null) {
     if (!data.length) return null;
 
-    const windowDays = 14;
-    const today = dateToISO(new Date());
-    const recentStart = addDaysToDateStr(today, -windowDays);
-    const baselineStart = addDaysToDateStr(recentStart, -365);
-    const prevStart = addDaysToDateStr(recentStart, -windowDays);
+    const recentDays = 14;
+    const previousDays = 84;
+    const recentStart = addDaysToDateStr(today, 1 - recentDays);
+    const previousStart = addDaysToDateStr(recentStart, -previousDays);
+    const firstLogDate = data.reduce((min, row) => row.date < min ? row.date : min, data[0].date);
+    if (firstLogDate > previousStart) return null;
 
-    const byName = {};
-    data.forEach((r) => {
-      if (!byName[r.symptom]) byName[r.symptom] = [];
-      byName[r.symptom].push(r);
+    const byName = new Map();
+    data.forEach((row) => {
+      if (!byName.has(row.symptom)) byName.set(row.symptom, []);
+      byName.get(row.symptom).push(row);
     });
 
-    const trends = [];
-    Object.keys(byName).forEach((name) => {
-      const rows = byName[name];
-      const recent = rows.filter((r) => r.date >= recentStart);
-
-      // 1. Rolling year vs. the last 14 days.
-      const yearHistorical = rows.filter((r) => r.date >= baselineStart && r.date < recentStart);
-      if (yearHistorical.length >= 2) {
-        const earliest = yearHistorical.reduce((min, r) => (r.date < min ? r.date : min), yearHistorical[0].date);
-        const spanDays = Math.round((new Date(recentStart) - new Date(earliest)) / 86400000);
-        if (spanDays >= 30) {
-          const expected = (yearHistorical.length / spanDays) * windowDays;
-          if (expected >= 0.2) {
-            const ratio = recent.length / expected;
-            if (recent.length >= 2 && ratio >= 1.6) {
-              trends.push({ name, direction: "up", basis: "year", recentCount: recent.length, windowDays, expected });
-              return;
-            } else if (expected >= 1 && ratio <= 0.4) {
-              trends.push({ name, direction: "down", basis: "year", recentCount: recent.length, windowDays, expected });
-              return;
-            }
-          }
-        }
-      }
-
-      // 2. Fallback: previous 14 days vs. these 14 days.
-      const prevCount = rows.filter((r) => r.date >= prevStart && r.date < recentStart).length;
-      if (recent.length >= 2 && prevCount >= 1 && recent.length / prevCount >= 2.0) {
-        trends.push({ name, direction: "up", basis: "previous", recentCount: recent.length, windowDays, expected: prevCount });
-      } else if (prevCount >= 2 && recent.length / prevCount <= 0.5) {
-        trends.push({ name, direction: "down", basis: "previous", recentCount: recent.length, windowDays, expected: prevCount });
-      }
+    const eligible = [];
+    byName.forEach((rows, name) => {
+      const recentDaysWithLog = new Set(rows.filter((row) => row.date >= recentStart && row.date <= today).map((row) => row.date)).size;
+      const previousDaysWithLog = new Set(rows.filter((row) => row.date >= previousStart && row.date < recentStart).map((row) => row.date)).size;
+      if (previousDaysWithLog >= 5) eligible.push({ name, recentDaysWithLog, previousDaysWithLog });
     });
 
-    if (!trends.length) return null;
-    trends.sort((a, b) => b.recentCount - b.expected - (a.recentCount - a.expected));
-    return trends[0];
+    const trends = eligible.map(({ name, recentDaysWithLog, previousDaysWithLog }) => {
+      const direction = recentDaysWithLog * 6 > previousDaysWithLog ? "up" : "down";
+      const pValue = symptomFrequencyTail(recentDaysWithLog, previousDaysWithLog, direction === "up");
+      return { name, direction, recentDaysWithLog, previousDaysWithLog, pValue };
+    }).filter((trend) => (trend.direction === "down" || trend.recentDaysWithLog >= 2)
+      && trend.pValue * eligible.length * 2 <= 0.05
+      && (!visibleNames || visibleNames.has(trend.name)));
+
+    trends.sort((a, b) => a.pValue - b.pValue || b.recentDaysWithLog - a.recentDaysWithLog);
+    return trends[0] || null;
   }
 
   function symptomTrendHtml(trend) {
     if (!trend) return "";
     const up = trend.direction === "up";
     const verb = up ? t("symptomTrendUp") : t("symptomTrendDown");
-    const color = up ? "#ff9500" : "#34c759";
+    const color = up ? "#ff9500" : "var(--text-muted)";
     return `<div class="dashboard-card-sub" style="color:${color}; font-weight:600; margin-top:6px;">${escapeHtml(trend.name)} ${verb}</div>
-            <div class="dashboard-card-sub">${trend.recentCount}x ${t("symptomTrendDetail")} ${trend.windowDays} ${t("symptomTrendWindowUnit")} · Ø ${trend.expected.toFixed(1)}x</div>`;
+            <div class="dashboard-card-sub">${t("symptomTrendRecent")}: ${trend.recentDaysWithLog} ${t("symptomTrendDays")}</div>
+            <div class="dashboard-card-sub">${t("symptomTrendPrevious")}: ${trend.previousDaysWithLog} ${t("symptomTrendDays")}</div>`;
   }
 
   // The dashboard tile has room for a glance, not a full log — an afwijking
@@ -8714,8 +8717,8 @@
     const vaxS = computeVaccinationSummary();
     const bloodS = computeBloodSummary();
     const symS = computeSymptomSinceVetVisit();
-    const symptomTrend = computeSymptomTrend();
     const symptomHighlights = computeDashboardSymptomHighlights(symS);
+    const symptomTrend = computeSymptomTrend(latestSymptomData || [], dateToISO(new Date()), new Set(symptomHighlights.map((item) => item.symptom)));
     const medS = computeMedicationSummary();
     const openMeds = [...medS.overdue, ...medS.dueSoon];
     const lastMed = (latestMedicationData || [])[0]; // loadMedications orders by date descending
@@ -8754,7 +8757,7 @@
     const bloodGlowColor = bloodS && bloodS.knownTotal ? majorityColor({ red: bloodS.outside, orange: 0, green: bloodS.within }) : null;
 
     let symGlowColor = !symS.hasData ? null : symS.count === 0 ? "#34c759" : majorityColor({ red: symS.bySeverity.ernstig.length, orange: symS.bySeverity.matig.length, green: symS.bySeverity.licht.length });
-    // A worsening trend ("komt vaker voor dan normaal") must never be shown
+    // A worsening trend must never be shown
     // behind a green glow, even when every individual entry logged so far
     // was only "licht" — the glow should reflect the direction, not just
     // the severity of what's already happened.

@@ -169,6 +169,79 @@ test("dashboard navigation and every collapsible form are keyboard accessible", 
   assert.match(html, /aria-label="\$\{t\("selectYearLabel"\)\}"/);
 });
 
+function createSymptomTrendHarness() {
+  const source = extractBetween("  function symptomLogCombination", "  // The dashboard tile has room");
+  const context = {
+    addDaysToDateStr: (date, days) => {
+      const result = new Date(`${date}T00:00:00Z`);
+      result.setUTCDate(result.getUTCDate() + days);
+      return result.toISOString().slice(0, 10);
+    },
+    escapeHtml: (value) => value,
+    t: (key) => ({
+      symptomTrendUp: "op meer dagen geregistreerd",
+      symptomTrendDown: "op minder dagen geregistreerd",
+      symptomTrendRecent: "Afgelopen 14 dagen",
+      symptomTrendPrevious: "84 dagen daarvoor",
+      symptomTrendDays: "dagen met registratie",
+    })[key],
+  };
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.api = { computeSymptomTrend, symptomTrendHtml };`, context);
+  return {
+    ...context.api,
+    log: (symptom, offsets) => offsets.map((offset) => ({
+      symptom,
+      date: context.addDaysToDateStr("2026-10-07", offset),
+    })),
+  };
+}
+
+test("symptom trend compares complete, non-overlapping periods and explains the counts", () => {
+  const { computeSymptomTrend, symptomTrendHtml, log } = createSymptomTrendHarness();
+  const rows = [
+    ...log("Braken", [-97, -80, -60, -40, -14]),
+    ...log("Braken", [-13, -12, -11, -10, -9, -8, -7, -6, 0]),
+    ...log("Braken", [1]), // a future-dated entry is not part of either window
+  ];
+  const trend = computeSymptomTrend(rows, "2026-10-07");
+  assert.equal(trend.direction, "up");
+  assert.equal(trend.recentDaysWithLog, 9);
+  assert.equal(trend.previousDaysWithLog, 5);
+  assert.match(symptomTrendHtml(trend), /Afgelopen 14 dagen: 9 dagen met registratie/);
+  assert.match(symptomTrendHtml(trend), /84 dagen daarvoor: 5 dagen met registratie/);
+  assert.doesNotMatch(symptomTrendHtml(trend), /Ø|normaal/);
+});
+
+test("symptom trend stays silent with sparse or clustered history", () => {
+  const { computeSymptomTrend, log } = createSymptomTrendHarness();
+  const recent = log("Braken", [-13, -12, -11, -10, -9, -8, -7, -6, 0]);
+  assert.equal(computeSymptomTrend([...log("Braken", [-97, -14]), ...recent], "2026-10-07"), null);
+  assert.equal(computeSymptomTrend([...log("Braken", [-80, -60, -40, -20, -14]), ...recent], "2026-10-07"), null);
+  assert.equal(computeSymptomTrend([...log("Braken", [-97, -80, -60, -40, -14]), ...log("Braken", Array(9).fill(0))], "2026-10-07"), null);
+});
+
+test("symptom trend also requires strong evidence before showing fewer logged days", () => {
+  const { computeSymptomTrend, log } = createSymptomTrendHarness();
+  const previous = log("Braken", Array.from({ length: 30 }, (_, i) => -97 + i));
+  const trend = computeSymptomTrend(previous, "2026-10-07");
+  assert.equal(trend.direction, "down");
+  assert.equal(trend.recentDaysWithLog, 0);
+  assert.equal(trend.previousDaysWithLog, 30);
+});
+
+test("symptom trend accounts for the number of symptom names being checked", () => {
+  const { computeSymptomTrend, log } = createSymptomTrendHarness();
+  const target = [
+    ...log("Braken", [-97, -80, -60, -40, -14]),
+    ...log("Braken", [-13, -12, -11, -10, 0]),
+  ];
+  assert.equal(computeSymptomTrend(target, "2026-10-07").direction, "up");
+
+  const otherSymptoms = Array.from({ length: 5 }, (_, i) => log(`Klacht ${i}`, [-97, -80, -60, -40, -14])).flat();
+  assert.equal(computeSymptomTrend([...target, ...otherSymptoms], "2026-10-07"), null);
+});
+
 test("CI runs regression tests before lint", () => {
   const workflow = fs.readFileSync(path.join(root, ".github/workflows/ci.yml"), "utf8");
   assert.ok(workflow.indexOf("- run: npm test") > -1);
