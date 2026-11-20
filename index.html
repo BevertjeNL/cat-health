@@ -1102,6 +1102,17 @@
     line-height: 1.45;
   }
 
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   .dashboard-card-empty {
     font-size: 0.9rem;
     color: var(--text-muted);
@@ -3454,7 +3465,7 @@
     alertNoData: "Nog onvoldoende gegevens.",
     alertAllGood: "Er zijn geen actuele aandachtspunten.",
     emptySeverityCount: "0 afwijkingen",
-    costPeriodRolling: "afgelopen 12 maanden",
+    costPeriodRolling: "Afgelopen 12 maanden",
     costVsSamePeriod: "vs. dezelfde periode vorig jaar",
     costToggleRolling: "Rollend jaar",
     costToggleCalendar: "Kalenderjaar",
@@ -3609,7 +3620,7 @@
     alertNoData: "Not enough data yet.",
     alertAllGood: "There are no current concerns.",
     emptySeverityCount: "0 symptoms",
-    costPeriodRolling: "past 12 months",
+    costPeriodRolling: "Past 12 months",
     costVsSamePeriod: "vs. same period last year",
     costToggleRolling: "Rolling year",
     costToggleCalendar: "Calendar year",
@@ -3763,7 +3774,7 @@
     alertNoData: "Noch nicht genug Daten.",
     alertAllGood: "Es gibt keine aktuellen Punkte.",
     emptySeverityCount: "0 Symptome",
-    costPeriodRolling: "letzte 12 Monate",
+    costPeriodRolling: "Letzte 12 Monate",
     costVsSamePeriod: "vs. gleicher Zeitraum letztes Jahr",
     costToggleRolling: "Rollierendes Jahr",
     costToggleCalendar: "Kalenderjahr",
@@ -8989,7 +9000,7 @@
       return `<div class="dashboard-card-empty">${t("foodPerDayNeedMore")}</div>`;
     }
     return `<div class="dashboard-card-value">${foodAmountText(s.perDay)}${t("perDaySuffix")}${foodTrendHtml(s.perDay, s.prevPerDay)}</div>
-            <div class="dashboard-card-sub">${s.periodLabel} · ${t("costVsSamePeriod")}</div>`;
+            <div class="dashboard-card-sub">${s.periodLabel}<span class="visually-hidden"> · ${t("costVsSamePeriod")}</span></div>`;
   }
 
   function setFoodViewMode(mode) {
@@ -9939,7 +9950,7 @@
       `<div class="inventory-row"><span>${escapeHtml(row.name)}<br>${formatDate(row.date)}</span><span>${formatEuro(row.cost)}</span></div>`
     ).join("")}</details>` : "";
     return `<div class="dashboard-card-value">${formatEuro(s.total)}${costTrendHtml(s.total, s.prevTotal)}</div>
-            <div class="dashboard-card-sub">${s.periodLabel} · ${t("costVsSamePeriod")}</div>${details}${history}`;
+            <div class="dashboard-card-sub">${s.periodLabel}<span class="visually-hidden"> · ${t("costVsSamePeriod")}</span></div>${details}${history}`;
   }
 
   function setCostViewType(type) {
