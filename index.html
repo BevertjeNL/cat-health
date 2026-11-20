@@ -215,6 +215,7 @@
   }
 
   button:focus-visible,
+  a:focus-visible,
   input:focus-visible,
   select:focus-visible,
   [role="button"]:focus-visible {
@@ -851,6 +852,11 @@
     padding: 14px;
   }
 
+  .dashboard-food-card,
+  .dashboard-cost-card {
+    grid-column: 1 / -1;
+  }
+
   .dashboard-card {
     display: block;
     width: 100%;
@@ -876,15 +882,16 @@
     background: transparent;
     color: var(--text-muted);
     border-radius: 999px;
-    padding: 3px 10px;
-    font-size: 0.75rem;
+    min-height: 44px;
+    padding: 8px 12px;
+    font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
   }
 
   .cost-toggle-btn.active {
-    background: var(--accent);
-    border-color: var(--accent);
+    background: #b95538;
+    border-color: #b95538;
     color: #fff;
   }
 
@@ -894,9 +901,28 @@
   }
 
   #symptomRangeToggle .cost-toggle-btn {
-    min-height: 32px;
+    min-height: 44px;
     min-width: 36px;
     padding: 4px 8px;
+  }
+
+  .dashboard-period-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .dashboard-period-controls select {
+    min-height: 44px;
+    max-width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--card-bg);
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
   }
 
   .since-visit-meta {
@@ -1065,15 +1091,6 @@
     color: #fff;
   }
 
-  #costYearSelect {
-    border: 1px solid var(--border);
-    background: var(--card-bg);
-    color: var(--text);
-    border-radius: 999px;
-    padding: 3px 8px;
-    font-size: 0.75rem;
-  }
-
   /* Dashboard type scale, deliberately just two sizes (a small uppercase
      label tier and one body tier) plus a single larger tier reserved for
      each card's one hero value — kept small on purpose so the dashboard
@@ -1184,6 +1201,34 @@
 
   .dashboard-alert-row:last-child {
     border-bottom: none;
+  }
+
+  .dashboard-alerts-more,
+  .dashboard-inventory-summary {
+    display: block;
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 2px;
+    border: none;
+    background: none;
+    color: var(--text);
+    font: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: left;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+  }
+
+  .dashboard-inventory-summary {
+    color: var(--text);
+    margin-bottom: 16px;
+    text-decoration: none;
+  }
+
+  .dashboard-inventory-summary[hidden] {
+    display: none;
   }
 
   .dashboard-add-btn {
@@ -1668,6 +1713,10 @@
       <div id="dashboardAlerts"></div>
     </div>
 
+    <a class="dashboard-inventory-summary" id="dashboardInventorySummary" href="#inventoryCard" hidden></a>
+
+    <div class="dashboard-cards" id="dashboardCards"></div>
+
     <div class="card" id="inventoryCard">
       <h2>Voorraad</h2>
       <p id="inventoryStatus" class="hint-text" role="status"></p>
@@ -1745,8 +1794,6 @@
         <button type="button" class="today-btn" id="inventoryCancelUse">Annuleren</button>
       </form>
     </div>
-
-    <div class="dashboard-cards" id="dashboardCards"></div>
 
     <button type="button" class="submit dashboard-add-btn" onclick="openQuickAddMenu()" data-i18n-js="dashboardAddData">+ Gegeven toevoegen</button>
   </section>
@@ -3390,6 +3437,7 @@
     dashboardWeightLastMeasured: "Laatste meting",
     dashboardVax: "Vaccinaties",
     dashboardMedication: "Medicatie",
+    dashboardMedicationLastLogged: "Laatste registratie",
     dashboardFood: "Voeding",
     dashboardBlood: "Bloedwaarden",
     dashboardSymptoms: "Afwijkingen",
@@ -3414,6 +3462,10 @@
     timeOneYearAgo: "1 jaar geleden",
     timeYearsAgo: "jaar geleden",
     weightTrendEqual: "gelijk",
+    weightTrendHeavier: "zwaarder dan bij de vorige meting",
+    weightTrendLighter: "lichter dan bij de vorige meting",
+    foodTrendMore: "meer dan in dezelfde periode vorig jaar",
+    foodTrendLess: "minder dan in dezelfde periode vorig jaar",
     vaxOverdueShort: "verlopen",
     vaxValidUntil: "Geldig tot",
     vaxExpiredSince: "Verlopen sinds",
@@ -3462,8 +3514,21 @@
     alertMedExpiresIn: "verloopt over",
     alertBloodOutOfRange: "van de",
     alertBloodKnownValues: "bekende waarden lagen buiten het referentiegebied bij het laatste bloedonderzoek",
-    alertNoData: "Nog onvoldoende gegevens.",
-    alertAllGood: "Er zijn geen actuele aandachtspunten.",
+    alertNoData: "Nog onvoldoende gezondheidsgegevens.",
+    alertAllGood: "Geen nieuwe meldingen op basis van je gegevens.",
+    alertSymptomsSevere: "Ernstige afwijking geregistreerd:",
+    alertVetPlanned: "Dierenartsbezoek gepland op",
+    alertShowAll: "Toon alle {n} meldingen",
+    alertShowLess: "Toon minder",
+    inventorySummaryNone: "Voorraad: nog niets geregistreerd →",
+    inventorySummaryEmpty: "Voorraad: geen producten beschikbaar →",
+    inventorySummaryOne: "Voorraad: 1 product beschikbaar →",
+    inventorySummaryCount: "Voorraad: {n} producten beschikbaar →",
+    inventorySummaryUnavailable: "Voorraad kon niet worden geladen →",
+    periodSelectLabel: "Periode",
+    costTypeGroup: "Soort kosten",
+    costExpenses: "Uitgaven",
+    costUsage: "Verbruikskosten",
     emptySeverityCount: "0 afwijkingen",
     costPeriodRolling: "Afgelopen 12 maanden",
     costVsSamePeriod: "vs. dezelfde periode vorig jaar",
@@ -3549,6 +3614,7 @@
     dashboardWeightLastMeasured: "Last measured",
     dashboardVax: "Vaccinations",
     dashboardMedication: "Medication",
+    dashboardMedicationLastLogged: "Last logged",
     dashboardFood: "Food",
     dashboardBlood: "Blood values",
     dashboardSymptoms: "Symptoms",
@@ -3571,6 +3637,10 @@
     timeOneYearAgo: "1 year ago",
     timeYearsAgo: "years ago",
     weightTrendEqual: "unchanged",
+    weightTrendHeavier: "heavier than at the previous measurement",
+    weightTrendLighter: "lighter than at the previous measurement",
+    foodTrendMore: "more than in the same period last year",
+    foodTrendLess: "less than in the same period last year",
     vaxOverdueShort: "expired",
     vaxValidUntil: "Valid until",
     vaxExpiredSince: "Expired since",
@@ -3617,8 +3687,21 @@
     alertMedExpiresIn: "expires in",
     alertBloodOutOfRange: "of the",
     alertBloodKnownValues: "known values were outside the reference range at the last blood test",
-    alertNoData: "Not enough data yet.",
-    alertAllGood: "There are no current concerns.",
+    alertNoData: "Not enough health data yet.",
+    alertAllGood: "No new alerts based on your records.",
+    alertSymptomsSevere: "Severe symptom logged:",
+    alertVetPlanned: "Vet visit planned for",
+    alertShowAll: "Show all {n} alerts",
+    alertShowLess: "Show less",
+    inventorySummaryNone: "Stock: nothing logged yet →",
+    inventorySummaryEmpty: "Stock: no products available →",
+    inventorySummaryOne: "Stock: 1 product available →",
+    inventorySummaryCount: "Stock: {n} products available →",
+    inventorySummaryUnavailable: "Stock could not be loaded →",
+    periodSelectLabel: "Period",
+    costTypeGroup: "Cost type",
+    costExpenses: "Expenses",
+    costUsage: "Usage costs",
     emptySeverityCount: "0 symptoms",
     costPeriodRolling: "Past 12 months",
     costVsSamePeriod: "vs. same period last year",
@@ -3703,6 +3786,7 @@
     dashboardWeightLastMeasured: "Zuletzt gemessen",
     dashboardVax: "Impfungen",
     dashboardMedication: "Medikamente",
+    dashboardMedicationLastLogged: "Letzter Eintrag",
     dashboardFood: "Futter",
     dashboardBlood: "Blutwerte",
     dashboardSymptoms: "Symptome",
@@ -3725,6 +3809,10 @@
     timeOneYearAgo: "vor 1 Jahr",
     timeYearsAgo: "Jahren",
     weightTrendEqual: "gleich",
+    weightTrendHeavier: "schwerer als bei der letzten Messung",
+    weightTrendLighter: "leichter als bei der letzten Messung",
+    foodTrendMore: "mehr als im gleichen Zeitraum des Vorjahres",
+    foodTrendLess: "weniger als im gleichen Zeitraum des Vorjahres",
     vaxOverdueShort: "abgelaufen",
     vaxValidUntil: "Gültig bis",
     vaxExpiredSince: "Abgelaufen seit",
@@ -3771,8 +3859,21 @@
     alertMedExpiresIn: "läuft ab in",
     alertBloodOutOfRange: "von",
     alertBloodKnownValues: "bekannten Werten lagen bei der letzten Blutuntersuchung außerhalb des Referenzbereichs",
-    alertNoData: "Noch nicht genug Daten.",
-    alertAllGood: "Es gibt keine aktuellen Punkte.",
+    alertNoData: "Noch nicht genug Gesundheitsdaten.",
+    alertAllGood: "Keine neuen Meldungen auf Basis deiner Einträge.",
+    alertSymptomsSevere: "Schweres Symptom eingetragen:",
+    alertVetPlanned: "Tierarzttermin geplant am",
+    alertShowAll: "Alle {n} Meldungen anzeigen",
+    alertShowLess: "Weniger anzeigen",
+    inventorySummaryNone: "Vorrat: noch nichts eingetragen →",
+    inventorySummaryEmpty: "Vorrat: keine Produkte verfügbar →",
+    inventorySummaryOne: "Vorrat: 1 Produkt verfügbar →",
+    inventorySummaryCount: "Vorrat: {n} Produkte verfügbar →",
+    inventorySummaryUnavailable: "Vorrat konnte nicht geladen werden →",
+    periodSelectLabel: "Zeitraum",
+    costTypeGroup: "Kostenart",
+    costExpenses: "Ausgaben",
+    costUsage: "Verbrauchskosten",
     emptySeverityCount: "0 Symptome",
     costPeriodRolling: "Letzte 12 Monate",
     costVsSamePeriod: "vs. gleicher Zeitraum letztes Jahr",
@@ -8968,17 +9069,15 @@
     };
   }
 
-  // Zelfde rood-omhoog/groen-omlaag/neutraal-conventie als costTrendHtml(),
-  // toegepast op het geschatte gram/dag-verbruik t.o.v. dezelfde periode
-  // een jaar eerder.
+  // A change in estimated food use is descriptive, not automatically good
+  // or bad for the animal, so direction uses a neutral color.
   function foodTrendHtml(perDay, prevPerDay) {
     if (!prevPerDay) return "";
     const diff = perDay - prevPerDay;
     if (diff === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">${t("weightTrendEqual")}</span></span>`;
     const up = diff > 0;
-    const color = up ? "#ff3b30" : "#34c759";
     const pct = Math.abs((diff / prevPerDay) * 100).toFixed(0) + "%";
-    return ` <span class="weight-trend" style="color:${color};">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span></span>`;
+    return ` <span class="weight-trend" style="color:var(--text-muted);">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span><span class="visually-hidden"> ${t(up ? "foodTrendMore" : "foodTrendLess")}</span></span>`;
   }
 
   function foodYearOptionsHtml() {
@@ -9016,11 +9115,8 @@
   function renderFoodCard() {
     const card = document.getElementById("foodCard");
     if (!card) return;
-    card.querySelectorAll(".cost-toggle-btn").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.mode === foodViewMode);
-    });
     const yearSelect = document.getElementById("foodYearSelect");
-    if (yearSelect) yearSelect.style.display = foodViewMode === "calendar" ? "" : "none";
+    if (yearSelect) yearSelect.hidden = foodViewMode !== "calendar";
     document.getElementById("foodCardBody").innerHTML = foodCardBodyHtml();
   }
 
@@ -9290,17 +9386,19 @@
       .slice(0, 3);
   }
 
-  function alertVaccination() {
+  function alertVaccinations() {
     const s = computeVaccinationSummary();
-    if (!s || !s.next) return null;
-    const { v, status } = s.next;
-    if (status.daysLeft < 0) {
-      return { message: `${v.vaccine} ${t("alertVaxExpiredSince")} ${formatDate(v.valid_until)}.`, severity: 0, color: "#ff3b30", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
-    }
-    if (status.daysLeft <= 30) {
-      return { message: `${v.vaccine} ${t("alertVaxExpiresIn")} ${status.daysLeft} ${status.daysLeft === 1 ? t("dayUnit") : t("daysUnit")}.`, severity: 1, color: "#ff9500", type: "vaccinatie", source: v.vaccine, date: v.valid_until, tabTarget: "vax" };
-    }
-    return { message: t("alertVaxAllCurrent"), severity: 2, color: "#34c759", type: "vaccinatie", source: null, date: null, tabTarget: "vax" };
+    if (!s) return [];
+    return s.items.filter(({ status }) => status.daysLeft != null && status.daysLeft <= 30).map(({ v, status }) => ({
+      message: status.daysLeft < 0
+        ? `${v.vaccine} ${t("alertVaxExpiredSince")} ${formatDate(v.valid_until)}.`
+        : `${v.vaccine} ${t("alertVaxExpiresIn")} ${status.daysLeft} ${status.daysLeft === 1 ? t("dayUnit") : t("daysUnit")}.`,
+      severity: status.daysLeft < 0 ? 0 : 1,
+      color: status.daysLeft < 0 ? "#ff3b30" : "#ff9500",
+      type: "vaccinatie",
+      date: v.valid_until,
+      tabTarget: "vax",
+    }));
   }
 
   function alertWeight() {
@@ -9368,26 +9466,65 @@
     };
   }
 
-  // Selects and prioritizes up to 3 dashboard notifications: red (achterstallig)
-  // before orange (binnenkort) before green (actueel). Falls back to a single
-  // calm status line when there's nothing to flag, or an explicit
-  // "onvoldoende gegevens" line when literally nothing has been logged yet.
+  function alertSevereSymptoms() {
+    const summary = computeSymptomSinceVetVisit();
+    if (!summary.hasData || summary.none) return [];
+    const windowStart = addDaysToDateStr(dateToISO(new Date()), -14);
+    const recent = summary.relevant.filter((row) => row.severity === "ernstig" && row.date >= windowStart);
+    const latestByName = new Map();
+    recent.sort((a, b) => b.date.localeCompare(a.date)).forEach((row) => {
+      if (!latestByName.has(row.symptom)) latestByName.set(row.symptom, row);
+    });
+    return [...latestByName.values()].map((row) => ({
+      message: `${t("alertSymptomsSevere")} ${row.symptom} (${formatDate(row.date)}).`,
+      severity: 0,
+      color: "#ff3b30",
+      type: "afwijking",
+      date: row.date,
+      tabTarget: "symptoms",
+    }));
+  }
+
+  function alertPlannedVetVisit() {
+    const visit = nextPlannedVetVisit();
+    if (!visit) return null;
+    const daysUntil = -daysSince(visit.date);
+    if (daysUntil > 30) return null;
+    return {
+      message: `${t("alertVetPlanned")} ${formatDate(visit.date)}.`,
+      severity: daysUntil <= 7 ? 1 : 2,
+      color: daysUntil <= 7 ? "#ff9500" : "var(--text-muted)",
+      type: "dierenarts",
+      date: visit.date,
+      tabTarget: "vet",
+    };
+  }
+
+  // Keep every actionable alert. The display initially shows three and
+  // offers an explicit expansion when more records need attention.
   function computeDashboardAlerts() {
-    const candidates = [alertVaccination(), alertWeight(), alertBlood(), ...alertMedications()].filter(Boolean);
+    const candidates = [
+      ...alertVaccinations(), ...alertSevereSymptoms(), ...alertMedications(),
+      alertWeight(), alertBlood(), alertPlannedVetVisit(),
+    ].filter(Boolean);
     if (!candidates.length) {
       const noDataAtAll =
-        !(latestVaxData || []).length && !(latestWeightData || []).length && !(latestMedicationData || []).length && !(latestBloodData || []).length;
+        !(latestVaxData || []).length && !(latestWeightData || []).length && !(latestMedicationData || []).length &&
+        !(latestBloodData || []).length && !(latestSymptomData || []).length && !(latestVetVisitData || []).length;
       if (noDataAtAll) {
         return [{ message: t("alertNoData"), severity: 3, color: "var(--text-muted)", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
       }
       return [{ message: t("alertAllGood"), severity: 2, color: "#34c759", type: "algemeen", source: null, date: null, tabTarget: "dashboard" }];
     }
-    return candidates.sort((a, b) => a.severity - b.severity).slice(0, 3);
+    return candidates.sort((a, b) => a.severity - b.severity || String(a.date || "").localeCompare(String(b.date || "")));
   }
+
+  let dashboardAlertsExpanded = false;
 
   function renderDashboardAlerts() {
     const alerts = computeDashboardAlerts();
-    document.getElementById("dashboardAlerts").innerHTML = alerts
+    const visible = dashboardAlertsExpanded ? alerts : alerts.slice(0, 3);
+    document.getElementById("dashboardAlerts").innerHTML = `<div id="dashboardAlertItems">${visible
       .map(
         (a) => `
         <button type="button" class="dashboard-alert-row" data-tab-target="${a.tabTarget}">
@@ -9396,23 +9533,29 @@
         </button>
       `
       )
-      .join("");
+      .join("")}</div>` + (alerts.length > 3
+      ? `<button type="button" class="dashboard-alerts-more" aria-expanded="${dashboardAlertsExpanded}" aria-controls="dashboardAlertItems" onclick="toggleDashboardAlerts()">${dashboardAlertsExpanded ? t("alertShowLess") : t("alertShowAll").replace("{n}", alerts.length)}</button>`
+      : "");
+  }
+
+  function toggleDashboardAlerts() {
+    dashboardAlertsExpanded = !dashboardAlertsExpanded;
+    renderDashboardAlerts();
+    document.querySelector(".dashboard-alerts-more")?.focus();
   }
 
   function purposeTagHtml(purpose) {
     return purpose ? `<span class="purpose-tag">${escapeHtml(purpose)}</span>` : "";
   }
 
-  // Red up-arrow = heavier than last time, green down-arrow = lighter,
-  // gray "stable" arrow when unchanged — color encodes direction only,
-  // independent of any target zone judgement.
+  // Direction alone does not say whether a weight change is healthy.
+  // The card's target-zone status supplies context; the trend stays neutral.
   function weightTrendHtml(s) {
     if (s.diffKg == null) return "";
     if (s.diffKg === 0) return ` <span class="weight-trend" style="color:var(--text-muted);">→<span class="dashboard-card-pct">${t("weightTrendEqual")}</span></span>`;
     const up = s.diffKg > 0;
-    const color = up ? "#ff3b30" : "#34c759";
     const pct = s.diffPct != null ? Math.abs(s.diffPct).toFixed(1) + "%" : "";
-    return ` <span class="weight-trend" style="color:${color};">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span></span>`;
+    return ` <span class="weight-trend" style="color:var(--text-muted);">${up ? "▲" : "▼"}<span class="dashboard-card-pct">${pct}</span><span class="visually-hidden"> ${t(up ? "weightTrendHeavier" : "weightTrendLighter")}</span></span>`;
   }
 
   function rgbToRgba(rgbStr, alpha) {
@@ -9582,10 +9725,18 @@
 
   function renderInventory() {
     const list = inventoryField("inventoryList");
+    const summary = inventoryField("dashboardInventorySummary");
     list.replaceChildren();
-    if (inventoryPetId !== currentPetId) return;
+    summary.hidden = inventoryPetId !== currentPetId;
+    if (summary.hidden) return;
     const { used } = inventoryAllocations();
     const available = inventoryPurchases.filter((purchase) => inventoryBalance(purchase, used) > 0);
+    const productCount = new Set(available.map((purchase) => purchase.name)).size;
+    summary.textContent = inventoryField("inventoryStatus").textContent ? t("inventorySummaryUnavailable")
+      : !inventoryPurchases.length ? t("inventorySummaryNone")
+      : productCount === 1 ? t("inventorySummaryOne")
+        : productCount ? t("inventorySummaryCount").replace("{n}", productCount)
+        : t("inventorySummaryEmpty");
     const expand = inventoryField("inventoryExpand");
     expand.hidden = inventoryPurchases.length <= 3 && available.length === inventoryPurchases.length;
     expand.textContent = inventoryExpanded ? "Toon minder" : "Bekijk alle verpakkingen";
@@ -9976,11 +10127,8 @@
       btn.setAttribute("aria-pressed", String(btn.dataset.costType === costViewType));
       btn.classList.toggle("active", btn.dataset.costType === costViewType);
     });
-    card.querySelectorAll("[data-mode]").forEach((btn) => {
-      btn.classList.toggle("active", btn.dataset.mode === costViewMode);
-    });
     const yearSelect = document.getElementById("costYearSelect");
-    if (yearSelect) yearSelect.style.display = costViewMode === "calendar" ? "" : "none";
+    if (yearSelect) yearSelect.hidden = costViewMode !== "calendar";
     document.getElementById("costCardBody").innerHTML = costCardBodyHtml();
   }
 
@@ -10074,7 +10222,7 @@
                 .join("")
             : lastMed
             ? `<div class="dashboard-card-value">${escapeHtml(lastMed.name)}${purposeTagHtml(lastMed.purpose)}</div>
-               <div class="dashboard-card-sub">${formatDate(lastMed.date)}</div>`
+               <div class="dashboard-card-sub">${t("dashboardMedicationLastLogged")}: ${formatDate(lastMed.date)}</div>`
             : `<div class="dashboard-card-empty">${t("emptyMedicationLogged")}</div>`
         }
       </a>`,
@@ -10114,15 +10262,6 @@
               : `<div class="dashboard-card-empty">${t("emptySymptomsRecent")}</div>`
         }
       </a>`,
-      `<div class="card dashboard-card dashboard-card-static" id="foodCard">
-        <h3>${iconHtml("food")} ${t("dashboardFood")}</h3>
-        <div class="cost-toggle">
-          <button type="button" class="cost-toggle-btn ${foodViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setFoodViewMode('rolling')">${t("costToggleRolling")}</button>
-          <button type="button" class="cost-toggle-btn ${foodViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setFoodViewMode('calendar')">${t("costToggleCalendar")}</button>
-          <select id="foodYearSelect" aria-label="${t("selectYearLabel")}" style="display:${foodViewMode === "calendar" ? "" : "none"};" onchange="setFoodViewYear(this.value)">${foodYearOptionsHtml()}</select>
-        </div>
-        <div id="foodCardBody">${foodCardBodyHtml()}</div>
-      </div>`,
       `<a class="card dashboard-card" href="#tabVet" data-tab-target="vet">
         <h3>${iconHtml("vet")} ${t("dashboardVet")}</h3>
         ${
@@ -10136,16 +10275,29 @@
             : `<div class="dashboard-card-empty">${t("emptyVetVisitsLogged")}</div>`
         }
       </a>`,
-      `<div class="card dashboard-card dashboard-card-static" id="costCard">
-        <h3>${iconHtml("cost")} ${t("dashboardCost")}</h3>
-        <div class="cost-toggle" role="group" aria-label="Soort kosten">
-          <button type="button" class="cost-toggle-btn ${costViewType === "expenses" ? "active" : ""}" data-cost-type="expenses" aria-pressed="${costViewType === "expenses"}" onclick="setCostViewType('expenses')">Uitgaven</button>
-          <button type="button" class="cost-toggle-btn ${costViewType === "usage" ? "active" : ""}" data-cost-type="usage" aria-pressed="${costViewType === "usage"}" onclick="setCostViewType('usage')">Verbruikskosten</button>
+      `<div class="card dashboard-card dashboard-card-static dashboard-food-card" id="foodCard">
+        <h3>${iconHtml("food")} ${t("dashboardFood")}</h3>
+        <div class="dashboard-period-controls">
+          <select id="foodPeriodSelect" aria-label="${t("periodSelectLabel")}" onchange="setFoodViewMode(this.value)">
+            <option value="rolling" ${foodViewMode === "rolling" ? "selected" : ""}>${t("costPeriodRolling")}</option>
+            <option value="calendar" ${foodViewMode === "calendar" ? "selected" : ""}>${t("costToggleCalendar")}</option>
+          </select>
+          <select id="foodYearSelect" aria-label="${t("selectYearLabel")}" ${foodViewMode === "calendar" ? "" : "hidden"} onchange="setFoodViewYear(this.value)">${foodYearOptionsHtml()}</select>
         </div>
-        <div class="cost-toggle">
-          <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">${t("costToggleRolling")}</button>
-          <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">${t("costToggleCalendar")}</button>
-          <select id="costYearSelect" aria-label="${t("selectYearLabel")}" style="display:${costViewMode === "calendar" ? "" : "none"};" onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
+        <div id="foodCardBody">${foodCardBodyHtml()}</div>
+      </div>`,
+      `<div class="card dashboard-card dashboard-card-static dashboard-cost-card" id="costCard">
+        <h3>${iconHtml("cost")} ${t("dashboardCost")}</h3>
+        <div class="cost-toggle" role="group" aria-label="${t("costTypeGroup")}">
+          <button type="button" class="cost-toggle-btn ${costViewType === "expenses" ? "active" : ""}" data-cost-type="expenses" aria-pressed="${costViewType === "expenses"}" onclick="setCostViewType('expenses')">${t("costExpenses")}</button>
+          <button type="button" class="cost-toggle-btn ${costViewType === "usage" ? "active" : ""}" data-cost-type="usage" aria-pressed="${costViewType === "usage"}" onclick="setCostViewType('usage')">${t("costUsage")}</button>
+        </div>
+        <div class="dashboard-period-controls">
+          <select id="costPeriodSelect" aria-label="${t("periodSelectLabel")}" onchange="setCostViewMode(this.value)">
+            <option value="rolling" ${costViewMode === "rolling" ? "selected" : ""}>${t("costPeriodRolling")}</option>
+            <option value="calendar" ${costViewMode === "calendar" ? "selected" : ""}>${t("costToggleCalendar")}</option>
+          </select>
+          <select id="costYearSelect" aria-label="${t("selectYearLabel")}" ${costViewMode === "calendar" ? "" : "hidden"} onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
         </div>
         <div id="costCardBody">${costCardBodyHtml()}</div>
       </div>`,
