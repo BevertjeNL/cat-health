@@ -1,3 +1,10 @@
+## [1.21.1](https://github.com/BevertjeNL/cat-health/compare/v1.21.0...v1.21.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* herstel periodeknoppen en visualiseer vergelijking ([7025ab0](https://github.com/BevertjeNL/cat-health/commit/7025ab017307ec558dc39dc6c8417c0ae49750e4))
+
 # [1.21.0](https://github.com/BevertjeNL/cat-health/compare/v1.20.1...v1.21.0) (2026-11-20)
 
 
