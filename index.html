@@ -925,6 +925,48 @@
     font-size: 0.9rem;
   }
 
+  .period-comparison {
+    display: grid;
+    gap: 7px;
+    margin: 12px 0 3px;
+  }
+
+  .period-comparison-row {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 0.78rem;
+  }
+
+  .period-comparison-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--border);
+  }
+
+  .period-comparison-fill {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+  }
+
+  .period-comparison-fill.current {
+    background: linear-gradient(90deg, var(--accent-secondary), var(--accent));
+  }
+
+  .period-comparison-fill.previous {
+    background: var(--text-muted);
+    opacity: 0.7;
+  }
+
+  .period-comparison-value {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
   .since-visit-meta {
     margin: 0 0 12px;
     color: var(--text-muted);
@@ -3526,12 +3568,14 @@
     inventorySummaryCount: "Voorraad: {n} producten beschikbaar →",
     inventorySummaryUnavailable: "Voorraad kon niet worden geladen →",
     periodSelectLabel: "Periode",
+    comparisonNow: "Nu",
+    comparisonLastYear: "Vorig jaar",
+    comparisonLabel: "Vergelijking met vorige periode",
     costTypeGroup: "Soort kosten",
     costExpenses: "Uitgaven",
     costUsage: "Verbruikskosten",
     emptySeverityCount: "0 afwijkingen",
     costPeriodRolling: "Afgelopen 12 maanden",
-    costVsSamePeriod: "vs. dezelfde periode vorig jaar",
     costToggleRolling: "Rollend jaar",
     costToggleCalendar: "Kalenderjaar",
     selectYearLabel: "Jaar selecteren",
@@ -3699,12 +3743,14 @@
     inventorySummaryCount: "Stock: {n} products available →",
     inventorySummaryUnavailable: "Stock could not be loaded →",
     periodSelectLabel: "Period",
+    comparisonNow: "Now",
+    comparisonLastYear: "Last year",
+    comparisonLabel: "Compared with the previous period",
     costTypeGroup: "Cost type",
     costExpenses: "Expenses",
     costUsage: "Usage costs",
     emptySeverityCount: "0 symptoms",
     costPeriodRolling: "Past 12 months",
-    costVsSamePeriod: "vs. same period last year",
     costToggleRolling: "Rolling year",
     costToggleCalendar: "Calendar year",
     selectYearLabel: "Select year",
@@ -3871,12 +3917,14 @@
     inventorySummaryCount: "Vorrat: {n} Produkte verfügbar →",
     inventorySummaryUnavailable: "Vorrat konnte nicht geladen werden →",
     periodSelectLabel: "Zeitraum",
+    comparisonNow: "Jetzt",
+    comparisonLastYear: "Vorjahr",
+    comparisonLabel: "Vergleich mit dem vorherigen Zeitraum",
     costTypeGroup: "Kostenart",
     costExpenses: "Ausgaben",
     costUsage: "Verbrauchskosten",
     emptySeverityCount: "0 Symptome",
     costPeriodRolling: "Letzte 12 Monate",
-    costVsSamePeriod: "vs. gleicher Zeitraum letztes Jahr",
     costToggleRolling: "Rollierendes Jahr",
     costToggleCalendar: "Kalenderjahr",
     selectYearLabel: "Jahr auswählen",
@@ -9052,10 +9100,7 @@
     const hasAnyFoodData = (latestFoodData || []).length > 0;
     let start, end, prevStart, prevEnd, periodLabel;
     if (mode === "calendar") {
-      start = `${year}-01-01`;
-      end = `${year}-12-31`;
-      prevStart = `${year - 1}-01-01`;
-      prevEnd = `${year - 1}-12-31`;
+      ({ start, end, prevStart, prevEnd } = calendarPeriodRange(year));
       periodLabel = String(year);
     } else {
       ({ start, end, prevStart, prevEnd } = rollingPeriodRange());
@@ -9090,6 +9135,18 @@
       .join("");
   }
 
+  function periodComparisonHtml(current, previous, formatValue, mode, year) {
+    if (!Number.isFinite(current) || !Number.isFinite(previous) || previous <= 0) return "";
+    const max = Math.max(current, previous);
+    const width = (value) => Math.round(Math.min(100, Math.max(0, value / max * 100)));
+    const currentLabel = mode === "calendar" ? String(year) : t("comparisonNow");
+    const previousLabel = mode === "calendar" ? String(year - 1) : t("comparisonLastYear");
+    return `<div class="period-comparison" role="group" aria-label="${t("comparisonLabel")}">
+      <div class="period-comparison-row"><span>${currentLabel}</span><span class="period-comparison-track" aria-hidden="true"><span class="period-comparison-fill current" style="width:${width(current)}%"></span></span><span class="period-comparison-value">${formatValue(current)}</span></div>
+      <div class="period-comparison-row"><span>${previousLabel}</span><span class="period-comparison-track" aria-hidden="true"><span class="period-comparison-fill previous" style="width:${width(previous)}%"></span></span><span class="period-comparison-value">${formatValue(previous)}</span></div>
+    </div>`;
+  }
+
   function foodCardBodyHtml() {
     const s = computeFoodPeriodSummary(foodViewMode, foodViewYear);
     if (!s.hasAnyFoodData) {
@@ -9098,8 +9155,10 @@
     if (s.perDay == null) {
       return `<div class="dashboard-card-empty">${t("foodPerDayNeedMore")}</div>`;
     }
+    const comparison = periodComparisonHtml(s.perDay, s.prevPerDay,
+      (value) => foodAmountText(value) + t("perDaySuffix"), foodViewMode, foodViewYear);
     return `<div class="dashboard-card-value">${foodAmountText(s.perDay)}${t("perDaySuffix")}${foodTrendHtml(s.perDay, s.prevPerDay)}</div>
-            <div class="dashboard-card-sub">${s.periodLabel}<span class="visually-hidden"> · ${t("costVsSamePeriod")}</span></div>`;
+            ${foodViewMode === "rolling" ? `<div class="dashboard-card-sub">${s.periodLabel}</div>` : ""}${comparison}`;
   }
 
   function setFoodViewMode(mode) {
@@ -9115,6 +9174,11 @@
   function renderFoodCard() {
     const card = document.getElementById("foodCard");
     if (!card) return;
+    card.querySelectorAll("[data-mode]").forEach((btn) => {
+      const active = btn.dataset.mode === foodViewMode;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", String(active));
+    });
     const yearSelect = document.getElementById("foodYearSelect");
     if (yearSelect) yearSelect.hidden = foodViewMode !== "calendar";
     document.getElementById("foodCardBody").innerHTML = foodCardBodyHtml();
@@ -9639,6 +9703,22 @@
     };
   }
 
+  // A current calendar year is only compared with the same year-to-date
+  // window last year; comparing it with all of last year skews the trend.
+  function calendarPeriodRange(year) {
+    const today = dateToISO(new Date());
+    const isCurrentYear = year === Number(today.slice(0, 4));
+    const previousEnd = isCurrentYear
+      ? dateToISO(new Date(Date.UTC(year - 1, Number(today.slice(5, 7)) - 1, Number(today.slice(8)))))
+      : `${year - 1}-12-31`;
+    return {
+      start: `${year}-01-01`,
+      end: isCurrentYear ? today : `${year}-12-31`,
+      prevStart: `${year - 1}-01-01`,
+      prevEnd: previousEnd,
+    };
+  }
+
   // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
   // --- Voorraad ----------------------------------------------------------
   const inventoryField = (id) => document.getElementById(id);
@@ -10044,10 +10124,7 @@
     const hasAnyCostData = rows.some((r) => r.cost != null);
     let start, end, prevStart, prevEnd, periodLabel;
     if (mode === "calendar") {
-      start = `${year}-01-01`;
-      end = `${year}-12-31`;
-      prevStart = `${year - 1}-01-01`;
-      prevEnd = `${year - 1}-12-31`;
+      ({ start, end, prevStart, prevEnd } = calendarPeriodRange(year));
       periodLabel = String(year);
     } else {
       ({ start, end, prevStart, prevEnd } = rollingPeriodRange());
@@ -10100,8 +10177,9 @@
     const history = entries.length ? `<details><summary>Voorraadboekingen</summary>${entries.map((row) =>
       `<div class="inventory-row"><span>${escapeHtml(row.name)}<br>${formatDate(row.date)}</span><span>${formatEuro(row.cost)}</span></div>`
     ).join("")}</details>` : "";
+    const comparison = periodComparisonHtml(s.total, s.prevTotal, formatEuro, costViewMode, costViewYear);
     return `<div class="dashboard-card-value">${formatEuro(s.total)}${costTrendHtml(s.total, s.prevTotal)}</div>
-            <div class="dashboard-card-sub">${s.periodLabel}<span class="visually-hidden"> · ${t("costVsSamePeriod")}</span></div>${details}${history}`;
+            ${costViewMode === "rolling" ? `<div class="dashboard-card-sub">${s.periodLabel}</div>` : ""}${comparison}${details}${history}`;
   }
 
   function setCostViewType(type) {
@@ -10126,6 +10204,11 @@
     card.querySelectorAll("[data-cost-type]").forEach((btn) => {
       btn.setAttribute("aria-pressed", String(btn.dataset.costType === costViewType));
       btn.classList.toggle("active", btn.dataset.costType === costViewType);
+    });
+    card.querySelectorAll("[data-mode]").forEach((btn) => {
+      const active = btn.dataset.mode === costViewMode;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-pressed", String(active));
     });
     const yearSelect = document.getElementById("costYearSelect");
     if (yearSelect) yearSelect.hidden = costViewMode !== "calendar";
@@ -10277,11 +10360,9 @@
       </a>`,
       `<div class="card dashboard-card dashboard-card-static dashboard-food-card" id="foodCard">
         <h3>${iconHtml("food")} ${t("dashboardFood")}</h3>
-        <div class="dashboard-period-controls">
-          <select id="foodPeriodSelect" aria-label="${t("periodSelectLabel")}" onchange="setFoodViewMode(this.value)">
-            <option value="rolling" ${foodViewMode === "rolling" ? "selected" : ""}>${t("costPeriodRolling")}</option>
-            <option value="calendar" ${foodViewMode === "calendar" ? "selected" : ""}>${t("costToggleCalendar")}</option>
-          </select>
+        <div class="dashboard-period-controls" role="group" aria-label="${t("periodSelectLabel")}">
+          <button type="button" class="cost-toggle-btn ${foodViewMode === "rolling" ? "active" : ""}" data-mode="rolling" aria-pressed="${foodViewMode === "rolling"}" onclick="setFoodViewMode('rolling')">${t("costToggleRolling")}</button>
+          <button type="button" class="cost-toggle-btn ${foodViewMode === "calendar" ? "active" : ""}" data-mode="calendar" aria-pressed="${foodViewMode === "calendar"}" onclick="setFoodViewMode('calendar')">${t("costToggleCalendar")}</button>
           <select id="foodYearSelect" aria-label="${t("selectYearLabel")}" ${foodViewMode === "calendar" ? "" : "hidden"} onchange="setFoodViewYear(this.value)">${foodYearOptionsHtml()}</select>
         </div>
         <div id="foodCardBody">${foodCardBodyHtml()}</div>
@@ -10292,11 +10373,9 @@
           <button type="button" class="cost-toggle-btn ${costViewType === "expenses" ? "active" : ""}" data-cost-type="expenses" aria-pressed="${costViewType === "expenses"}" onclick="setCostViewType('expenses')">${t("costExpenses")}</button>
           <button type="button" class="cost-toggle-btn ${costViewType === "usage" ? "active" : ""}" data-cost-type="usage" aria-pressed="${costViewType === "usage"}" onclick="setCostViewType('usage')">${t("costUsage")}</button>
         </div>
-        <div class="dashboard-period-controls">
-          <select id="costPeriodSelect" aria-label="${t("periodSelectLabel")}" onchange="setCostViewMode(this.value)">
-            <option value="rolling" ${costViewMode === "rolling" ? "selected" : ""}>${t("costPeriodRolling")}</option>
-            <option value="calendar" ${costViewMode === "calendar" ? "selected" : ""}>${t("costToggleCalendar")}</option>
-          </select>
+        <div class="dashboard-period-controls" role="group" aria-label="${t("periodSelectLabel")}">
+          <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" aria-pressed="${costViewMode === "rolling"}" onclick="setCostViewMode('rolling')">${t("costToggleRolling")}</button>
+          <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" aria-pressed="${costViewMode === "calendar"}" onclick="setCostViewMode('calendar')">${t("costToggleCalendar")}</button>
           <select id="costYearSelect" aria-label="${t("selectYearLabel")}" ${costViewMode === "calendar" ? "" : "hidden"} onchange="setCostViewYear(this.value)">${costYearOptionsHtml()}</select>
         </div>
         <div id="costCardBody">${costCardBodyHtml()}</div>

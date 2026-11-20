@@ -65,7 +65,7 @@ beheert:
 
 - `sw.js` cachet alleen de app-shell en gebruikt network-first. Bij een
   bedoelde clientverversing moet `CACHE_NAME` omhoog. De huidige cache is
-  `cat-health-v15`.
+  `cat-health-v16`.
 - Externe CDN-runtimes worden niet door de serviceworker gecachet. Een koude
   offline start is daardoor niet gegarandeerd; een eerder geladen shell kan
   nog steeds stuklopen wanneer een library niet in de HTTP-cache staat.
