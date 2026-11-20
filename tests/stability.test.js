@@ -369,3 +369,34 @@ test("symptom timeline range is a validated pet-scoped setting and marks are not
   const card = extractBetween("  function renderSymptomSinceVisitCard", "  function setSymptomListFilter");
   assert.doesNotMatch(card, /innerHTML/);
 });
+
+test("voorraadaankopen en afboekingen worden op hun eigen datum geteld", () => {
+  const source = [
+    extractBetween("  function inventoryAllocations()", "  async function loadInventory("),
+    extractBetween("  let costViewType", "  function computeCostSummary("),
+  ].join("\n");
+  const context = {
+    currentPetId: 1, inventoryPetId: 1,
+    inventoryPurchases: [{ id: "pipetten", pet_id: 1, date: "2026-11-20", category: "medicine", quantity: 2, cost: "74" }],
+    inventoryUses: [],
+    latestMedicationData: [
+      { id: 1, pet_id: 1, date: "2026-11-23", inventory_purchase_id: "pipetten", inventory_quantity: 1 },
+      { id: 2, pet_id: 1, date: "2027-05-23", inventory_purchase_id: "pipetten", inventory_quantity: 1 },
+    ],
+    latestVetVisitData: [], latestVaxData: [], latestFoodData: [],
+  };
+  vm.createContext(context);
+  vm.runInContext(source, context);
+  assert.equal(vm.runInContext('sumCostInRange(collectCostRows(), "2026-01-01", "2026-12-31")', context), 74);
+  assert.equal(vm.runInContext('inventoryBalance(inventoryPurchases[0])', context), 0);
+  vm.runInContext('costViewType = "usage"', context);
+  assert.equal(vm.runInContext('sumCostInRange(collectCostRows(), "2026-01-01", "2026-12-31")', context), 37);
+  assert.equal(vm.runInContext('sumCostInRange(collectCostRows(), "2027-01-01", "2027-12-31")', context), 37);
+
+  context.inventoryPurchases = [{ id: "vulling", pet_id: 1, date: "2026-11-20", category: "litter", quantity: 1.5, cost: "10" }];
+  context.inventoryUses = ["2026-11-21", "2026-11-22", "2026-11-23"].map((date, index) => ({
+    id: index, pet_id: 1, date, inventory_purchase_id: "vulling", inventory_quantity: "0.5",
+  }));
+  assert.deepEqual(Array.from(vm.runInContext('collectCostRows().map((row) => row.cost)', context)), [3.33, 3.34, 3.33]);
+  assert.equal(vm.runInContext('inventoryBalance(inventoryPurchases[0])', context), 0);
+});
