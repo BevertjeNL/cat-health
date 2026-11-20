@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/BevertjeNL/cat-health/compare/v1.18.1...v1.19.0) (2026-11-20)
+
+
+### Features
+
+* voeg algemene voorraad en verbruikskosten toe ([80e99a1](https://github.com/BevertjeNL/cat-health/commit/80e99a1d96dc64b23655bf2d84619f364e5bf256))
+
 ## [1.18.1](https://github.com/BevertjeNL/cat-health/compare/v1.18.0...v1.18.1) (2026-10-07)
 
 
