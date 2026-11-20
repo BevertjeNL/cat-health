@@ -1,3 +1,10 @@
+## [1.20.1](https://github.com/BevertjeNL/cat-health/compare/v1.20.0...v1.20.1) (2026-11-20)
+
+
+### Bug Fixes
+
+* verkort periodeomschrijving op dashboard ([dfe4759](https://github.com/BevertjeNL/cat-health/commit/dfe475981a2ce828c1da0d4c1e360fc8a362be40))
+
 # [1.20.0](https://github.com/BevertjeNL/cat-health/compare/v1.19.0...v1.20.0) (2026-11-20)
 
 
