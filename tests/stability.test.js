@@ -255,6 +255,43 @@ test("weight and food trend colors stay neutral", () => {
   }
 });
 
+test("period comparison bars show the chosen and previous values", () => {
+  const source = extractBetween("  function periodComparisonHtml", "  function foodCardBodyHtml");
+  const context = { t: (key) => ({ comparisonNow: "Nu", comparisonLastYear: "Vorig jaar", comparisonLabel: "Vergelijking" })[key] };
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.periodComparisonHtml = periodComparisonHtml;`, context);
+
+  const rolling = context.periodComparisonHtml(60, 100, (value) => `€ ${value}`, "rolling", 2026);
+  assert.match(rolling, /Nu<\/span>/);
+  assert.match(rolling, /Vorig jaar<\/span>/);
+  assert.match(rolling, /width:60%/);
+  assert.match(rolling, /width:100%/);
+  assert.match(rolling, /€ 60/);
+  assert.match(rolling, /€ 100/);
+  const calendar = context.periodComparisonHtml(60, 100, String, "calendar", 2024);
+  assert.match(calendar, />2024<\/span>/);
+  assert.match(calendar, />2023<\/span>/);
+  assert.equal(context.periodComparisonHtml(60, 0, String, "rolling", 2026), "");
+});
+
+test("current calendar year compares year to date with the prior year", () => {
+  const source = extractBetween("  function calendarPeriodRange", "  // --- Kosten");
+  const RealDate = Date;
+  class FixedDate extends RealDate {
+    constructor(...args) { super(...(args.length ? args : ["2026-11-20T12:00:00.000Z"])); }
+    static UTC(...args) { return RealDate.UTC(...args); }
+  }
+  const context = { Date: FixedDate, dateToISO: (date) => date.toISOString().slice(0, 10) };
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.calendarPeriodRange = calendarPeriodRange;`, context);
+  assert.deepEqual({ ...context.calendarPeriodRange(2026) }, {
+    start: "2026-01-01", end: "2026-11-20", prevStart: "2025-01-01", prevEnd: "2025-11-20",
+  });
+  assert.deepEqual({ ...context.calendarPeriodRange(2024) }, {
+    start: "2024-01-01", end: "2024-12-31", prevStart: "2023-01-01", prevEnd: "2023-12-31",
+  });
+});
+
 function createSymptomTrendHarness() {
   const source = extractBetween("  function symptomLogCombination", "  // The dashboard tile has room");
   const context = {
