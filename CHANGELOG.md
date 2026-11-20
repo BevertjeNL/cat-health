@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/BevertjeNL/cat-health/compare/v1.19.0...v1.20.0) (2026-11-20)
+
+
+### Features
+
+* allow editing inventory purchases ([5d62542](https://github.com/BevertjeNL/cat-health/commit/5d62542da8b64a0bbb5f5bccdc8a2d011faebccb))
+
 # [1.19.0](https://github.com/BevertjeNL/cat-health/compare/v1.18.1...v1.19.0) (2026-11-20)
 
 
