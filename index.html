@@ -455,6 +455,7 @@
     border-bottom: 1px solid var(--border);
     overflow-wrap: anywhere;
   }
+  .inventory-actions { display: flex; flex-wrap: wrap; gap: 8px; }
   #inventoryCard .cost-toggle { margin-top: 10px; }
   #inventoryCard form { margin-top: 14px; }
 
@@ -9508,6 +9509,7 @@
   let inventoryUsePurchase = null;
   let medicationInventoryPurchase = null;
   let inventoryPurchaseRequestId;
+  let editingInventoryPurchaseId = null;
   let inventoryUseRequestId;
 
   function inventoryQuantityText(quantity, unit) {
@@ -9574,13 +9576,13 @@
     const { used } = inventoryAllocations();
     const available = inventoryPurchases.filter((purchase) => inventoryBalance(purchase, used) > 0);
     const expand = inventoryField("inventoryExpand");
-    expand.hidden = available.length <= 3;
+    expand.hidden = inventoryPurchases.length <= 3 && available.length === inventoryPurchases.length;
     expand.textContent = inventoryExpanded ? "Toon minder" : "Bekijk alle verpakkingen";
     expand.setAttribute("aria-expanded", String(inventoryExpanded));
-    if (!available.length && !inventoryField("inventoryStatus").textContent) {
+    if (!available.length && !inventoryExpanded && !inventoryField("inventoryStatus").textContent) {
       list.textContent = "Geen producten op voorraad.";
     }
-    for (const purchase of inventoryExpanded ? available : available.slice(0, 3)) {
+    for (const purchase of inventoryExpanded ? inventoryPurchases : available.slice(0, 3)) {
       const row = document.createElement("div");
       row.className = "inventory-row";
       const name = document.createElement("strong");
@@ -9590,15 +9592,27 @@
       const balance = inventoryQuantityText(inventoryBalance(purchase, used), purchase.unit);
       details.textContent = [inventoryCategories[purchase.category], balance + " over", "gekocht " + formatDate(purchase.date),
         purchase.batch ? "batch " + purchase.batch : ""].filter(Boolean).join(" · ");
-      const action = document.createElement("button");
-      action.type = "button";
-      action.className = "today-btn";
-      action.textContent = purchase.category === "medicine" ? "Toedienen" : "Afboeken";
-      action.setAttribute("aria-label", action.textContent + " · " + purchase.name + " · " + formatDate(purchase.date));
-      action.onclick = () => openInventoryUse(purchase);
+      const actions = document.createElement("div");
+      actions.className = "inventory-actions";
+      if (inventoryBalance(purchase, used) > 0) {
+        const action = document.createElement("button");
+        action.type = "button";
+        action.className = "today-btn";
+        action.textContent = purchase.category === "medicine" ? "Toedienen" : "Afboeken";
+        action.setAttribute("aria-label", action.textContent + " · " + purchase.name + " · " + formatDate(purchase.date));
+        action.onclick = () => openInventoryUse(purchase);
+        actions.append(action);
+      }
+      const edit = document.createElement("button");
+      edit.type = "button";
+      edit.className = "today-btn";
+      edit.textContent = "Bewerken";
+      edit.setAttribute("aria-label", "Bewerken · " + purchase.name + " · " + formatDate(purchase.date));
+      edit.onclick = () => openInventoryPurchaseEdit(purchase);
+      actions.append(edit);
       const description = document.createElement("div");
       description.append(name, details);
-      row.append(description, action);
+      row.append(description, actions);
       list.append(row);
     }
   }
@@ -9613,7 +9627,9 @@
     switchTab("dashboard");
     inventoryUseForm.hidden = true;
     inventoryPurchaseForm.reset();
+    editingInventoryPurchaseId = null;
     inventoryPurchaseRequestId = createClientMutationId();
+    inventoryPurchaseForm.querySelector(".submit").textContent = "Aankoop opslaan";
     inventoryField("inventoryDate").value = dateToISO(new Date());
     inventoryField("inventoryCategory").value = category;
     const names = new Set([
@@ -9629,6 +9645,25 @@
     setInventoryQuantityRules(inventoryField("inventoryQuantity"), inventoryField("inventoryUnit").value);
     inventoryPurchaseForm.hidden = false;
     inventoryField("inventoryPreset").focus();
+  }
+
+  function openInventoryPurchaseEdit(purchase) {
+    if (purchase.pet_id !== currentPetId) return;
+    openInventoryPurchase(purchase.category);
+    editingInventoryPurchaseId = purchase.id;
+    inventoryField("inventoryPreset").value = "";
+    inventoryField("inventoryName").value = purchase.name;
+    inventoryField("inventoryDate").value = purchase.date;
+    inventoryField("inventoryCategory").value = purchase.category;
+    inventoryField("inventoryUnit").value = purchase.unit;
+    setInventoryQuantityRules(inventoryField("inventoryQuantity"), purchase.unit);
+    inventoryField("inventoryQuantity").value = purchase.quantity;
+    inventoryField("inventoryCost").value = formatDecimalInput(purchase.cost);
+    inventoryField("inventoryBatch").value = purchase.batch || "";
+    inventoryField("inventoryBatchField").hidden = purchase.category !== "medicine";
+    inventoryPurchaseForm.querySelector(".submit").textContent = "Wijzigingen opslaan";
+    inventoryPurchaseForm.scrollIntoView({ behavior: "smooth", block: "start" });
+    inventoryField("inventoryName").focus();
   }
 
   function openInventoryFood(preset) {
@@ -9651,6 +9686,7 @@
   };
   inventoryField("inventoryCancelPurchase").onclick = () => {
     inventoryPurchaseForm.hidden = true;
+    editingInventoryPurchaseId = null;
     inventoryField("inventoryAdd").focus();
   };
   inventoryField("inventoryCancelUse").onclick = () => {
@@ -9697,6 +9733,15 @@
     }
   }
 
+  async function updateInventoryPurchase(id, petId, payload) {
+    try {
+      const result = await neonClient.from("inventory_purchases").update(payload).eq("id", id).eq("pet_id", petId);
+      return result.error;
+    } catch (error) {
+      return error;
+    }
+  }
+
   inventoryPurchaseForm.onsubmit = async (event) => {
     event.preventDefault();
     const name = inventoryField("inventoryName").value.trim();
@@ -9706,20 +9751,25 @@
     if (!context.petId || submit.disabled) return;
     const category = inventoryField("inventoryCategory").value;
     submit.disabled = true;
-    const error = await insertInventory("inventory_purchases", {
-      id: inventoryPurchaseRequestId, pet_id: context.petId, name, category,
+    const payload = {
+      name, category,
       date: inventoryField("inventoryDate").value, unit: inventoryField("inventoryUnit").value,
       quantity: inventoryField("inventoryQuantity").valueAsNumber,
       cost: parseOptionalDecimalInput(inventoryField("inventoryCost").value),
       batch: category === "medicine" ? inventoryField("inventoryBatch").value.trim() || null : null,
-    });
+    };
+    const editingId = editingInventoryPurchaseId;
+    const error = editingId
+      ? await updateInventoryPurchase(editingId, context.petId, payload)
+      : await insertInventory("inventory_purchases", { id: inventoryPurchaseRequestId, pet_id: context.petId, ...payload });
     submit.disabled = false;
     if (context.petId !== currentPetId) return;
     if (error) return showError(t("errSaveFailed") + ": " + error.message);
     inventoryPurchaseForm.hidden = true;
+    editingInventoryPurchaseId = null;
     inventoryExpanded = true;
     await loadInventory();
-    showSuccess("Aankoop toegevoegd aan de voorraad.");
+    showSuccess(editingId ? "Aankoop bijgewerkt." : "Aankoop toegevoegd aan de voorraad.");
   };
 
   function openInventoryUse(purchase) {
