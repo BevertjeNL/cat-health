@@ -169,6 +169,92 @@ test("dashboard navigation and every collapsible form are keyboard accessible", 
   assert.match(html, /aria-label="\$\{t\("selectYearLabel"\)\}"/);
 });
 
+function createDashboardAlertHarness() {
+  const source = extractBetween("  function alertVaccinations", "  function purposeTagHtml");
+  const alertBox = { innerHTML: "" };
+  const state = {
+    vaccines: [], medications: { overdue: [], dueSoon: [] }, symptoms: [],
+    visit: null, weight: null, blood: null,
+  };
+  const labels = {
+    alertVaxExpiredSince: "verlopen sinds", alertVaxExpiresIn: "verloopt over",
+    dayUnit: "dag", daysUnit: "dagen", alertSymptomsSevere: "Ernstige afwijking geregistreerd:",
+    alertVetPlanned: "Dierenartsbezoek gepland op", alertShowAll: "Toon alle {n} meldingen",
+    alertShowLess: "Toon minder", alertNoData: "Nog onvoldoende gegevens.",
+    alertAllGood: "Geen nieuwe meldingen op basis van je gegevens.",
+  };
+  const context = {
+    computeVaccinationSummary: () => ({ items: state.vaccines }),
+    computeMedicationSummary: () => state.medications,
+    computeWeightSummary: () => state.weight,
+    computeBloodSummary: () => state.blood,
+    computeSymptomSinceVetVisit: () => ({ hasData: true, none: !state.symptoms.length, relevant: state.symptoms }),
+    nextPlannedVetVisit: () => state.visit,
+    daysSince: (date) => Math.round((Date.parse("2026-11-20") - Date.parse(date)) / 86400000),
+    dateToISO: () => "2026-11-20",
+    addDaysToDateStr: (date, days) => new Date(Date.parse(date) + days * 86400000).toISOString().slice(0, 10),
+    dueStatusFromDate: (date) => ({ daysLeft: Math.round((Date.parse(date) - Date.parse("2026-11-20")) / 86400000) }),
+    formatDate: (date) => date,
+    formatDaysAgo: (days) => `${days} dagen geleden`,
+    escapeHtml: (value) => value,
+    t: (key) => labels[key] || key,
+    document: { getElementById: () => alertBox, querySelector: () => ({ focus() {} }) },
+    latestVaxData: [{}], latestWeightData: [], latestMedicationData: [], latestBloodData: [],
+    latestSymptomData: [], latestVetVisitData: [],
+  };
+  vm.createContext(context);
+  vm.runInContext(`${source}\nthis.api = { computeDashboardAlerts, renderDashboardAlerts, toggleDashboardAlerts };`, context);
+  return { ...context.api, state, alertBox };
+}
+
+test("dashboard keeps every urgent alert and exposes overflow", () => {
+  const { computeDashboardAlerts, renderDashboardAlerts, toggleDashboardAlerts, state, alertBox } = createDashboardAlertHarness();
+  state.vaccines = [
+    { v: { vaccine: "A", valid_until: "2026-11-18" }, status: { daysLeft: -2 } },
+    { v: { vaccine: "B", valid_until: "2026-11-19" }, status: { daysLeft: -1 } },
+    { v: { vaccine: "C", valid_until: "2026-11-25" }, status: { daysLeft: 5 } },
+  ];
+  state.symptoms = [{ symptom: "Braken", severity: "ernstig", date: "2026-11-20" }];
+  state.visit = { date: "2026-11-24" };
+  const alerts = computeDashboardAlerts();
+  assert.equal(alerts.length, 5);
+  assert.equal(alerts.filter((item) => item.severity === 0).length, 3);
+  assert.ok(alerts.some((item) => item.tabTarget === "vet"));
+
+  renderDashboardAlerts();
+  assert.match(alertBox.innerHTML, /Toon alle 5 meldingen/);
+  assert.doesNotMatch(alertBox.innerHTML, /Dierenartsbezoek gepland/);
+  toggleDashboardAlerts();
+  assert.match(alertBox.innerHTML, /Dierenartsbezoek gepland/);
+  assert.match(alertBox.innerHTML, /Toon minder/);
+});
+
+test("dashboard does not call old or mild records urgent", () => {
+  const { computeDashboardAlerts, state } = createDashboardAlertHarness();
+  state.symptoms = [
+    { symptom: "Braken", severity: "ernstig", date: "2026-10-01" },
+    { symptom: "Niezen", severity: "licht", date: "2026-11-20" },
+  ];
+  state.visit = { date: "2027-01-15" };
+  assert.equal(computeDashboardAlerts()[0].message, "Geen nieuwe meldingen op basis van je gegevens.");
+});
+
+test("weight and food trend colors stay neutral", () => {
+  const foodSource = extractBetween("  function foodTrendHtml", "  function foodYearOptionsHtml");
+  const weightSource = extractBetween("  function weightTrendHtml", "  function rgbToRgba");
+  const context = { t: (key) => key };
+  vm.createContext(context);
+  vm.runInContext(`${foodSource}\n${weightSource}\nthis.api = { foodTrendHtml, weightTrendHtml };`, context);
+  for (const htmlText of [
+    context.api.foodTrendHtml(80, 100), context.api.foodTrendHtml(120, 100),
+    context.api.weightTrendHtml({ diffKg: -0.5, diffPct: -10 }),
+    context.api.weightTrendHtml({ diffKg: 0.5, diffPct: 10 }),
+  ]) {
+    assert.match(htmlText, /color:var\(--text-muted\)/);
+    assert.doesNotMatch(htmlText, /#ff3b30|#34c759/);
+  }
+});
+
 function createSymptomTrendHarness() {
   const source = extractBetween("  function symptomLogCombination", "  // The dashboard tile has room");
   const context = {
