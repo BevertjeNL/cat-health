@@ -444,6 +444,20 @@
     gap: 10px;
   }
 
+  #inventoryPurchaseForm[hidden], #inventoryUseForm[hidden], #inventoryExpand[hidden] { display: none; }
+  .inventory-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    overflow-wrap: anywhere;
+  }
+  #inventoryCard .cost-toggle { margin-top: 10px; }
+  #inventoryCard form { margin-top: 14px; }
+
   form.entry-form .row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -1642,6 +1656,84 @@
       <div id="dashboardAlerts"></div>
     </div>
 
+    <div class="card" id="inventoryCard">
+      <h2>Voorraad</h2>
+      <p id="inventoryStatus" class="hint-text" role="status"></p>
+      <div id="inventoryList"></div>
+      <div class="cost-toggle">
+        <button type="button" class="today-btn" id="inventoryExpand" aria-expanded="false" aria-controls="inventoryList" hidden>Bekijk alle verpakkingen</button>
+        <button type="button" class="today-btn" id="inventoryAdd">+ Aankoop</button>
+      </div>
+      <form id="inventoryPurchaseForm" class="entry-form" hidden>
+        <div>
+          <label for="inventoryPreset">Snel kiezen</label>
+          <select id="inventoryPreset">
+            <option value="">Eigen product invoeren</option>
+            <optgroup label="Medicijnen">
+              <option value="flea">Vlooienbehandeling</option><option value="worm">Ontworming</option>
+            </optgroup>
+            <optgroup label="Kattenbakvulling">
+              <option value="clumping">Klontvormende kattenbakvulling</option><option value="wood">Houtkorrels</option><option value="silica">Silicavulling</option>
+            </optgroup>
+            <optgroup label="Voer">
+              <option value="wet">Natvoer</option><option value="dry">Droogvoer</option>
+            </optgroup>
+            <optgroup label="Overig">
+              <option value="bags">Kattenbakzakken</option><option value="pads">Onderleggers</option>
+            </optgroup>
+          </select>
+        </div>
+        <div>
+          <label for="inventoryCategory">Categorie</label>
+          <select id="inventoryCategory">
+            <option value="medicine">Medicijnen</option><option value="litter">Kattenbakvulling</option>
+            <option value="food">Voer</option><option value="other">Overig</option>
+          </select>
+        </div>
+        <div>
+          <label for="inventoryName">Product</label>
+          <input id="inventoryName" maxlength="160" list="inventoryNames" required>
+          <datalist id="inventoryNames"></datalist>
+        </div>
+        <div>
+          <label for="inventoryDate">Aankoopdatum</label>
+          <input id="inventoryDate" type="date" required>
+        </div>
+        <div class="row">
+          <div><label for="inventoryQuantity">Hoeveelheid</label><input id="inventoryQuantity" type="number" min="1" step="1" max="999999999" required></div>
+          <div>
+            <label for="inventoryUnit">Eenheid</label>
+            <select id="inventoryUnit">
+              <option>pipet</option><option>tablet</option><option>stuk</option><option>zak</option>
+              <option>pak</option><option>kg</option><option>liter</option><option>ml</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label for="inventoryCost">Totaal betaald (€)</label>
+          <input id="inventoryCost" type="text" inputmode="decimal" pattern="[0-9]{1,8}([.,][0-9]{1,2})?" required>
+        </div>
+        <div id="inventoryBatchField">
+          <label for="inventoryBatch">Batch (optioneel)</label><input id="inventoryBatch" maxlength="160">
+        </div>
+        <button class="submit" type="submit">Aankoop opslaan</button>
+        <button type="button" class="today-btn" id="inventoryCancelPurchase">Annuleren</button>
+      </form>
+      <form id="inventoryUseForm" class="entry-form" hidden>
+        <h3 id="inventoryUseProduct"></h3>
+        <div>
+          <label for="inventoryUseDate">Datum gebruikt</label><input id="inventoryUseDate" type="date" required>
+        </div>
+        <div>
+          <label for="inventoryUseQuantity" id="inventoryUseLabel">Gebruikte hoeveelheid</label>
+          <input id="inventoryUseQuantity" type="number" required>
+        </div>
+        <p class="hint-text" id="inventoryUseCost" aria-live="polite"></p>
+        <button class="submit" type="submit">Verbruik opslaan</button>
+        <button type="button" class="today-btn" id="inventoryCancelUse">Annuleren</button>
+      </form>
+    </div>
+
     <div class="dashboard-cards" id="dashboardCards"></div>
 
     <button type="button" class="submit dashboard-add-btn" onclick="openQuickAddMenu()" data-i18n-js="dashboardAddData">+ Gegeven toevoegen</button>
@@ -2022,6 +2114,11 @@
       </div>
       <div class="collapsible-body" id="medicationFormBody" style="display:none;">
         <form class="entry-form" id="medicationForm">
+          <div id="medicationInventoryField" hidden>
+            <label id="medicationInventoryLabel" for="medicationInventoryQuantity">Afboeken uit voorraad</label>
+            <input id="medicationInventoryQuantity" type="number">
+            <p class="hint-text" id="medicationInventoryCost" aria-live="polite"></p>
+          </div>
           <div>
             <label for="medicationPurpose" data-i18n="fieldPurposeOptional">Doel (optioneel)</label>
             <input type="text" id="medicationPurpose" list="medicationPurposeSuggestions" placeholder="bijv. Ontworming" />
@@ -2090,6 +2187,7 @@
     <div class="card">
       <h2 data-i18n="headingOverview">Overzicht</h2>
       <p class="swipe-hint">Veeg een rij naar links om te verwijderen of bewerken</p>
+      <button type="button" class="today-btn" onclick="openInventoryPurchase()">+ Medicijn kopen</button>
       <ul class="entry-list" id="medicationList"></ul>
     </div>
   </section>
@@ -2513,6 +2611,8 @@
     "vet_visits",
     "food_catalog",
     "food_purchases",
+    "inventory_purchases",
+    "inventory_uses",
   ];
   const EXPORT_COLUMNS = {
     pets: ["id", "user_id", "name", "species", "breed", "birth_date", "sex", "neutered", "activity_level", "target_min_kg", "target_max_kg", "photo_data_url", "weight_reminder_days", "archived_at", "created_at", "updated_at"],
@@ -2520,12 +2620,14 @@
     blood_values: ["id", "pet_id", "date", "marker", "value", "unit", "note", "client_mutation_id", "created_at"],
     vaccinations: ["id", "pet_id", "date", "vaccine", "valid_until", "note", "cost", "no_repeat", "client_mutation_id", "created_at"],
     symptom_logs: ["id", "pet_id", "date", "time", "symptom", "severity", "note", "client_mutation_id", "created_at"],
-    medications: ["id", "pet_id", "date", "name", "dose", "next_due_date", "note", "purpose", "brand", "active_ingredient", "batch", "cost", "client_mutation_id", "created_at"],
+    medications: ["id", "pet_id", "date", "name", "dose", "next_due_date", "note", "purpose", "brand", "active_ingredient", "batch", "cost", "client_mutation_id", "created_at", "inventory_purchase_id", "inventory_quantity"],
     medication_catalog: ["id", "pet_id", "name", "purpose", "brand", "active_ingredient", "dose", "created_at"],
     veterinarians: ["id", "pet_id", "name", "phone", "email", "address", "notes", "is_primary", "created_at", "street", "postal_city"],
     vet_visits: ["id", "pet_id", "date", "reason", "result", "note", "cost", "client_mutation_id", "created_at", "vet_id"],
     food_catalog: ["id", "pet_id", "name", "food_type", "shop", "created_at"],
     food_purchases: ["id", "pet_id", "date", "name", "food_type", "amount_grams", "shop", "cost", "note", "client_mutation_id", "created_at", "exclude_from_stats"],
+    inventory_purchases: ["id", "pet_id", "date", "name", "category", "unit", "quantity", "cost", "batch", "created_at"],
+    inventory_uses: ["id", "pet_id", "inventory_purchase_id", "date", "inventory_quantity", "created_at"],
   };
   const EXCEL_SHEET_NAMES = {
     pets: "Huisdieren",
@@ -2539,8 +2641,10 @@
     vet_visits: "Dierenartsbezoeken",
     food_catalog: "Voercatalogus",
     food_purchases: "Voeraankopen",
+    inventory_purchases: "Voorraadaankopen",
+    inventory_uses: "Voorraadverbruik",
   };
-  const EXCEL_NUMERIC_COLUMNS = new Set(["weight_grams", "target_min_kg", "target_max_kg", "weight_reminder_days", "value", "cost", "amount_grams"]);
+  const EXCEL_NUMERIC_COLUMNS = new Set(["weight_grams", "target_min_kg", "target_max_kg", "weight_reminder_days", "value", "cost", "amount_grams", "quantity", "inventory_quantity"]);
 
   const isConfigured = NEON_AUTH_URL.startsWith("https://") && NEON_DATA_API_URL.startsWith("https://");
   let neonClient = null;
@@ -3885,6 +3989,9 @@
     currentUser = null;
     pets = [];
     currentPetId = null;
+    inventoryPetId = null;
+    inventoryPurchases = [];
+    inventoryUses = [];
     showAuthScreen();
   }
 
@@ -8223,6 +8330,10 @@
   }
 
   function editMedication(row) {
+    const purchase = row.inventory_purchase_id && inventoryPurchases.find(
+      (entry) => entry.id === row.inventory_purchase_id && entry.pet_id === currentPetId);
+    if (row.inventory_purchase_id && !purchase) return showError("De gekoppelde verpakking kon niet worden geladen.");
+    configureMedicationInventory(purchase || null, row);
     editingMedicationId = row.id;
     document.getElementById("medicationPurpose").value = row.purpose || "";
     document.getElementById("medicationName").value = row.name;
@@ -8247,6 +8358,7 @@
   // doel and dose, but today's date and no leftover next-due, since that
   // referred to the old dose, not this new one.
   function duplicateMedication(row) {
+    configureMedicationInventory(null);
     editingMedicationId = null;
     document.getElementById("medicationPurpose").value = row.purpose || "";
     document.getElementById("medicationName").value = row.name;
@@ -8271,6 +8383,7 @@
   }
 
   function cancelMedicationEdit() {
+    configureMedicationInventory(null);
     editingMedicationId = null;
     medicationForm.reset();
     document.getElementById("medicationDate").valueAsDate = new Date();
@@ -8302,9 +8415,20 @@
       return;
     }
 
+    const petId = currentPetId;
+    const purchase = medicationInventoryPurchase;
+    if (purchase && purchase.pet_id !== petId) {
+      submitBtn.disabled = false;
+      return showError("Kies opnieuw een verpakking voor dit huisdier.");
+    }
+    const payload = { name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost };
+    if (purchase) {
+      payload.inventory_purchase_id = purchase.id;
+      payload.inventory_quantity = inventoryField("medicationInventoryQuantity").valueAsNumber;
+    }
     const { error, offline } = editingMedicationId
-      ? await mutateTable("medications", "update", { id: editingMedicationId, payload: { name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost } })
-      : await mutateTable("medications", "insert", { payload: { name, purpose, brand, active_ingredient, date, dose, batch, next_due_date, note, cost, pet_id: currentPetId } });
+      ? await mutateTable("medications", "update", { id: editingMedicationId, payload })
+      : await mutateTable("medications", "insert", { payload: { ...payload, pet_id: petId } });
 
     submitBtn.disabled = false;
 
@@ -8313,10 +8437,12 @@
       return;
     }
 
+    if (petId !== currentPetId) return;
     // Catalogusregistratie heeft een online de-dupe-read nodig en wordt
     // daarom bewust overgeslagen bij een offline log — zelfherstellend
     // zodra dezelfde naam/doel-combinatie ooit weer online gelogd wordt.
     if (!offline) await registerMedicationInCatalog(name, purpose, brand, active_ingredient, dose);
+    if (petId !== currentPetId) return;
     cancelMedicationEdit();
     showSuccess(t("successMedicationSaved"));
     if (!offline) await loadMedications();
@@ -8358,6 +8484,8 @@
   }
 
   function renderMedicationList(data) {
+    renderInventory();
+    renderCostCard();
     medicationList.innerHTML = "";
 
     if (data.length === 0) {
@@ -9357,13 +9485,339 @@
   }
 
   // --- Kosten (dashboard-only, no dedicated tab) ----------------------------
+  // --- Voorraad ----------------------------------------------------------
+  const inventoryField = (id) => document.getElementById(id);
+  const inventoryPurchaseForm = inventoryField("inventoryPurchaseForm");
+  const inventoryUseForm = inventoryField("inventoryUseForm");
+  const inventoryCategories = { medicine: "Medicijnen", litter: "Kattenbakvulling", other: "Overig" };
+  const inventoryPresets = {
+    flea: ["Vlooienbehandeling", "medicine", "pipet"],
+    worm: ["Ontworming", "medicine", "tablet"],
+    clumping: ["Klontvormende kattenbakvulling", "litter", "liter"],
+    wood: ["Houtkorrels", "litter", "kg"],
+    silica: ["Silicavulling", "litter", "liter"],
+    wet: ["Natvoer", "food"],
+    dry: ["Droogvoer", "food"],
+    bags: ["Kattenbakzakken", "other", "stuk"],
+    pads: ["Onderleggers", "other", "stuk"],
+  };
+  let inventoryPurchases = [];
+  let inventoryUses = [];
+  let inventoryPetId = null;
+  let inventoryExpanded = false;
+  let inventoryUsePurchase = null;
+  let medicationInventoryPurchase = null;
+  let inventoryPurchaseRequestId;
+  let inventoryUseRequestId;
+
+  function inventoryQuantityText(quantity, unit) {
+    return new Intl.NumberFormat("nl-NL", { maximumFractionDigits: 3 }).format(quantity) + " " + unit;
+  }
+
+  function inventoryAllocations() {
+    const purchases = new Map(inventoryPurchases.map((row) => [row.id, row]));
+    const entries = [...inventoryUses, ...latestMedicationData.filter(
+      (row) => row.pet_id === inventoryPetId && row.inventory_purchase_id)]
+      .sort((a, b) => a.date.localeCompare(b.date) || String(a.id).localeCompare(String(b.id)));
+    const used = new Map();
+    const allocations = [];
+    for (const entry of entries) {
+      const purchase = purchases.get(entry.inventory_purchase_id);
+      if (!purchase) continue;
+      const before = used.get(purchase.id) || 0;
+      const after = before + Math.round(Number(entry.inventory_quantity) * 1000);
+      const cents = Math.round(Number(purchase.cost) * 100);
+      const capacity = Math.round(Number(purchase.quantity) * 1000);
+      const cost = (Math.round(after * cents / capacity) - Math.round(before * cents / capacity)) / 100;
+      used.set(purchase.id, after);
+      allocations.push({ ...entry, category: purchase.category, name: purchase.name, cost });
+    }
+    return { used, allocations };
+  }
+
+  function inventoryBalance(purchase, used = inventoryAllocations().used) {
+    return (Math.round(Number(purchase.quantity) * 1000) - (used.get(purchase.id) || 0)) / 1000;
+  }
+
+  async function loadInventory(loadContext = currentLoadContext()) {
+    const { petId } = loadContext;
+    if (!petId) return;
+    const tables = ["inventory_purchases", "inventory_uses"];
+    const results = await Promise.all(tables.map(async (table) => {
+      try {
+        const result = await fetchAllRows((from, to) => neonClient.from(table).select("*")
+          .eq("pet_id", petId).order("date", { ascending: false }).order("id").range(from, to));
+        if (!result.error) return result.data;
+        if (!isNetworkError(result.error)) return null;
+      } catch (error) {
+        if (!isNetworkError(error)) return null;
+      }
+      return getOfflineCachedRows(table, petId);
+    }));
+    if (isStaleLoad(loadContext)) return;
+    inventoryPetId = petId;
+    inventoryPurchases = results.every(Boolean) ? results[0] : [];
+    inventoryUses = results.every(Boolean) ? results[1] : [];
+    inventoryField("inventoryStatus").textContent = results.some((result) => !result)
+      ? "Voorraad kon niet worden geladen." : "";
+    if (results.every(Boolean)) {
+      tables.forEach((table, index) => idbPut("cache", offlineCacheKey(table, petId), results[index]));
+    }
+    renderInventory();
+    renderCostCard();
+  }
+
+  function renderInventory() {
+    const list = inventoryField("inventoryList");
+    list.replaceChildren();
+    if (inventoryPetId !== currentPetId) return;
+    const { used } = inventoryAllocations();
+    const available = inventoryPurchases.filter((purchase) => inventoryBalance(purchase, used) > 0);
+    const expand = inventoryField("inventoryExpand");
+    expand.hidden = available.length <= 3;
+    expand.textContent = inventoryExpanded ? "Toon minder" : "Bekijk alle verpakkingen";
+    expand.setAttribute("aria-expanded", String(inventoryExpanded));
+    if (!available.length && !inventoryField("inventoryStatus").textContent) {
+      list.textContent = "Geen producten op voorraad.";
+    }
+    for (const purchase of inventoryExpanded ? available : available.slice(0, 3)) {
+      const row = document.createElement("div");
+      row.className = "inventory-row";
+      const name = document.createElement("strong");
+      name.textContent = purchase.name;
+      const details = document.createElement("div");
+      details.className = "hint-text";
+      const balance = inventoryQuantityText(inventoryBalance(purchase, used), purchase.unit);
+      details.textContent = [inventoryCategories[purchase.category], balance + " over", "gekocht " + formatDate(purchase.date),
+        purchase.batch ? "batch " + purchase.batch : ""].filter(Boolean).join(" · ");
+      const action = document.createElement("button");
+      action.type = "button";
+      action.className = "today-btn";
+      action.textContent = purchase.category === "medicine" ? "Toedienen" : "Afboeken";
+      action.setAttribute("aria-label", action.textContent + " · " + purchase.name + " · " + formatDate(purchase.date));
+      action.onclick = () => openInventoryUse(purchase);
+      const description = document.createElement("div");
+      description.append(name, details);
+      row.append(description, action);
+      list.append(row);
+    }
+  }
+
+  function setInventoryQuantityRules(input, unit, maximum = 999999999) {
+    input.step = ["kg", "liter", "ml"].includes(unit) ? "0.001" : "1";
+    input.min = input.step;
+    input.max = maximum;
+  }
+
+  function openInventoryPurchase(category = "medicine") {
+    switchTab("dashboard");
+    inventoryUseForm.hidden = true;
+    inventoryPurchaseForm.reset();
+    inventoryPurchaseRequestId = createClientMutationId();
+    inventoryField("inventoryDate").value = dateToISO(new Date());
+    inventoryField("inventoryCategory").value = category;
+    const names = new Set([
+      ...inventoryPurchases.filter((row) => row.pet_id === currentPetId).map((row) => row.name),
+      ...(inventoryPetId === currentPetId ? medicationCatalog.map((row) => row.name) : []),
+    ]);
+    inventoryField("inventoryNames").replaceChildren(...[...names].map((name) => {
+      const option = document.createElement("option");
+      option.value = name;
+      return option;
+    }));
+    inventoryField("inventoryBatchField").hidden = category !== "medicine";
+    setInventoryQuantityRules(inventoryField("inventoryQuantity"), inventoryField("inventoryUnit").value);
+    inventoryPurchaseForm.hidden = false;
+    inventoryField("inventoryPreset").focus();
+  }
+
+  function openInventoryFood(preset) {
+    inventoryPurchaseForm.hidden = true;
+    cancelFoodEdit();
+    switchTab("food");
+    openFoodForm();
+    if (preset) {
+      inventoryField("foodType").value = preset === "wet" ? "nat" : "droog";
+      inventoryField("foodName").value = inventoryPresets[preset][0];
+    }
+    inventoryField("foodName").focus();
+    inventoryField("foodName").select();
+  }
+
+  inventoryField("inventoryAdd").onclick = () => openInventoryPurchase();
+  inventoryField("inventoryExpand").onclick = () => {
+    inventoryExpanded = !inventoryExpanded;
+    renderInventory();
+  };
+  inventoryField("inventoryCancelPurchase").onclick = () => {
+    inventoryPurchaseForm.hidden = true;
+    inventoryField("inventoryAdd").focus();
+  };
+  inventoryField("inventoryCancelUse").onclick = () => {
+    inventoryUseForm.hidden = true;
+    inventoryField("inventoryAdd").focus();
+  };
+  inventoryField("inventoryPreset").onchange = (event) => {
+    const preset = inventoryPresets[event.target.value];
+    if (!preset) {
+      inventoryField("inventoryName").value = "";
+      inventoryField("inventoryName").focus();
+      return;
+    }
+    const [name, category, unit] = preset;
+    if (category === "food") return openInventoryFood(event.target.value);
+    inventoryField("inventoryName").value = name;
+    inventoryField("inventoryCategory").value = category;
+    inventoryField("inventoryUnit").value = unit;
+    inventoryField("inventoryBatchField").hidden = category !== "medicine";
+    inventoryField("inventoryUnit").onchange();
+    inventoryField("inventoryQuantity").focus();
+  };
+  inventoryField("inventoryCategory").onchange = (event) => {
+    const category = event.target.value;
+    if (category === "food") return openInventoryFood();
+    inventoryField("inventoryPreset").value = "";
+    inventoryField("inventoryUnit").value = category === "medicine" ? "pipet" : category === "litter" ? "liter" : "stuk";
+    inventoryField("inventoryBatchField").hidden = category !== "medicine";
+    inventoryField("inventoryUnit").onchange();
+  };
+  inventoryField("inventoryUnit").onchange = () =>
+    setInventoryQuantityRules(inventoryField("inventoryQuantity"), inventoryField("inventoryUnit").value);
+
+  async function insertInventory(table, payload) {
+    try {
+      const result = await neonClient.from(table).insert([payload]);
+      if (result.error?.code === "23505") {
+        const existing = await neonClient.from(table).select("id").eq("id", payload.id).maybeSingle();
+        if (existing.data) return null;
+      }
+      return result.error;
+    } catch (error) {
+      return error;
+    }
+  }
+
+  inventoryPurchaseForm.onsubmit = async (event) => {
+    event.preventDefault();
+    const name = inventoryField("inventoryName").value.trim();
+    if (!name) return showError("Vul een productnaam in.");
+    const context = currentLoadContext();
+    const submit = inventoryPurchaseForm.querySelector(".submit");
+    if (!context.petId || submit.disabled) return;
+    const category = inventoryField("inventoryCategory").value;
+    submit.disabled = true;
+    const error = await insertInventory("inventory_purchases", {
+      id: inventoryPurchaseRequestId, pet_id: context.petId, name, category,
+      date: inventoryField("inventoryDate").value, unit: inventoryField("inventoryUnit").value,
+      quantity: inventoryField("inventoryQuantity").valueAsNumber,
+      cost: parseOptionalDecimalInput(inventoryField("inventoryCost").value),
+      batch: category === "medicine" ? inventoryField("inventoryBatch").value.trim() || null : null,
+    });
+    submit.disabled = false;
+    if (context.petId !== currentPetId) return;
+    if (error) return showError(t("errSaveFailed") + ": " + error.message);
+    inventoryPurchaseForm.hidden = true;
+    inventoryExpanded = true;
+    await loadInventory();
+    showSuccess("Aankoop toegevoegd aan de voorraad.");
+  };
+
+  function openInventoryUse(purchase) {
+    if (purchase.pet_id !== currentPetId) return;
+    inventoryPurchaseForm.hidden = true;
+    if (purchase.category === "medicine") {
+      cancelMedicationEdit();
+      configureMedicationInventory(purchase);
+      inventoryField("medicationName").value = purchase.name;
+      inventoryField("medicationBatch").value = purchase.batch || "";
+      inventoryField("medicationDate").value = [purchase.date, dateToISO(new Date())].sort().pop();
+      switchTab("medication");
+      openMedicationForm();
+      inventoryField("medicationDate").focus();
+      return;
+    }
+    inventoryUsePurchase = purchase;
+    inventoryUseRequestId = createClientMutationId();
+    inventoryField("inventoryUseProduct").textContent = purchase.name + " · gekocht " + formatDate(purchase.date);
+    const date = inventoryField("inventoryUseDate");
+    date.min = purchase.date;
+    date.value = [purchase.date, dateToISO(new Date())].sort().pop();
+    const quantity = inventoryField("inventoryUseQuantity");
+    const balance = inventoryBalance(purchase);
+    setInventoryQuantityRules(quantity, purchase.unit, balance);
+    quantity.value = Math.min(1, balance);
+    inventoryField("inventoryUseLabel").textContent = "Gebruikte hoeveelheid (" + purchase.unit + ")";
+    inventoryUseForm.hidden = false;
+    inventoryUseForm.oninput();
+    quantity.focus();
+  }
+
+  function inventoryCostPreview(purchase, quantity) {
+    if (!Number.isFinite(quantity) || quantity <= 0) return "";
+    return "Verbruikskosten (indicatie) · " + formatEuro(quantity * Number(purchase.cost) / Number(purchase.quantity));
+  }
+
+  inventoryUseForm.oninput = () => {
+    inventoryField("inventoryUseCost").textContent = inventoryCostPreview(
+      inventoryUsePurchase, inventoryField("inventoryUseQuantity").valueAsNumber);
+  };
+
+  inventoryUseForm.onsubmit = async (event) => {
+    event.preventDefault();
+    const purchase = inventoryUsePurchase;
+    const submit = inventoryUseForm.querySelector(".submit");
+    if (purchase?.pet_id !== currentPetId || submit.disabled) return;
+    submit.disabled = true;
+    const error = await insertInventory("inventory_uses", {
+      id: inventoryUseRequestId, pet_id: purchase.pet_id, inventory_purchase_id: purchase.id,
+      date: inventoryField("inventoryUseDate").value,
+      inventory_quantity: inventoryField("inventoryUseQuantity").valueAsNumber,
+    });
+    submit.disabled = false;
+    if (purchase.pet_id !== currentPetId) return;
+    if (error) return showError(t("errSaveFailed") + ": " + error.message);
+    inventoryUseForm.hidden = true;
+    await loadInventory();
+    showSuccess("Verbruik afgeboekt.");
+  };
+
+  function configureMedicationInventory(purchase, row = null) {
+    medicationInventoryPurchase = purchase;
+    const quantity = inventoryField("medicationInventoryQuantity");
+    const date = inventoryField("medicationDate");
+    const cost = inventoryField("medicationCost");
+    quantity.required = Boolean(purchase);
+    inventoryField("medicationName").readOnly = Boolean(purchase);
+    cost.parentElement.hidden = Boolean(purchase);
+    inventoryField("medicationInventoryField").hidden = !purchase;
+    date.min = purchase?.date || "";
+    if (!purchase) return;
+    const balance = inventoryBalance(purchase) + Number(row?.inventory_quantity || 0);
+    setInventoryQuantityRules(quantity, purchase.unit, balance);
+    quantity.value = row?.inventory_quantity ?? Math.min(1, balance);
+    inventoryField("medicationInventoryLabel").textContent =
+      "Afboeken uit voorraad (" + purchase.unit + ") · gekocht " + formatDate(purchase.date);
+    cost.value = "";
+    quantity.oninput();
+  }
+
+  inventoryField("medicationInventoryQuantity").oninput = () => {
+    if (!medicationInventoryPurchase) return;
+    inventoryField("medicationInventoryCost").textContent = inventoryCostPreview(
+      medicationInventoryPurchase, inventoryField("medicationInventoryQuantity").valueAsNumber);
+  };
+
+  let costViewType = "expenses";
   let costViewMode = "rolling"; // "rolling" | "calendar"
   let costViewYear = new Date().getFullYear();
 
   function collectCostRows() {
     const rows = [];
+    const currentInventory = inventoryPetId === currentPetId;
+    if (costViewType === "usage") return currentInventory ? inventoryAllocations().allocations : [];
+    if (currentInventory) rows.push(...inventoryPurchases.map((row) => ({ ...row, cost: Number(row.cost) })));
     (latestVetVisitData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
-    (latestMedicationData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
+    (latestMedicationData || []).filter((r) => !r.inventory_purchase_id).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
     (latestVaxData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
     (latestFoodData || []).forEach((r) => rows.push({ date: r.date, cost: r.cost }));
     return rows;
@@ -9388,7 +9842,7 @@
       periodLabel = t("costPeriodRolling");
     }
     return {
-      hasAnyCostData,
+      hasAnyCostData, start, end,
       total: sumCostInRange(rows, start, end),
       prevTotal: sumCostInRange(rows, prevStart, prevEnd),
       periodLabel,
@@ -9422,8 +9876,26 @@
     if (!s.hasAnyCostData) {
       return `<div class="dashboard-card-empty">${t("emptyCostsRegistered")}</div>`;
     }
+    const subtotals = new Map();
+    for (const row of collectCostRows()) {
+      if (!row.category || row.date < s.start || row.date > s.end) continue;
+      subtotals.set(row.category, (subtotals.get(row.category) || 0) + row.cost);
+    }
+    const details = [...subtotals].map(([category, total]) =>
+      `<div class="inventory-row"><span>${inventoryCategories[category]}</span><span>${formatEuro(total)}</span></div>`).join("");
+    const entries = collectCostRows().filter((row) => row.category && row.date >= s.start && row.date <= s.end)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    const history = entries.length ? `<details><summary>Voorraadboekingen</summary>${entries.map((row) =>
+      `<div class="inventory-row"><span>${escapeHtml(row.name)}<br>${formatDate(row.date)}</span><span>${formatEuro(row.cost)}</span></div>`
+    ).join("")}</details>` : "";
     return `<div class="dashboard-card-value">${formatEuro(s.total)}${costTrendHtml(s.total, s.prevTotal)}</div>
-            <div class="dashboard-card-sub">${s.periodLabel} · ${t("costVsSamePeriod")}</div>`;
+            <div class="dashboard-card-sub">${s.periodLabel} · ${t("costVsSamePeriod")}</div>${details}${history}`;
+  }
+
+  function setCostViewType(type) {
+    costViewType = type;
+    costViewYear = new Date().getFullYear();
+    renderCostCard();
   }
 
   function setCostViewMode(mode) {
@@ -9439,7 +9911,11 @@
   function renderCostCard() {
     const card = document.getElementById("costCard");
     if (!card) return;
-    card.querySelectorAll(".cost-toggle-btn").forEach((btn) => {
+    card.querySelectorAll("[data-cost-type]").forEach((btn) => {
+      btn.setAttribute("aria-pressed", String(btn.dataset.costType === costViewType));
+      btn.classList.toggle("active", btn.dataset.costType === costViewType);
+    });
+    card.querySelectorAll("[data-mode]").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.mode === costViewMode);
     });
     const yearSelect = document.getElementById("costYearSelect");
@@ -9601,6 +10077,10 @@
       </a>`,
       `<div class="card dashboard-card dashboard-card-static" id="costCard">
         <h3>${iconHtml("cost")} ${t("dashboardCost")}</h3>
+        <div class="cost-toggle" role="group" aria-label="Soort kosten">
+          <button type="button" class="cost-toggle-btn ${costViewType === "expenses" ? "active" : ""}" data-cost-type="expenses" aria-pressed="${costViewType === "expenses"}" onclick="setCostViewType('expenses')">Uitgaven</button>
+          <button type="button" class="cost-toggle-btn ${costViewType === "usage" ? "active" : ""}" data-cost-type="usage" aria-pressed="${costViewType === "usage"}" onclick="setCostViewType('usage')">Verbruikskosten</button>
+        </div>
         <div class="cost-toggle">
           <button type="button" class="cost-toggle-btn ${costViewMode === "rolling" ? "active" : ""}" data-mode="rolling" onclick="setCostViewMode('rolling')">${t("costToggleRolling")}</button>
           <button type="button" class="cost-toggle-btn ${costViewMode === "calendar" ? "active" : ""}" data-mode="calendar" onclick="setCostViewMode('calendar')">${t("costToggleCalendar")}</button>
@@ -9638,6 +10118,7 @@
   function renderDashboard() {
     renderDashboardAlerts();
     renderDashboardCards();
+    renderInventory();
   }
 
   function openQuickAddMenu() {
@@ -9851,6 +10332,14 @@
     if (!currentUser || !currentPetId) return;
     const loadContext = { petId: currentPetId, generation: ++refreshGeneration };
     refreshing = true;
+    if (inventoryPetId !== currentPetId) {
+      inventoryExpanded = false;
+      inventoryPurchaseForm.hidden = true;
+      inventoryUseForm.hidden = true;
+      inventoryField("inventoryStatus").textContent = "";
+      renderInventory();
+      if (medicationInventoryPurchase) cancelMedicationEdit();
+    }
 
     const btn = document.getElementById("refreshBtn");
     if (manual && btn) btn.classList.add("spinning");
@@ -9865,6 +10354,7 @@
         loadMedicationCatalog(loadContext),
         loadFoodPurchases(loadContext),
         loadFoodCatalog(loadContext),
+        loadInventory(loadContext),
         loadVetVisits(loadContext),
         loadVets(loadContext),
         loadProfile(loadContext),
