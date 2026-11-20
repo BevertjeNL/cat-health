@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/BevertjeNL/cat-health/compare/v1.20.1...v1.21.0) (2026-11-20)
+
+
+### Features
+
+* verbeter dashboardoverzicht voor huisdierbezitters ([f1a5971](https://github.com/BevertjeNL/cat-health/commit/f1a59715523ae7d920cfd4c37c256841c3d632c1))
+
 ## [1.20.1](https://github.com/BevertjeNL/cat-health/compare/v1.20.0...v1.20.1) (2026-11-20)
 
 
